@@ -67,7 +67,7 @@ export function createClientBundle(pluginId: string, entry: string): UserConfig 
     platform: 'browser',
     target: 'es2022',
     dts: false,
-    sourcemap: true,
+    sourcemap: false,
     clean: false,
     external: [...CLIENT_EXTERNALS],
     noExternal: (id: string) => CLIENT_EXTERNALS.includes(id as typeof CLIENT_EXTERNALS[number])

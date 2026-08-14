@@ -115,6 +115,7 @@ describe("diagram editor static route", () => {
   it("rejects unsupported methods, malformed paths, traversal, and misses", async () => {
     const root = await editorRoot();
     await writeFile(join(root, "notes.txt"), "not an editor asset");
+    await writeFile(join(root, "editor.js.map"), "{}\n");
     const handler = createEditorAssetsHandler(root);
 
     const cases = [
@@ -125,6 +126,7 @@ describe("diagram editor static route", () => {
       { url: "/diagram-assets/%2F..%2Foutside.js", method: "GET", status: 404 },
       { url: "/diagram-assets/missing.js", method: "GET", status: 404 },
       { url: "/diagram-assets/notes.txt", method: "GET", status: 415 },
+      { url: "/diagram-assets/editor.js.map", method: "GET", status: 415 },
     ] as const;
 
     for (const testCase of cases) {

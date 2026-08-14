@@ -15,7 +15,7 @@ export default defineConfig({
     outDir: editorOutDir,
     emptyOutDir: false,
     target: 'es2022',
-    sourcemap: true,
+    sourcemap: false,
     cssCodeSplit: false,
     assetsDir: 'assets',
     rollupOptions: {

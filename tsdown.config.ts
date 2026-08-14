@@ -9,7 +9,7 @@ const host: UserConfig = {
   platform: 'node',
   target: 'es2024',
   dts: false,
-  sourcemap: true,
+  sourcemap: false,
   clean: false,
   external: [/^@deepseek-ai\//],
   outputOptions: {

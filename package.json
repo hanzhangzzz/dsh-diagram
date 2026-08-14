@@ -18,12 +18,10 @@
   },
   "files": [
     "lib/index.js",
-    "lib/index.js.map",
     "lib/client.js",
-    "lib/client.js.map",
     "lib/editor/**",
+    "!lib/**/*.map",
     "lib/types/**/*.d.ts",
-    "lib/types/**/*.d.ts.map",
     "cordis.patch.yml",
     "DESIGN.md",
     "LICENSE"
