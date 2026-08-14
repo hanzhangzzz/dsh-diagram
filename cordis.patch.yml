@@ -1,0 +1,22 @@
+- insert:
+    - id: diagram
+      name: dsh-diagram
+      config:
+        maxNodes: 80
+        maxEdges: 160
+        maxGroups: 20
+        maxIdChars: 64
+        maxTitleChars: 200
+        maxSummaryChars: 1000
+        maxNodeLabelChars: 160
+        maxNodeDetailChars: 600
+        maxEdgeLabelChars: 120
+        maxGroupLabelChars: 120
+        maxSceneBytes: 1048576
+        maxSceneElements: 500
+        maxElementTextChars: 4000
+        maxDiagramsPerSession: 20
+        maxDiagramsTotal: 1000
+        maxStoredBytesTotal: 67108864
+        autosaveDebounceMs: 800
+        maxReadChars: 12000

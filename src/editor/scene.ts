@@ -1,0 +1,262 @@
+import {
+  FONT_FAMILY,
+  convertToExcalidrawElements,
+} from "@excalidraw/excalidraw";
+import type { ExcalidrawElementSkeleton } from "@excalidraw/excalidraw/data/transform";
+
+import {
+  EDITABLE_SCENE_ELEMENT_TYPES,
+  createSceneSchema,
+  type DiagramSpec,
+  type DiagramValidationPolicy,
+  type PersistedScene,
+} from "../core/contracts.ts";
+import {
+  layoutDiagram,
+  type PositionedDiagram,
+} from "../core/layout.ts";
+
+const APP_STATE_KEYS = [
+  "viewBackgroundColor",
+  "theme",
+  "gridSize",
+  "gridStep",
+  "gridModeEnabled",
+] as const;
+const EDITABLE_TYPES = new Set<string>(EDITABLE_SCENE_ELEMENT_TYPES);
+const TEXT_COLOR = "#1f2328";
+const MUTED_COLOR = "#667085";
+const BORDER_COLOR = "#98a2b3";
+const SURFACE_COLOR = "#f8fafc";
+const ACCENT_COLOR = "#dbeafe";
+const ACCENT_BORDER_COLOR = "#2563eb";
+
+/** Result of converting live editor state into durable JSON. */
+export type EditorSceneResult =
+  | { ok: true; scene: PersistedScene }
+  | { ok: false; message: string };
+
+/**
+ * Converts semantic input into an editable scene with deterministic positions.
+ *
+ * @param spec Validated model-authored diagram semantics.
+ * @param policy Active scene validation limits.
+ * @returns Storage-valid initial Excalidraw scene.
+ */
+export function createInitialScene(
+  spec: DiagramSpec,
+  policy: Readonly<DiagramValidationPolicy>,
+): PersistedScene {
+  const skeletons = diagramToElementSkeletons(layoutDiagram(spec));
+  const elements = convertToExcalidrawElements(skeletons, {
+    regenerateIds: false,
+  });
+  const result = normalizeEditorScene(
+    elements,
+    { viewBackgroundColor: "#ffffff" },
+    {},
+    policy,
+  );
+  if (!result.ok) {
+    throw new Error(`Initial diagram scene is invalid: ${result.message}`);
+  }
+  return result.scene;
+}
+
+/**
+ * Maps editor-independent coordinates to Excalidraw element skeletons.
+ *
+ * @param diagram Deterministically positioned diagram.
+ * @returns Stable-id editable primitives.
+ */
+export function diagramToElementSkeletons(
+  diagram: PositionedDiagram,
+): ExcalidrawElementSkeleton[] {
+  const groups: ExcalidrawElementSkeleton[] = diagram.groups.flatMap((group) => [
+    {
+      type: "rectangle",
+      id: `group:${group.id}`,
+      x: group.x,
+      y: group.y,
+      width: group.width,
+      height: group.height,
+      backgroundColor: "transparent",
+      strokeColor: BORDER_COLOR,
+      strokeStyle: "dashed",
+      roughness: 0,
+      roundness: { type: 3 },
+    },
+    {
+      type: "text",
+      id: `text:group:${group.id}`,
+      x: group.x + 16,
+      y: group.y + 14,
+      text: group.label,
+      fontFamily: FONT_FAMILY.Helvetica,
+      fontSize: 16,
+      strokeColor: MUTED_COLOR,
+    },
+  ]);
+  const edges: ExcalidrawElementSkeleton[] = diagram.edges.flatMap((edge) => {
+    const [start, ...remaining] = edge.points;
+    const end = remaining.at(-1);
+    if (start === undefined || end === undefined) {
+      throw new Error(`Positioned edge ${edge.id} has fewer than two points`);
+    }
+    const points = edge.points.map(
+      (point) => [point.x - start.x, point.y - start.y] as [number, number],
+    );
+    const label = edge.label;
+    return [
+      {
+        type: "arrow",
+        id: `edge:${edge.id}`,
+        x: start.x,
+        y: start.y,
+        points,
+        start: { id: `node:${edge.from}` },
+        end: { id: `node:${edge.to}` },
+        strokeColor: MUTED_COLOR,
+        roughness: 0,
+        endArrowhead: "arrow",
+      },
+      ...(label === undefined
+        ? []
+        : [
+            {
+              type: "text" as const,
+              id: `text:edge:${edge.id}`,
+              x: (start.x + end.x) / 2 - Math.min(72, label.length * 4),
+              y: (start.y + end.y) / 2 - 24,
+              text: label,
+              fontFamily: FONT_FAMILY.Helvetica,
+              fontSize: 14,
+              strokeColor: MUTED_COLOR,
+            },
+          ]),
+    ];
+  });
+  const nodes: ExcalidrawElementSkeleton[] = [];
+  for (const node of diagram.nodes) {
+    const groupId = `node-group:${node.id}`;
+    const text = [node.label, node.detail].filter(isDefined).join("\n");
+    nodes.push({
+      type: "rectangle",
+      id: `node:${node.id}`,
+      x: node.x,
+      y: node.y,
+      width: node.width,
+      height: node.height,
+      groupIds: [groupId],
+      backgroundColor: node.emphasis ? ACCENT_COLOR : SURFACE_COLOR,
+      strokeColor: node.emphasis ? ACCENT_BORDER_COLOR : BORDER_COLOR,
+      fillStyle: "solid",
+      roughness: 0,
+      roundness: { type: 3 },
+    });
+    nodes.push({
+      type: "text",
+      id: `text:node:${node.id}`,
+      x: node.x + 16,
+      y: node.y + 16,
+      width: Math.max(32, node.width - 32),
+      text,
+      groupIds: [groupId],
+      fontFamily: FONT_FAMILY.Helvetica,
+      fontSize: 18,
+      strokeColor: TEXT_COLOR,
+    });
+  }
+  const title: ExcalidrawElementSkeleton = {
+    type: "text",
+    id: "diagram:title",
+    x: 40,
+    y: 8,
+    text: diagram.title,
+    fontFamily: FONT_FAMILY.Helvetica,
+    fontSize: 24,
+    strokeColor: TEXT_COLOR,
+  };
+  return [...groups, ...edges, ...nodes, title];
+}
+
+/**
+ * Validates live Excalidraw data and retains only durable editor fields.
+ *
+ * @param elements Current Excalidraw elements.
+ * @param appState Current Excalidraw application state.
+ * @param files Current binary-file table.
+ * @param policy Active scene validation limits.
+ * @returns Valid persisted scene or actionable Chinese guidance.
+ */
+export function normalizeEditorScene(
+  elements: unknown,
+  appState: unknown,
+  files: unknown,
+  policy: Readonly<DiagramValidationPolicy>,
+): EditorSceneResult {
+  if (!Array.isArray(elements)) {
+    return { ok: false, message: "画布元素格式无效。重新载入服务器版本。" };
+  }
+  for (const element of elements) {
+    if (!isRecord(element)) continue;
+    if (typeof element.type === "string" && !EDITABLE_TYPES.has(element.type)) {
+      return {
+        ok: false,
+        message:
+          "当前画布包含图片或嵌入内容。删除 image、iframe、embeddable 或 frame 元素后会继续自动保存。",
+      };
+    }
+    if (element.link !== undefined && element.link !== null) {
+      return {
+        ok: false,
+        message: "当前画布包含链接。移除元素链接后会继续自动保存。",
+      };
+    }
+  }
+  if (isRecord(files) && Object.keys(files).length > 0) {
+    return {
+      ok: false,
+      message: "当前画布包含图片文件。删除图片后会继续自动保存。",
+    };
+  }
+
+  const durableElements = elements.filter(
+    (element) => !isRecord(element) || element.isDeleted !== true,
+  );
+  const candidate = {
+    elements: jsonClone(durableElements),
+    appState: pickAppState(appState),
+    files: {},
+  };
+  const parsed = createSceneSchema(policy).safeParse(candidate);
+  if (!parsed.success) {
+    const issue = parsed.error.issues[0];
+    return {
+      ok: false,
+      message: `当前画布超出保存限制：${issue?.message ?? "未知校验错误"}。精简元素或文字后会继续自动保存。`,
+    };
+  }
+  return { ok: true, scene: parsed.data };
+}
+
+function pickAppState(value: unknown): Record<string, unknown> {
+  if (!isRecord(value)) return {};
+  const selected: Record<string, unknown> = {};
+  for (const key of APP_STATE_KEYS) {
+    if (value[key] !== undefined) selected[key] = jsonClone(value[key]);
+  }
+  return selected;
+}
+
+function jsonClone<T>(value: T): T {
+  return JSON.parse(JSON.stringify(value)) as T;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isDefined(value: string | undefined): value is string {
+  return value !== undefined;
+}
