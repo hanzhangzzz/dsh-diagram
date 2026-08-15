@@ -38,7 +38,7 @@
 - Explicit model handoff: 手工修改不会自动进入模型上下文；只有用户要求 Agent 读取当前 diagram 时，`diagram_read` 才从当前 scene 派生受限的文字、图形和连线摘要，并通过普通 Tool Result 记录该版本。
 - Tradeoffs: 首版不改 DSH 核心，因此用户从工具结果进入编辑器时点击“画布”标签；不使用私有 store 或 DOM 查询模拟一键跳转。
 - Loading boundary: DSH 目前只为一个 Client 插件提供单个 `client.js`，而 Excalidraw 需要动态资源。轻量 Client 仅注册标签页，选中标签后才由同包、同源 iframe 加载独立 editor 资源，避免把完整编辑器加入每次 Web 启动路径。
-- Iframe trust: editor 与 DSH 同源并运行同一 bundle 的受信代码；iframe 不作为安全隔离边界。插件在加载时要求 WebServer 物理绑定 `127.0.0.1`，并由静态资源路径白名单、严格 CSP、Connection 请求头检查、Host 端 schema 校验、Session 生命周期指纹和 diagram 归属校验共同约束访问。
+- Iframe trust: editor 与 DSH 同源并运行同一 bundle 的受信代码；iframe 不作为安全隔离边界。插件在加载时要求 WebServer 物理绑定 `127.0.0.1`，并由静态资源路径白名单、严格 CSP、插件自有的有界 RPC 路由、loopback Host/Origin 检查、Host 端 schema 校验、Session 生命周期指纹和 diagram 归属校验共同约束访问。
 
 ## Visual language
 
@@ -90,7 +90,7 @@
 - Framework/styling system: DSH Client 插件、React、CSS Modules、DSH CSS 变量；Host、轻量 Client 与 Vite 构建的同源 editor 从同一 npm bundle 发布。iframe 是编辑器资源的按需加载边界，不是独立产品路由。
 - Design-token constraints: DSH 标签容器使用现有 CSS 变量；iframe 文档无法继承父文档 token，因此编辑器 UI 先读取同名变量并提供中性字面 fallback。不引入 Tailwind 或第二套组件库。
 - Performance constraints: Excalidraw 只在“画布”标签实际挂载后加载；聊天首屏和 DSH `client.js` 不包含画布依赖；自动保存需去抖并避免高频 durable session event。
-- Compatibility constraints: Node `^22.19.0 || >=24.0.0`，ESM，外置 `dsh.bundle.patch` 安装；WebServer 必须绑定 `127.0.0.1`；Host/Client RPC 的输入和返回在不可信边界验证；scene 拒绝可嵌入网页、外链和可执行内容，并限制序列化体积、元素数、单段文字长度及全域持久化字节数。
+- Compatibility constraints: DeepSeek Harness `0.1.0-rc.6`，Node `^22.19.0 || >=24.0.0`，ESM，外置 `dsh.bundle.patch` 安装；WebServer 必须绑定 `127.0.0.1`；Host/Client RPC 的输入和返回在不可信边界验证，请求在 JSON 解析前受字节上限约束；scene 拒绝可嵌入网页、外链和可执行内容，并限制序列化体积、元素数、单段文字长度及全域持久化字节数。
 - Static delivery constraints: editor route 仅响应 `GET`/`HEAD`，只提供构建目录内的 MIME 白名单文件；路径逃逸和缺失文件返回 404，入口不缓存、带内容哈希的资源可长期缓存，插件卸载后整条路由消失。
 - Test/screenshot expectations: 单元测试覆盖 `DiagramSpec` 验证、布局和 CAS；built-artifact smoke 覆盖 bundle exports；真实 DSH Web 验收覆盖生成、编辑、刷新、导出和冲突错误；产品可见输出增加 keyless snapshot 或记录缺失的外置插件 harness 支持。
 

@@ -28,6 +28,7 @@ The DSH Client bundle only registers the `conversation.view` entry. The active v
 - A revision conflict returns the authoritative Host record and preserves the browser draft.
 - Session fork and export do not copy this sidecar in the first release.
 - Uninstalling the bundle removes its routes and UI but retains stored records.
-- The iframe is not a security isolation boundary. Static path containment, CSP, loopback-only RPC, runtime schemas and Host-side Session ownership checks enforce access.
+- The iframe is not a security isolation boundary. Static path containment, CSP, a plugin-owned bounded HTTP RPC carrier, loopback Host/Origin checks, runtime schemas and Host-side Session ownership checks enforce access.
+- The diagram carrier limits bytes before JSON parsing to `maxSceneBytes + 16 KiB`; it does not inherit the generic Connection bridge's larger request limit.
 - The first release fails plugin loading unless DSH Web is physically bound to `127.0.0.1`; it does not expose the diagram channel on an all-interfaces deployment.
 - Image, embedded Web content, external links and binary files are outside the first-release scene format.

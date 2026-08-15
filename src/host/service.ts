@@ -5,7 +5,6 @@ import {
 } from "@deepseek-ai/dsh-session";
 import type {} from "@deepseek-ai/dsh-session-persistence";
 import type { KvTable } from "@deepseek-ai/dsh-storage-domain";
-import type {} from "@deepseek-ai/dsh-client-connection";
 import type {} from "@deepseek-ai/dsh-host-webserver";
 import type {} from "@deepseek-ai/dsh-tools";
 
@@ -34,6 +33,7 @@ import {
   type DiagramConfig,
 } from "./config.ts";
 import { createDiagramDomainSpec } from "./domain.ts";
+import { createDiagramHttpRpcHandler } from "./http-rpc.ts";
 import { DiagramRepository } from "./repository.ts";
 import { createDiagramRpcHandler, type DiagramRpcOperations } from "./rpc.ts";
 import {
@@ -133,7 +133,6 @@ export class DiagramService extends Service implements
     "sessionPersistence",
     "sessions",
     "tools",
-    "connection",
     "webServer",
   ];
 
@@ -204,10 +203,17 @@ export class DiagramService extends Service implements
       }),
       "diagram.editorAssets",
     );
-    this.ctx.connection.rpc.handle(
-      DIAGRAM_RPC_CHANNEL,
-      createDiagramRpcHandler(this, this.validationPolicy, this.ctx.logger),
-      { authority: "loopback" },
+    this.ctx.effect(
+      () => this.ctx.webServer.register({
+        kind: "prefix",
+        path: DIAGRAM_RPC_CHANNEL,
+        handler: createDiagramHttpRpcHandler(
+          createDiagramRpcHandler(this, this.validationPolicy, this.ctx.logger),
+          this.validationPolicy.maxSceneBytes,
+          this.ctx.logger,
+        ),
+      }),
+      "diagram.rpc",
     );
     for (const tool of createDiagramTools(this)) {
       this.ctx.tools.register(tool);

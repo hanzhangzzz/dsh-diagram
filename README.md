@@ -15,26 +15,39 @@
 
 首版不抓取文章，也不在任意网页注入 UI。Agent 应先用 DSH 已有的对话、文件或 Web 工具取得文章内容，再调用 `diagram_create`。
 
-## 本地安装
+## 安装
 
-当前版本面向同级目录中的 DeepSeek Harness `0.1.0-rc.5` 源码开发。先构建插件：
+当前版本支持 DeepSeek Harness `0.1.0-rc.6` Web profile。发布包只包含预构建 Host、Client 和 editor 产物；包清单不声明 `build`、`prepack`、`prepare` 或任何 install lifecycle script，安装时不编译代码，也不修改 DeepSeek Harness 源码。
+
+安装 npm 发布包：
 
 ```sh
-pnpm install
-pnpm run build
+dsh plugin --profile web add dsh-diagram
+dsh --profile web --dump-config
+dsh web
 ```
 
-再从 `deepseek-harness` 仓库安装到 Web profile：
+也可以安装 GitHub Release 中带 SHA-256 校验值的同一份 tarball。
+
+### 从源码构建
+
+从源码构建发布包：
 
 ```sh
-pnpm dsh plugin --profile web add ../dsh-diagram
+pnpm install --frozen-lockfile
+pnpm run bundle
+pnpm pack
+```
+
+再在 DSH 安装目录将预构建 tarball 安装到 Web profile：
+
+```sh
+pnpm dsh plugin --profile web add /absolute/path/to/dsh-diagram-0.1.0.tgz
 pnpm dsh --profile web --dump-config
 pnpm dsh web
 ```
 
 首版只支持 DSH Web 绑定 `127.0.0.1`。如果 WebServer 配置为 `0.0.0.0`，插件会在加载时明确拒绝启动；当前版本不把画布 RPC 暴露到局域网。
-
-也可以安装 `pnpm pack` 生成的预编译 tarball。当前不支持直接从 Git URL 安装源码：公开 registry 尚未提供本项目开发时使用的全部 DSH `rc.5` 类型包，因此仓库没有声明会在目标机器执行的 `prepare` 脚本。
 
 移除插件：
 
@@ -59,7 +72,7 @@ Agent 创建后，点击会话顶部的“画布”标签。画布内容变化�
 - Excalidraw scene 是当前文档；创建时的 `DiagramSpec` 只保留为来源记录。
 - diagram 绑定 Session id 与 `{createdAt, cwd}` 生命周期指纹；复用的 Session id 看不到旧数据。
 - Session fork 和 Session export 不复制或携带 diagram sidecar。
-- editor 只在“画布”标签挂载后加载。它由同一 bundle 的 Host 路由提供，并受路径白名单、CSP、loopback RPC、请求 schema 和 Session 归属检查约束。
+- editor 只在“画布”标签挂载后加载。它由同一 bundle 的 Host 路由提供，并受路径白名单、CSP、loopback Host/Origin 检查、解析前请求字节上限、RPC/scene schema 和 Session 归属检查约束。
 - Excalidraw 字体随 bundle 自托管在 `/diagram-assets/fonts/`，画布不依赖外部 CDN。
 - 首版拒绝 image、iframe、embeddable、外部 link 和非空 binary files，并限制 scene 大小、元素数及文字长度。
 - 默认每个 scene 最多 1 MiB，全部 diagram 记录合计最多 64 MiB；条数和字节预算都可在 bundle patch 中显式配置。
@@ -67,20 +80,21 @@ Agent 创建后，点击会话顶部的“画布”标签。画布内容变化�
 ## 已知限制
 
 - Excalidraw 0.18.1 在严格 CSP 下导出包含非系统字体的 SVG 时，会在开发者控制台记录 glyph subsetting fallback；导出会改为内嵌完整字体，文件仍自包含且内容完整。插件不为消除该日志放开 `unsafe-eval`。
-- DSH `0.1.0-rc.5` 的独立 Connection RPC 通道在解析前仍继承 Host 的通用 160 MiB 请求上限；插件会在解析后执行 1 MiB scene 限制，并且首版强制 Web 只绑定 `127.0.0.1`。独立通道的解析前限额需要 DSH 上游 API 支持。
-- DSH `0.1.0-rc.5` 尚无 typed `inspect-if-present` Session API；首次查询不存在或冷 Session 时会扫描 snapshot 列表，不影响已打开 Session 的正常编辑路径。
+- 画布 RPC 的单请求解析前上限由 `maxSceneBytes + 16 KiB` 推导，默认约 1.02 MiB。这一上限不提供并发请求总量配额或 slow-client 超时；首版因此仍强制 Web 只绑定 `127.0.0.1`。
+- 当前支持的 DSH 版本尚无 typed `inspect-if-present` Session API；首次查询不存在或冷 Session 时会扫描 snapshot 列表，不影响已打开 Session 的正常编辑路径。
 
 ## 开发
 
 ```sh
 pnpm run typecheck
 pnpm run test
-pnpm run build
+pnpm run bundle
 pnpm pack --json
+pnpm run smoke:dsh-install
 ```
 
 设计基线和明确的非目标见 [DESIGN.md](./DESIGN.md)。
 
 ## License
 
-MIT
+插件自有代码使用 MIT License。发布包内嵌的第三方 JavaScript 和自托管字体许可见 [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md) 与 `third_party_licenses/`。

@@ -1,5 +1,4 @@
 import { Context } from "@deepseek-ai/cordis";
-import { HostConnectionService } from "@deepseek-ai/dsh-client-connection";
 import type { WebRoute, WebServer } from "@deepseek-ai/dsh-host-webserver";
 import { SessionId, SessionStore, type SessionHeader } from "@deepseek-ai/dsh-session";
 import type {} from "@deepseek-ai/dsh-storage-domain";
@@ -158,10 +157,6 @@ async function diagramHost(
     } as unknown as Context["sessions"]);
   }
   await ctx.plugin(ToolRuntime, { mode: "native", maxParallelSubCalls: 10 });
-  const connectionFiber = ctx.plugin((inner: Context) => {
-    new HostConnectionService(inner, []);
-  });
-  await connectionFiber.await();
   const diagramFiber = ctx.plugin(DiagramPlugin, {
     ...DEFAULT_DIAGRAM_VALIDATION_POLICY,
     maxDiagramsPerSession: 20,
