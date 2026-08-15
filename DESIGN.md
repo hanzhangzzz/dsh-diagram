@@ -94,6 +94,8 @@
 - Static delivery constraints: editor route 仅响应 `GET`/`HEAD`，只提供构建目录内的 MIME 白名单文件；路径逃逸和缺失文件返回 404，入口不缓存、带内容哈希的资源可长期缓存，插件卸载后整条路由消失。
 - Test/screenshot expectations: 单元测试覆盖 `DiagramSpec` 验证、布局和 CAS；built-artifact smoke 覆盖 bundle exports；真实 DSH Web 验收覆盖生成、编辑、刷新、导出和冲突错误；产品可见输出增加 keyless snapshot 或记录缺失的外置插件 harness 支持。
 
-## Open questions
+## Release surface
 
-- [ ] 本地验收通过后决定公开 npm scope、GitHub remote 和发布版本；owner: 用户；impact: 仅发布，不阻塞实现。
+- npm package: `dsh-diagram`
+- GitHub repository: `hanzhangzzz/dsh-diagram`
+- Discovery metadata: `dsh-plugin` topic and `dsh.bundle.patch`

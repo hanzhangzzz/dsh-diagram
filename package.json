@@ -1,14 +1,19 @@
 {
   "name": "dsh-diagram",
-  "version": "0.1.0",
-  "description": "Editable Excalidraw diagrams for DeepSeek Harness conversations",
+  "version": "0.1.1",
+  "description": "Turn articles in DeepSeek Harness into editable Excalidraw canvases",
   "keywords": [
     "deepseek-harness",
     "dsh",
     "dsh-plugin",
     "dsh-bundle",
+    "canvas",
     "diagram",
-    "excalidraw"
+    "diagram-editor",
+    "excalidraw",
+    "flowchart",
+    "visualization",
+    "web-ui"
   ],
   "homepage": "https://github.com/hanzhangzzz/dsh-diagram#readme",
   "bugs": {
@@ -39,6 +44,7 @@
     "!lib/**/*.map",
     "lib/types/**/*.d.ts",
     "cordis.patch.yml",
+    "README.zh-CN.md",
     "DESIGN.md",
     "LICENSE",
     "THIRD_PARTY_NOTICES.md",

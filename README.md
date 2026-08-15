@@ -1,89 +1,199 @@
 # dsh-diagram
 
-`dsh-diagram` 是 DeepSeek Harness 的可安装 Web bundle。Agent 把当前上下文中的文章提炼为紧凑的 `DiagramSpec`，插件将其确定性布局为 Excalidraw 画布；用户可在 DSH 会话的“画布”标签页继续修改、自动保存并导出。
+English | [简体中文](https://github.com/hanzhangzzz/dsh-diagram/blob/master/README.zh-CN.md)
 
-## 首版能力
+[![npm version](https://img.shields.io/npm/v/dsh-diagram?style=flat-square)](https://www.npmjs.com/package/dsh-diagram)
+[![GitHub release](https://img.shields.io/github/v/release/hanzhangzzz/dsh-diagram?display_name=tag&style=flat-square)](https://github.com/hanzhangzzz/dsh-diagram/releases/latest)
+[![license](https://img.shields.io/github/license/hanzhangzzz/dsh-diagram?style=flat-square)](./LICENSE)
+[![DeepSeek Harness](https://img.shields.io/badge/DeepSeek_Harness-0.1.0--rc.6-4c6ef5?style=flat-square)](https://github.com/deepseek-ai/deepseek-harness)
 
-- 支持流程图、架构图、时间线、层级图、对比图和关系图。
-- `diagram_create` 为当前 Agent Session 创建 diagram。
-- `diagram_read` 显式读取当前画布；手工编辑不会在后台自动进入模型上下文。
-- 画布按 revision 做 compare-and-set 自动保存，冲突不会静默覆盖本地内容。
-- 切换标签或页面卸载前会把一份未确认草稿写入当前浏览器标签的 `sessionStorage`，重开“画布”后按原 revision 恢复保存。
-- 桌面端可折叠 diagram 列表，窄屏改用下拉选择，把主要空间留给画布。
-- 导出 `.excalidraw`、SVG 和 PNG。
-- 数据存放在插件自己的 storage-domain sidecar；刷新或重装插件后仍可恢复。
+Turn any article already available in a DeepSeek Harness session into an editable Excalidraw canvas. The Agent creates the structure; you refine the text, nodes, and connections directly in DSH.
 
-首版不抓取文章，也不在任意网页注入 UI。Agent 应先用 DSH 已有的对话、文件或 Web 工具取得文章内容，再调用 `diagram_create`。
+![dsh-diagram canvas demo](https://raw.githubusercontent.com/hanzhangzzz/dsh-diagram/assets/dsh-diagram-demo.gif)
 
-## 安装
+## Why dsh-diagram?
 
-当前版本支持 DeepSeek Harness `0.1.0-rc.6` Web profile。发布包只包含预构建 Host、Client 和 editor 产物；包清单不声明 `build`、`prepack`、`prepare` 或任何 install lifecycle script，安装时不编译代码，也不修改 DeepSeek Harness 源码。
+- **Editable, not disposable.** Continue working in a full Excalidraw canvas instead of accepting a static generated image.
+- **Built into the conversation.** Open the **Canvas** tab without leaving the DSH session that contains the article.
+- **Safe autosave.** Revision-based compare-and-set prevents a stale editor from silently overwriting newer work.
+- **Ready to share.** Export `.excalidraw`, SVG, or PNG.
+- **Model context stays explicit.** Manual edits reach the Agent only when you ask it to call `diagram_read`.
 
-安装 npm 发布包：
+## Quick install
+
+Requirements:
+
+- DeepSeek Harness `0.1.0-rc.6`
+- Node.js `^22.19.0` or `>=24.0.0`
+- pnpm `>=10` on `PATH` (the DSH plugin command delegates package management to pnpm)
+- DSH Web bound to `127.0.0.1`
+
+The commands below assume `dsh` is already on `PATH`:
 
 ```sh
-dsh plugin --profile web add dsh-diagram
+dsh plugin --profile web add dsh-diagram@latest
 dsh --profile web --dump-config
 dsh web
 ```
 
-也可以安装 GitHub Release 中带 SHA-256 校验值的同一份 tarball。
+The config dump should contain this block:
 
-### 从源码构建
+```yaml
+# == dsh-diagram
+- id: diagram
+  name: dsh-diagram
+```
 
-从源码构建发布包：
+If DSH Web was already running, restart it after adding or updating the plugin. Then open an existing session and look for the **Canvas** tab.
+
+### Running DSH from source
+
+Run the same commands from a DeepSeek Harness checkout that matches the supported `0.1.0-rc.6` APIs, replacing `dsh` with `pnpm dsh`:
 
 ```sh
+pnpm dsh plugin --profile web add dsh-diagram@latest
+pnpm dsh --profile web --dump-config
+pnpm dsh web
+```
+
+### Using DSH through npx
+
+This works without a global `dsh` command, but its first run is slower. pnpm must still be on `PATH`.
+
+```sh
+npx -y @deepseek-ai/dsh@0.1.0-rc.6 plugin --profile web add dsh-diagram@latest
+npx -y @deepseek-ai/dsh@0.1.0-rc.6 --profile web --dump-config
+npx -y @deepseek-ai/dsh@0.1.0-rc.6 web
+```
+
+## Create your first diagram
+
+1. Open a DSH session that already contains the article, or let the Agent read it with DSH's existing file or Web tools.
+2. Send a prompt such as:
+
+   ```text
+   Create one clear diagram for this article. Choose the most suitable diagram type, call diagram_create, and keep the title and node labels concise.
+   ```
+
+3. After the tool finishes, select **Canvas** at the top of the conversation.
+4. Edit the diagram directly. **Saved** means the Host has completed a durable write.
+5. Export the result, or ask the Agent to call `diagram_read` before continuing from your manual changes.
+
+The plugin supports flowcharts, architecture diagrams, timelines, hierarchies, comparisons, and relationship diagrams.
+
+## What it adds
+
+| Surface | Behavior |
+| --- | --- |
+| `diagram_create` | Creates a diagram for the current Agent Session from a compact semantic specification. |
+| `diagram_read` | Reads a bounded summary of the current editable scene into the conversation transcript. |
+| **Canvas** tab | Opens the Excalidraw editor only when selected, keeping it out of the normal chat startup path. |
+| Diagram list | Switches between diagrams; collapses on desktop and becomes a selector on narrow screens. |
+| Autosave | Debounced durable writes with revision conflict protection and tab-local pending-draft recovery. |
+| Export | Downloads `.excalidraw`, SVG, or PNG files. |
+
+The plugin does not fetch articles and does not inject UI into arbitrary websites. Article acquisition stays with the DSH conversation, file tools, or Web tools.
+
+## Compatibility
+
+| Item | Supported in `0.1.1` |
+| --- | --- |
+| DeepSeek Harness | `0.1.0-rc.6` |
+| Profile | `web` |
+| Web bind address | `127.0.0.1` only |
+| Node.js | `^22.19.0` or `>=24.0.0` |
+| Editor | Excalidraw `0.18.1` |
+| Storage | Plugin-owned DSH storage-domain sidecar |
+| Install artifact | Prebuilt npm package or GitHub Release tarball with SHA-256 checksum |
+
+The npm package has no install lifecycle scripts. Installation adds a bundle to the selected DSH profile; it does not compile code or modify the DeepSeek Harness source tree.
+
+## Manage the installation
+
+### Update
+
+```sh
+dsh plugin --profile web update dsh-diagram
+```
+
+Restart DSH Web after the update.
+
+### Install the exact GitHub Release artifact
+
+The release page publishes the same prebuilt tarball with a SHA-256 checksum:
+
+```sh
+dsh plugin --profile web add \
+  https://github.com/hanzhangzzz/dsh-diagram/releases/download/v0.1.1/dsh-diagram-0.1.1.tgz
+```
+
+See [v0.1.1](https://github.com/hanzhangzzz/dsh-diagram/releases/tag/v0.1.1) for the checksum and release notes.
+
+### Remove
+
+```sh
+dsh plugin --profile web remove dsh-diagram
+```
+
+Removing the bundle does not delete saved diagram sidecar data. Reinstalling the plugin can make that data available again to the same Session identity.
+
+## Data, security, and limits
+
+- The Excalidraw scene is the current document. The original semantic specification is retained only as its creation source.
+- A diagram is bound to its Session id and `{createdAt, cwd}` lifecycle fingerprint. A reused Session id cannot read older data.
+- Session fork and Session export do not copy or include diagram sidecar data.
+- Editor assets and fonts are self-hosted by the bundle; the canvas does not depend on an external CDN.
+- Static paths, RPC bodies, request origin, Session ownership, and scene contents are validated by the Host before persistence.
+- Images, iframes, embeddables, external links, and non-empty binary files are rejected in this release.
+- Defaults limit each scene to 1 MiB and all stored diagram records to 64 MiB. Element, text, diagram-count, and byte limits are explicit in [`cordis.patch.yml`](./cordis.patch.yml).
+- The plugin intentionally refuses to load when DSH Web binds to `0.0.0.0`; this release does not expose the canvas RPC to a LAN.
+
+## Troubleshooting
+
+### The Canvas tab is missing
+
+Confirm that you installed the plugin into the `web` profile, that `--dump-config` contains the `dsh-diagram` block shown above, and that DSH Web was restarted after installation.
+
+### The Agent does not know about my manual edits
+
+Manual edits are not silently injected into model context. Ask the Agent to call `diagram_read`; its result is then recorded in the normal conversation transcript.
+
+### Can the plugin fetch an article from a URL?
+
+No. First let DSH obtain the content through the conversation, a file tool, or a Web tool. Then ask for a diagram.
+
+### Why does startup fail with `0.0.0.0`?
+
+The canvas RPC is not designed for LAN exposure in this release. The plugin fails closed unless DSH Web is physically bound to `127.0.0.1`.
+
+### What should I do after a revision conflict?
+
+The editor keeps the local draft. Export it before choosing **Reload server version** if you need to preserve both versions.
+
+### Why can SVG export log a font fallback warning?
+
+Under the strict content security policy, Excalidraw may fall back from glyph subsetting to embedding the full self-hosted font. The exported SVG remains self-contained; the plugin does not enable `unsafe-eval` to suppress the warning.
+
+## Build from source
+
+```sh
+git clone https://github.com/hanzhangzzz/dsh-diagram.git
+cd dsh-diagram
 pnpm install --frozen-lockfile
 pnpm run bundle
 pnpm pack
 ```
 
-再在 DSH 安装目录将预构建 tarball 安装到 Web profile：
+Install the generated tarball from a DeepSeek Harness checkout:
 
 ```sh
-pnpm dsh plugin --profile web add /absolute/path/to/dsh-diagram-0.1.0.tgz
+cd /path/to/deepseek-harness
+pnpm dsh plugin --profile web add /absolute/path/to/dsh-diagram-0.1.1.tgz
 pnpm dsh --profile web --dump-config
 pnpm dsh web
 ```
 
-首版只支持 DSH Web 绑定 `127.0.0.1`。如果 WebServer 配置为 `0.0.0.0`，插件会在加载时明确拒绝启动；当前版本不把画布 RPC 暴露到局域网。
-
-移除插件：
-
-```sh
-pnpm dsh plugin --profile web remove dsh-diagram
-```
-
-移除 bundle 不会删除已保存的 sidecar 数据。
-
-## 使用
-
-在一个已有文章内容的 DSH 会话中告诉 Agent：
-
-```text
-为这篇文章提炼一张主图。选择最合适的 diagram 类型，调用 diagram_create，标题和节点文字保持简洁。
-```
-
-Agent 创建后，点击会话顶部的“画布”标签。画布内容变化会去抖保存；“已保存”表示 Host 已完成 durable write。需要让 Agent 继续基于手工修改后的内容工作时，明确要求它调用 `diagram_read`。
-
-## 数据与安全
-
-- Excalidraw scene 是当前文档；创建时的 `DiagramSpec` 只保留为来源记录。
-- diagram 绑定 Session id 与 `{createdAt, cwd}` 生命周期指纹；复用的 Session id 看不到旧数据。
-- Session fork 和 Session export 不复制或携带 diagram sidecar。
-- editor 只在“画布”标签挂载后加载。它由同一 bundle 的 Host 路由提供，并受路径白名单、CSP、loopback Host/Origin 检查、解析前请求字节上限、RPC/scene schema 和 Session 归属检查约束。
-- Excalidraw 字体随 bundle 自托管在 `/diagram-assets/fonts/`，画布不依赖外部 CDN。
-- 首版拒绝 image、iframe、embeddable、外部 link 和非空 binary files，并限制 scene 大小、元素数及文字长度。
-- 默认每个 scene 最多 1 MiB，全部 diagram 记录合计最多 64 MiB；条数和字节预算都可在 bundle patch 中显式配置。
-
-## 已知限制
-
-- Excalidraw 0.18.1 在严格 CSP 下导出包含非系统字体的 SVG 时，会在开发者控制台记录 glyph subsetting fallback；导出会改为内嵌完整字体，文件仍自包含且内容完整。插件不为消除该日志放开 `unsafe-eval`。
-- 画布 RPC 的单请求解析前上限由 `maxSceneBytes + 16 KiB` 推导，默认约 1.02 MiB。这一上限不提供并发请求总量配额或 slow-client 超时；首版因此仍强制 Web 只绑定 `127.0.0.1`。
-- 当前支持的 DSH 版本尚无 typed `inspect-if-present` Session API；首次查询不存在或冷 Session 时会扫描 snapshot 列表，不影响已打开 Session 的正常编辑路径。
-
-## 开发
+Developer checks:
 
 ```sh
 pnpm run typecheck
@@ -93,8 +203,12 @@ pnpm pack --json
 pnpm run smoke:dsh-install
 ```
 
-设计基线和明确的非目标见 [DESIGN.md](./DESIGN.md)。
+See [`DESIGN.md`](./DESIGN.md) for the product and implementation decisions.
+
+## Contributing
+
+Bug reports and focused pull requests are welcome in [GitHub Issues](https://github.com/hanzhangzzz/dsh-diagram/issues). If the plugin improves your article-to-diagram workflow, a GitHub star helps other DSH users discover it.
 
 ## License
 
-插件自有代码使用 MIT License。发布包内嵌的第三方 JavaScript 和自托管字体许可见 [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md) 与 `third_party_licenses/`。
+The plugin's own code is licensed under [MIT](./LICENSE). Licenses for bundled JavaScript and self-hosted fonts are listed in [`THIRD_PARTY_NOTICES.md`](./THIRD_PARTY_NOTICES.md) and `third_party_licenses/`.
