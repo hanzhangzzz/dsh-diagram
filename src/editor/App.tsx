@@ -102,6 +102,7 @@ export function DiagramApp({
   const [canvasError, setCanvasError] = useState<string | null>(null);
   const [exporting, setExporting] = useState<DiagramExportFormat | null>(null);
   const [editorReady, setEditorReady] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const apiRef = useRef<ExcalidrawImperativeAPI | null>(null);
   const autosaveRef = useRef<SceneAutosaveController | null>(null);
   const selectionEpochRef = useRef(0);
@@ -509,21 +510,51 @@ export function DiagramApp({
         )}
       </div>
 
-      <div className={css.body}>
-        <nav aria-label="当前会话的 diagram" className={css.sidebar}>
-          <div className={css.sidebarHeading}>DIAGRAMS</div>
-          {diagrams.map((diagram) => (
+      <div className={css.body} data-sidebar-collapsed={sidebarCollapsed}>
+        <nav
+          aria-label="当前会话的 diagram"
+          className={css.sidebar}
+          data-collapsed={sidebarCollapsed}
+        >
+          <div className={css.sidebarHeader}>
+            {!sidebarCollapsed && (
+              <div className={css.sidebarHeading}>DIAGRAMS</div>
+            )}
             <button
-              aria-current={diagram.id === record.id ? "page" : undefined}
-              className={css.diagramButton}
-              key={diagram.id}
-              onClick={() => void selectDiagram(diagram.id)}
+              aria-controls="diagram-list"
+              aria-expanded={!sidebarCollapsed}
+              aria-label={
+                sidebarCollapsed ? "展开 diagram 列表" : "收起 diagram 列表"
+              }
+              className={css.sidebarToggle}
+              onClick={() => setSidebarCollapsed((current) => !current)}
               type="button"
             >
-              <span>{diagram.title}</span>
-              <small>{diagramKindLabel(diagram.kind)}</small>
+              <svg aria-hidden="true" viewBox="0 0 24 24">
+                <path
+                  d={sidebarCollapsed ? "M9 18l6-6-6-6" : "M15 18l-6-6 6-6"}
+                />
+              </svg>
             </button>
-          ))}
+          </div>
+          <div
+            className={css.diagramList}
+            hidden={sidebarCollapsed}
+            id="diagram-list"
+          >
+            {diagrams.map((diagram) => (
+              <button
+                aria-current={diagram.id === record.id ? "page" : undefined}
+                className={css.diagramButton}
+                key={diagram.id}
+                onClick={() => void selectDiagram(diagram.id)}
+                type="button"
+              >
+                <span>{diagram.title}</span>
+                <small>{diagramKindLabel(diagram.kind)}</small>
+              </button>
+            ))}
+          </div>
         </nav>
         <section aria-label={`${record.title} 可编辑画布`} className={css.canvas}>
           <Excalidraw

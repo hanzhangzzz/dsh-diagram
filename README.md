@@ -9,6 +9,7 @@
 - `diagram_read` 显式读取当前画布；手工编辑不会在后台自动进入模型上下文。
 - 画布按 revision 做 compare-and-set 自动保存，冲突不会静默覆盖本地内容。
 - 切换标签或页面卸载前会把一份未确认草稿写入当前浏览器标签的 `sessionStorage`，重开“画布”后按原 revision 恢复保存。
+- 桌面端可折叠 diagram 列表，窄屏改用下拉选择，把主要空间留给画布。
 - 导出 `.excalidraw`、SVG 和 PNG。
 - 数据存放在插件自己的 storage-domain sidecar；刷新或重装插件后仍可恢复。
 

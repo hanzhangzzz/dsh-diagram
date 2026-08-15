@@ -129,7 +129,7 @@ afterEach(() => {
 });
 
 describe("DiagramApp", () => {
-  it("keeps the canvas in the remaining 594px track of a 662px frame when notices are empty", async () => {
+  it("keeps the canvas below a compact toolbar when notices are empty", async () => {
     const client = clientWith([summary], record);
 
     render(<DiagramApp client={client} sessionId="session-1" />);
@@ -138,10 +138,13 @@ describe("DiagramApp", () => {
     const app = screen.getByRole("main");
     const notices = app.children.item(1);
     expect(notices?.childElementCount).toBe(0);
-    expect(662 - 68).toBe(594);
 
     const stylesheet = readFileSync("src/editor/App.module.css", "utf8");
+    expect(cssRule(stylesheet, "toolbar")).toMatch(/\bmin-height:\s*3\.5rem\s*;/);
     expect(cssRule(stylesheet, "body")).toMatch(/\bgrid-row:\s*3\s*;/);
+    expect(stylesheet).toMatch(
+      /\.diagramList\[hidden\]\s*\{[^}]*\bdisplay:\s*none\s*;/,
+    );
   });
 
   it("bounds initialization when Excalidraw echoes the persisted scene after every render", async () => {
@@ -168,6 +171,32 @@ describe("DiagramApp", () => {
         expect((button as HTMLButtonElement).disabled).toBe(false);
       }
     });
+  });
+
+  it("collapses and restores the diagram list without reloading the canvas", async () => {
+    const client = clientWith([summary], record);
+
+    render(<DiagramApp client={client} sessionId="session-1" />);
+
+    expect(await screen.findByTestId("excalidraw-loaded")).toBeTruthy();
+    const collapseButton = screen.getByRole("button", {
+      name: "收起 diagram 列表",
+    });
+    expect(collapseButton.getAttribute("aria-expanded")).toBe("true");
+
+    fireEvent.click(collapseButton);
+
+    const expandButton = screen.getByRole("button", {
+      name: "展开 diagram 列表",
+    });
+    expect(expandButton.getAttribute("aria-expanded")).toBe("false");
+    expect(screen.queryByRole("button", { name: /^Runtime/ })).toBeNull();
+    expect(client.get).toHaveBeenCalledOnce();
+
+    fireEvent.click(expandButton);
+
+    expect(screen.getByRole("button", { name: /^Runtime/ })).toBeTruthy();
+    expect(client.get).toHaveBeenCalledOnce();
   });
 
   it("shows the Agent handoff when the current session has no diagrams", async () => {
