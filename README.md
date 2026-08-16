@@ -28,12 +28,12 @@ Requirements:
 - pnpm `>=10` on `PATH` (the DSH plugin command delegates package management to pnpm)
 - DSH Web bound to `127.0.0.1`
 
-The commands below assume `dsh` is already on `PATH`:
+DeepSeek Harness does not install a global `dsh` command by default; the official way to launch it is through `npx`. The commands below work on any machine that meets the requirements:
 
 ```sh
-dsh plugin --profile web add dsh-diagram@latest
-dsh --profile web --dump-config
-dsh web
+npx -y @deepseek-ai/dsh@0.1.0-rc.6 plugin --profile web add dsh-diagram@latest
+npx -y @deepseek-ai/dsh@0.1.0-rc.6 --profile web --dump-config
+npx -y @deepseek-ai/dsh@0.1.0-rc.6 web
 ```
 
 The config dump should contain this block:
@@ -48,7 +48,7 @@ If DSH Web was already running, restart it after adding or updating the plugin. 
 
 ### Running DSH from source
 
-Run the same commands from a DeepSeek Harness checkout that matches the supported `0.1.0-rc.6` APIs, replacing `dsh` with `pnpm dsh`:
+Run the same commands from a DeepSeek Harness checkout that matches the supported `0.1.0-rc.6` APIs, using `pnpm dsh` as the prefix:
 
 ```sh
 pnpm dsh plugin --profile web add dsh-diagram@latest
@@ -56,15 +56,17 @@ pnpm dsh --profile web --dump-config
 pnpm dsh web
 ```
 
-### Using DSH through npx
+### If `dsh` is on your `PATH`
 
-This works without a global `dsh` command, but its first run is slower. pnpm must still be on `PATH`.
+If you installed the CLI globally or created a shell alias, the short form works the same way:
 
 ```sh
-npx -y @deepseek-ai/dsh@0.1.0-rc.6 plugin --profile web add dsh-diagram@latest
-npx -y @deepseek-ai/dsh@0.1.0-rc.6 --profile web --dump-config
-npx -y @deepseek-ai/dsh@0.1.0-rc.6 web
+dsh plugin --profile web add dsh-diagram@latest
+dsh --profile web --dump-config
+dsh web
 ```
+
+Later sections use this short `dsh` form; substitute the `npx -y @deepseek-ai/dsh@0.1.0-rc.6` or `pnpm dsh` prefix that matches how you run DSH.
 
 ## Create your first diagram
 
@@ -153,6 +155,10 @@ Removing the bundle does not delete saved diagram sidecar data. Reinstalling the
 ### The Canvas tab is missing
 
 Confirm that you installed the plugin into the `web` profile, that `--dump-config` contains the `dsh-diagram` block shown above, and that DSH Web was restarted after installation.
+
+### The Agent wrote an SVG or Mermaid file instead of using the Canvas
+
+`diagram_create` is an ordinary tool: the model chooses freely among all tools and workspace skills available in the session. If your workspace also contains a diagram-generating skill, a generic prompt such as "draw an architecture diagram" may be routed there. Name the tool or the Canvas explicitly — for example, "call diagram_create so I can edit the result in the Canvas tab" — and the Agent will use the plugin.
 
 ### The Agent does not know about my manual edits
 

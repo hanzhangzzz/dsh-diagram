@@ -28,12 +28,12 @@
 - `PATH` 中可用的 pnpm `>=10`（DSH 的插件命令会把包管理交给 pnpm）
 - DSH Web 绑定 `127.0.0.1`
 
-以下命令假设 `dsh` 已在 `PATH` 中：
+DeepSeek Harness 默认不会安装全局 `dsh` 命令，官方启动方式是通过 `npx`。满足前置条件的机器都可以直接执行：
 
 ```sh
-dsh plugin --profile web add dsh-diagram@latest
-dsh --profile web --dump-config
-dsh web
+npx -y @deepseek-ai/dsh@0.1.0-rc.6 plugin --profile web add dsh-diagram@latest
+npx -y @deepseek-ai/dsh@0.1.0-rc.6 --profile web --dump-config
+npx -y @deepseek-ai/dsh@0.1.0-rc.6 web
 ```
 
 配置输出中应出现：
@@ -48,7 +48,7 @@ dsh web
 
 ### 从 DSH 源码运行
 
-在与受支持的 `0.1.0-rc.6` API 匹配的 DeepSeek Harness 源码目录执行相同命令，并把 `dsh` 换成 `pnpm dsh`：
+在与受支持的 `0.1.0-rc.6` API 匹配的 DeepSeek Harness 源码目录执行相同命令，前缀改为 `pnpm dsh`：
 
 ```sh
 pnpm dsh plugin --profile web add dsh-diagram@latest
@@ -56,15 +56,17 @@ pnpm dsh --profile web --dump-config
 pnpm dsh web
 ```
 
-### 通过 npx 运行 DSH
+### 如果 `dsh` 已在 `PATH` 中
 
-不安装全局 `dsh` 命令也可以使用，但首次运行较慢，且 `PATH` 中仍需有 pnpm。
+如果你全局安装了 CLI 或配置了 shell alias，短形式效果相同：
 
 ```sh
-npx -y @deepseek-ai/dsh@0.1.0-rc.6 plugin --profile web add dsh-diagram@latest
-npx -y @deepseek-ai/dsh@0.1.0-rc.6 --profile web --dump-config
-npx -y @deepseek-ai/dsh@0.1.0-rc.6 web
+dsh plugin --profile web add dsh-diagram@latest
+dsh --profile web --dump-config
+dsh web
 ```
+
+后文各节以短形式 `dsh` 书写；请按你实际的启动方式替换为 `npx -y @deepseek-ai/dsh@0.1.0-rc.6` 或 `pnpm dsh` 前缀。
 
 ## 创建第一张图
 
@@ -153,6 +155,10 @@ dsh plugin --profile web remove dsh-diagram
 ### 为什么没有“画布”标签？
 
 确认插件安装到了 `web` profile，`--dump-config` 输出包含上面的 `dsh-diagram` 配置块，并在安装后重启了 DSH Web。
+
+### 为什么 Agent 写了 SVG 或 Mermaid 文件，而不是用画布？
+
+`diagram_create` 是一个普通工具：模型会在会话内所有工具和工作区 skill 中自主选择。如果你的工作区里还有会生成图表的 skill，「画一张架构图」这类泛化提示可能被路由到 skill。明确点名工具或画布——例如「调用 diagram_create，我要在画布标签里编辑结果」——Agent 就会使用本插件。
 
 ### 为什么 Agent 不知道我手工修改了画布？
 
