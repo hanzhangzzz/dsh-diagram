@@ -6,6 +6,7 @@ import {
 import type {} from "@deepseek-ai/dsh-session-persistence";
 import type { KvTable } from "@deepseek-ai/dsh-storage-domain";
 import type {} from "@deepseek-ai/dsh-host-webserver";
+import type {} from "@deepseek-ai/dsh-skill";
 import type {} from "@deepseek-ai/dsh-tools";
 
 import type {
@@ -36,6 +37,7 @@ import { createDiagramDomainSpec } from "./domain.ts";
 import { createDiagramHttpRpcHandler } from "./http-rpc.ts";
 import { DiagramRepository } from "./repository.ts";
 import { createDiagramRpcHandler, type DiagramRpcOperations } from "./rpc.ts";
+import { CANVAS_DIAGRAM_SKILL } from "./skill.ts";
 import {
   createEditorAssetsHandler,
   DIAGRAM_ASSETS_PATH,
@@ -129,6 +131,7 @@ function sameSessionLifecycle(left: SessionHeader, right: SessionHeader): boolea
 export class DiagramService extends Service implements
   DiagramRpcOperations, DiagramToolHost {
   static inject = [
+    "skills",
     "storageDomain",
     "sessionPersistence",
     "sessions",
@@ -218,6 +221,10 @@ export class DiagramService extends Service implements
     for (const tool of createDiagramTools(this)) {
       this.ctx.tools.register(tool);
     }
+    this.ctx.effect(
+      () => this.ctx.skills.register(CANVAS_DIAGRAM_SKILL),
+      "diagram.canvasSkill",
+    );
   }
 
   /**

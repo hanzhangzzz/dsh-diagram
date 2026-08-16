@@ -120,7 +120,16 @@ async function diagramHost(
   const ctx = new Context();
   const routes: WebRoute[] = [];
   const records = new Map<DiagramId, DiagramRecord>();
+  const registeredSkills: { name: string }[] = [];
   const close = vi.fn(async () => {});
+  ctx.provide("skills", {
+    register(skill: { name: string }) {
+      registeredSkills.push(skill);
+      return () => {
+        registeredSkills.splice(registeredSkills.indexOf(skill), 1);
+      };
+    },
+  } as unknown as Context["skills"]);
   ctx.provide("webServer", {
     host,
     register(route: WebRoute) {
@@ -165,7 +174,7 @@ async function diagramHost(
     autosaveDebounceMs: 800,
     maxReadChars: 12_000,
   });
-  return { close, ctx, diagramFiber, open, routes };
+  return { close, ctx, diagramFiber, open, registeredSkills, routes };
 }
 
 describe("DiagramService registrations", () => {
@@ -189,12 +198,15 @@ describe("DiagramService registrations", () => {
     ]);
     expect(host.ctx.tools.get("diagram_create")).toBeDefined();
     expect(host.ctx.tools.get("diagram_read")).toBeDefined();
+    expect(host.registeredSkills.map((skill) => skill.name))
+      .toEqual(["canvas-diagram"]);
 
     await host.diagramFiber.dispose();
 
     expect(host.routes).toEqual([]);
     expect(host.ctx.tools.get("diagram_create")).toBeUndefined();
     expect(host.ctx.tools.get("diagram_read")).toBeUndefined();
+    expect(host.registeredSkills).toEqual([]);
     expect(host.close).toHaveBeenCalledOnce();
     await host.ctx.fiber.dispose();
   });

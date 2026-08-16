@@ -86,6 +86,69 @@ describe("deterministic diagram layout", () => {
     }
   });
 
+  it("stacks grouped architecture bands vertically at a uniform width", () => {
+    const spec: DiagramSpec = {
+      kind: "architecture",
+      title: "Layered system",
+      groups: [
+        { id: "cause", label: "病因" },
+        { id: "course", label: "病程" },
+        { id: "treat", label: "治疗" },
+      ],
+      nodes: [
+        { id: "root", label: "桥本甲状腺炎", detail: "AIT 最常见类型" },
+        { id: "gene", label: "遗传", group: "cause" },
+        { id: "env", label: "环境诱因", group: "cause" },
+        { id: "sub", label: "亚临床甲减", group: "course" },
+        { id: "overt", label: "临床甲减", group: "course" },
+        { id: "ata", label: "ATA 分层", group: "treat", emphasis: true },
+      ],
+      edges: [
+        { from: "root", to: "gene" },
+        { from: "gene", to: "sub" },
+        { from: "sub", to: "ata" },
+      ],
+    };
+
+    const layout = layoutDiagram(spec);
+    const [cause, course, treat] = layout.groups;
+
+    // Bands stack top-to-bottom in input order without overlapping.
+    expect(layout.groups.map((group) => group.id))
+      .toEqual(["cause", "course", "treat"]);
+    expect((cause?.y ?? 0) + (cause?.height ?? 0))
+      .toBeLessThan(course?.y ?? 0);
+    expect((course?.y ?? 0) + (course?.height ?? 0))
+      .toBeLessThan(treat?.y ?? 0);
+    // All band containers share one width and left edge.
+    expect(new Set(layout.groups.map((group) => group.width)).size).toBe(1);
+    expect(new Set(layout.groups.map((group) => group.x)).size).toBe(1);
+    // The ungrouped root node sits above the first band.
+    const root = layout.nodes.find((node) => node.id === "root");
+    expect((root?.y ?? 0) + (root?.height ?? 0)).toBeLessThan(cause?.y ?? 0);
+    // Node input order is preserved in the returned array.
+    expect(layout.nodes.map((node) => node.id))
+      .toEqual(["root", "gene", "env", "sub", "overt", "ata"]);
+  });
+
+  it("keeps ungrouped architecture specs on the directed fallback", () => {
+    const spec: DiagramSpec = {
+      kind: "architecture",
+      title: "Pipeline",
+      nodes: [
+        { id: "in", label: "In" },
+        { id: "out", label: "Out" },
+      ],
+      edges: [{ from: "in", to: "out" }],
+    };
+
+    const layout = layoutDiagram(spec);
+    const [input, output] = layout.nodes;
+
+    expect(layout.groups).toEqual([]);
+    expect(input?.x ?? 0).toBeLessThan(output?.x ?? 0);
+  });
+
   it("lays hierarchy parents above their children", () => {
     const spec: DiagramSpec = {
       kind: "hierarchy",

@@ -17,7 +17,12 @@ import {
   DEFAULT_DIAGRAM_VALIDATION_POLICY,
   type DiagramSpec,
 } from "../src/core/contracts.ts";
-import type { PositionedDiagram } from "../src/core/layout.ts";
+import {
+  DETAIL_FONT_SIZE,
+  layoutDiagram,
+  textWidth,
+  type PositionedDiagram,
+} from "../src/core/layout.ts";
 import {
   createInitialScene,
   diagramToElementSkeletons,
@@ -81,8 +86,45 @@ describe("diagram scene compiler", () => {
     });
     expect(first.find((element) => element.id === "text:node:ship")).toMatchObject({
       type: "text",
-      text: "发布\n可访问",
+      text: "发布",
     });
+    expect(first.find((element) => element.id === "detail:node:ship")).toMatchObject({
+      type: "text",
+      text: "可访问",
+    });
+  });
+
+  it("pre-wraps long CJK detail so no line exceeds the node interior", () => {
+    const spec: DiagramSpec = {
+      kind: "architecture",
+      title: "换行验证",
+      groups: [{ id: "band", label: "分区" }],
+      nodes: [
+        {
+          id: "dense",
+          label: "命名沿革",
+          detail:
+            "三个名字一个病：HT = 慢性淋巴细胞性甲状腺炎 = 自身免疫性甲状腺炎；比「自身免疫」概念早描述几十年。",
+          group: "band",
+        },
+      ],
+      edges: [],
+    };
+
+    const skeletons = diagramToElementSkeletons(layoutDiagram(spec));
+    const node = skeletons.find((element) => element.id === "node:dense") as {
+      width: number;
+    };
+    const detail = skeletons.find(
+      (element) => element.id === "detail:node:dense",
+    ) as { text: string };
+
+    const lines = detail.text.split("\n");
+    expect(lines.length).toBeGreaterThan(1);
+    const innerWidth = node.width - 32;
+    for (const line of lines) {
+      expect(textWidth(line, DETAIL_FONT_SIZE)).toBeLessThanOrEqual(innerWidth);
+    }
   });
 
   it("converts a supported spec into a storage-valid initial scene", () => {

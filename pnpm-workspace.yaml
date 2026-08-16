@@ -1,0 +1,11 @@
+allowBuilds:
+  # esbuild resolves its platform binary through optionalDependencies; its
+  # install script is a fallback we deliberately do not run.
+  esbuild: false
+
+# Security floors for vulnerable transitive versions inside the bundled
+# Excalidraw tree. Range keys so future in-range resolutions stay covered.
+overrides:
+  "nanoid@<3.3.18": 3.3.18
+  "nanoid@>=4.0.0 <5.1.16": 5.1.16
+  "lodash-es@<4.17.24": 4.18.1

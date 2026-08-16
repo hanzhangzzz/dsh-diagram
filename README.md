@@ -71,7 +71,7 @@ Later sections use this short `dsh` form; substitute the `npx -y @deepseek-ai/ds
 ## Create your first diagram
 
 1. Open a DSH session that already contains the article, or let the Agent read it with DSH's existing file or Web tools.
-2. Send a prompt such as:
+2. Type `/` in the composer and pick **canvas-diagram** — the plugin registers this skill so you never have to remember a tool name. Plain requests such as "把这篇文章画成架构图" route through the same skill automatically. An explicit prompt also works:
 
    ```text
    Create one clear diagram for this article. Choose the most suitable diagram type, call diagram_create, and keep the title and node labels concise.
@@ -87,8 +87,9 @@ The plugin supports flowcharts, architecture diagrams, timelines, hierarchies, c
 
 | Surface | Behavior |
 | --- | --- |
-| `diagram_create` | Creates a diagram for the current Agent Session from a compact semantic specification. |
+| `diagram_create` | Creates a diagram for the current Agent Session from a compact semantic specification. Grouped architecture specs get a banded two-dimensional layout with per-group colors. |
 | `diagram_read` | Reads a bounded summary of the current editable scene into the conversation transcript. |
+| `canvas-diagram` skill | Built-in bilingual routing entry: selectable from the composer's `/` menu and matched by generic diagram requests, so the Agent reaches `diagram_create` without exact tool-name prompts. |
 | **Canvas** tab | Opens the Excalidraw editor only when selected, keeping it out of the normal chat startup path. |
 | Diagram list | Switches between diagrams; collapses on desktop and becomes a selector on narrow screens. |
 | Autosave | Debounced durable writes with revision conflict protection and tab-local pending-draft recovery. |
@@ -98,7 +99,7 @@ The plugin does not fetch articles and does not inject UI into arbitrary website
 
 ## Compatibility
 
-| Item | Supported in `0.1.1` |
+| Item | Supported in `0.2.0` |
 | --- | --- |
 | DeepSeek Harness | `0.1.0-rc.6` |
 | Profile | `web` |
@@ -126,10 +127,10 @@ The release page publishes the same prebuilt tarball with a SHA-256 checksum:
 
 ```sh
 dsh plugin --profile web add \
-  https://github.com/hanzhangzzz/dsh-diagram/releases/download/v0.1.1/dsh-diagram-0.1.1.tgz
+  https://github.com/hanzhangzzz/dsh-diagram/releases/download/v0.2.0/dsh-diagram-0.2.0.tgz
 ```
 
-See [v0.1.1](https://github.com/hanzhangzzz/dsh-diagram/releases/tag/v0.1.1) for the checksum and release notes.
+See [v0.2.0](https://github.com/hanzhangzzz/dsh-diagram/releases/tag/v0.2.0) for the checksum and release notes.
 
 ### Remove
 
@@ -158,7 +159,7 @@ Confirm that you installed the plugin into the `web` profile, that `--dump-confi
 
 ### The Agent wrote an SVG or Mermaid file instead of using the Canvas
 
-`diagram_create` is an ordinary tool: the model chooses freely among all tools and workspace skills available in the session. If your workspace also contains a diagram-generating skill, a generic prompt such as "draw an architecture diagram" may be routed there. Name the tool or the Canvas explicitly — for example, "call diagram_create so I can edit the result in the Canvas tab" — and the Agent will use the plugin.
+The model chooses freely among all tools and workspace skills in the session. The plugin registers its own `canvas-diagram` skill so generic diagram requests normally route to the canvas; if a workspace skill with a stronger matching description still wins, pick **canvas-diagram** from the `/` menu or mention the Canvas explicitly — for example, "call diagram_create so I can edit the result in the Canvas tab".
 
 ### The Agent does not know about my manual edits
 

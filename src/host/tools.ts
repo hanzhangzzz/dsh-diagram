@@ -81,7 +81,10 @@ export function createDiagramTools(
   const create = defineTool({
     name: "diagram_create",
     description:
-      "Create an editable diagram for the current article or discussion. Supply a compact semantic graph; the plugin lays it out deterministically. The result appears in the current DSH session's 画布 tab.",
+      "把当前会话中的文章或讨论生成为可编辑的画布图表（架构图/流程图/时间线/层级图/对比图/关系图）。"
+      + "Create an editable diagram for the current article or discussion. Supply a compact semantic graph;"
+      + " the plugin lays it out deterministically. The result appears in the current DSH session's 画布 tab."
+      + " Prefer this over writing standalone SVG or Mermaid files when the user wants an editable diagram.",
     parameters: {
       kind: {
         type: "string",

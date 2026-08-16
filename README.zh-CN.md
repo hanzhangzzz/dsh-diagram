@@ -71,7 +71,7 @@ dsh web
 ## 创建第一张图
 
 1. 打开已经包含文章内容的 DSH 会话，或先让 Agent 使用 DSH 现有的文件或 Web 工具读取文章。
-2. 发送类似下面的提示：
+2. 在输入框敲 `/` 选择 **canvas-diagram**——插件自带这个 skill，不需要记住任何工具名。「把这篇文章画成架构图」这类自然说法也会自动路由到画布。显式提示同样有效：
 
    ```text
    为这篇文章提炼一张清晰的主图。选择最合适的 diagram 类型，调用 diagram_create，标题和节点文字保持简洁。
@@ -87,8 +87,9 @@ dsh web
 
 | 界面或能力 | 行为 |
 | --- | --- |
-| `diagram_create` | 根据紧凑的语义描述，为当前 Agent Session 创建 diagram。 |
+| `diagram_create` | 根据紧凑的语义描述，为当前 Agent Session 创建 diagram。带分组的 architecture 采用分区带状二维布局并按组着色。 |
 | `diagram_read` | 把当前可编辑 scene 的受限摘要读取到正常对话记录中。 |
+| `canvas-diagram` skill | 内置中英双语路由入口：可在输入框 `/` 菜单中选择，泛化的图表请求也会自动命中，无需在提示里点名工具。 |
 | “画布”标签 | 只在用户打开时加载 Excalidraw 编辑器，不进入普通聊天首屏启动路径。 |
 | Diagram 列表 | 可在桌面端折叠，窄屏改为选择器。 |
 | 自动保存 | 去抖持久化、revision 冲突保护和当前浏览器标签内的待保存草稿恢复。 |
@@ -98,7 +99,7 @@ dsh web
 
 ## 兼容性
 
-| 项目 | `0.1.1` 支持范围 |
+| 项目 | `0.2.0` 支持范围 |
 | --- | --- |
 | DeepSeek Harness | `0.1.0-rc.6` |
 | Profile | `web` |
@@ -126,10 +127,10 @@ Release 页面提供同一份预构建 tarball 及其 SHA-256 校验值：
 
 ```sh
 dsh plugin --profile web add \
-  https://github.com/hanzhangzzz/dsh-diagram/releases/download/v0.1.1/dsh-diagram-0.1.1.tgz
+  https://github.com/hanzhangzzz/dsh-diagram/releases/download/v0.2.0/dsh-diagram-0.2.0.tgz
 ```
 
-校验值和版本说明见 [v0.1.1](https://github.com/hanzhangzzz/dsh-diagram/releases/tag/v0.1.1)。
+校验值和版本说明见 [v0.2.0](https://github.com/hanzhangzzz/dsh-diagram/releases/tag/v0.2.0)。
 
 ### 移除
 
@@ -158,7 +159,7 @@ dsh plugin --profile web remove dsh-diagram
 
 ### 为什么 Agent 写了 SVG 或 Mermaid 文件，而不是用画布？
 
-`diagram_create` 是一个普通工具：模型会在会话内所有工具和工作区 skill 中自主选择。如果你的工作区里还有会生成图表的 skill，「画一张架构图」这类泛化提示可能被路由到 skill。明确点名工具或画布——例如「调用 diagram_create，我要在画布标签里编辑结果」——Agent 就会使用本插件。
+模型会在会话内所有工具和工作区 skill 中自主选择。插件自带 `canvas-diagram` skill，泛化的图表请求通常会自动路由到画布；如果工作区里存在描述更匹配的 skill 抢走了请求，在 `/` 菜单里选择 **canvas-diagram**，或明确点名画布——例如「调用 diagram_create，我要在画布标签里编辑结果」。
 
 ### 为什么 Agent 不知道我手工修改了画布？
 

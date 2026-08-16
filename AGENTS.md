@@ -105,7 +105,8 @@ pnpm run test
 - sourcemap 保持关闭，npm `files` 继续排除 `lib/**/*.map`。构建后检查 bundle 不包含本机绝对路径；曾经的 virtual module region 注释会泄漏 `/Users/...` checkout 路径，minify 是当前消除路径的组成部分。
 - editor 较大是已知成本；聊天首屏只下载小型 Client entry。优化体积时必须以网络资源和真实启动为证据，不能删除字体许可或把 Excalidraw重新塞回 Client entry。
 - core layout 的边点是绝对坐标，Excalidraw `points` 是相对元素起点。转换时令 arrow `x/y` 等于首个绝对点，再让每个 point 减去起点，并保持稳定 `edge-N` id 和 `node:*` binding；禁止直接混用两种坐标。
-- 布局必须确定且保持输入顺序：flow/architecture 为 LR，hierarchy 为 TB，Dagre 使用 named multigraph 保留并行边；所有节点、边和分组统一经过 normalize、边界偏移和舍入。不能依赖 Dagre 返回顺序重排持久 id。
+- 布局必须确定且保持输入顺序：flow 与无分组 architecture 为 Dagre LR，带分组的 architecture 使用等宽分区带状布局（组按输入顺序纵向堆叠、未分组节点为首个无容器带、行在共享内容宽度内居中换行、容器框由布局显式给出），hierarchy 为 TB，Dagre 使用 named multigraph 保留并行边；所有节点、边和分组统一经过 normalize、边界偏移和舍入。不能依赖 Dagre 返回顺序重排持久 id。
+- Host 在 init 时通过 `ctx.skills.register()` 注册 `canvas-diagram` 运行时 skill（模型与用户双向可调用），这是中文泛化提示路由到 `diagram_create` 的机制，也是输入框 `/` 命令的入口；disposer 由 `ctx.effect` 持有，`skills` 在 `static inject` 中为必需服务。删除该注册会让泛化图表请求重新流向工作区 skill。
 
 ## 自动保存和 React 交互
 
