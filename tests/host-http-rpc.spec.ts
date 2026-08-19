@@ -5,6 +5,7 @@ import {
   type IncomingMessage,
   type ServerResponse,
 } from "node:http";
+import { createConnection } from "node:net";
 import { Readable } from "node:stream";
 import type { ConnectionRpcHandler } from "@deepseek-ai/dsh-client-connection";
 import { describe, expect, it, vi } from "vitest";
@@ -88,6 +89,56 @@ function httpHandler(
   return createDiagramHttpRpcHandler(rpc, maxSceneBytes, logger);
 }
 
+function probeDeclaredOversizedStatus(
+  port: number,
+  contentLength: number,
+): Promise<number> {
+  return new Promise((resolve, reject) => {
+    let response = "";
+    let settled = false;
+    const socket = createConnection({ host: "127.0.0.1", port });
+    const finish = (error?: Error) => {
+      if (settled) return;
+      const match = response.match(/^HTTP\/1\.[01] (\d{3})/u);
+      if (match !== null) {
+        settled = true;
+        socket.destroy();
+        resolve(Number(match[1]));
+        return;
+      }
+      if (error !== undefined) {
+        settled = true;
+        reject(error);
+      }
+    };
+    socket.setTimeout(5_000, () =>
+      finish(new Error("oversized HTTP probe timed out")),
+    );
+    socket.on("connect", () => {
+      socket.write([
+        "POST /diagram/list HTTP/1.1",
+        `Host: 127.0.0.1:${port}`,
+        "Content-Type: application/json",
+        `Content-Length: ${contentLength}`,
+        "Connection: close",
+        "",
+        "",
+      ].join("\r\n"));
+    });
+    socket.on("data", (chunk) => {
+      response += chunk.toString("latin1");
+      finish();
+    });
+    socket.on("end", () =>
+      finish(new Error("oversized HTTP probe ended without a response")),
+    );
+    socket.on("close", () =>
+      finish(new Error("oversized HTTP probe closed without a response")),
+    );
+    socket.on("error", (error) => finish(error));
+  });
+}
+
 describe("diagram bounded HTTP RPC", () => {
   it("rejects scene limits that cannot produce a safe fixed body cap", () => {
     const rpc = vi.fn<ConnectionRpcHandler>();
@@ -137,14 +188,12 @@ describe("diagram bounded HTTP RPC", () => {
       if (address === null || typeof address === "string") {
         throw new Error("test server did not bind a TCP port");
       }
-      const response = await fetch(`http://127.0.0.1:${address.port}/diagram/list`, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: Buffer.alloc(MAX_SCENE_BYTES + DIAGRAM_RPC_BODY_HEADROOM_BYTES + 1),
-      });
+      const status = await probeDeclaredOversizedStatus(
+        address.port,
+        MAX_SCENE_BYTES + DIAGRAM_RPC_BODY_HEADROOM_BYTES + 1,
+      );
 
-      expect(response.status).toBe(413);
-      await expect(response.text()).resolves.toBe("");
+      expect(status).toBe(413);
       expect(rpc).not.toHaveBeenCalled();
     } finally {
       await new Promise<void>((resolve, reject) => {
