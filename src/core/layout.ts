@@ -27,6 +27,10 @@ const REPORT_COMPACT_LABEL_FONT_SIZE = 14;
 const REPORT_COMPACT_DETAIL_FONT_SIZE = 12;
 const REPORT_COMPACT_LABEL_LINE_HEIGHT = 18;
 const REPORT_COMPACT_DETAIL_LINE_HEIGHT = 16;
+/** Report group heading size shared with native Excalidraw text. */
+export const REPORT_GROUP_FONT_SIZE = 20;
+/** Standard group heading size shared with native Excalidraw text. */
+export const STANDARD_GROUP_FONT_SIZE = 15;
 const DIRECTED_NODE_GAP = 56;
 const DIRECTED_RANK_GAP = 96;
 const BAND_MAX_CONTENT_WIDTH = 720;
@@ -51,6 +55,16 @@ export const REPORT_GROUP_TOP_PADDING = 64;
 const REPORT_GROUP_BOTTOM_PADDING = 24;
 const REPORT_NODE_GAP = 20;
 const REPORT_MAIN_INNER_MIN_WIDTH = 260;
+const ORTHOGONAL_EDGE_CLEARANCE = 16;
+const REPORT_GROUP_LABEL_HEIGHT = 28;
+const REPORT_GROUP_LABEL_PADDING_X = 32;
+const STANDARD_GROUP_LABEL_HEIGHT = 26;
+const STANDARD_GROUP_LABEL_PADDING_X = 24;
+const ROUTE_OBSTACLE_PENALTY = 1_000_000;
+const ROUTE_EDGE_CONFLICT_PENALTY = 100_000;
+const ROUTE_SHORT_SEGMENT_PENALTY = 50_000;
+const ROUTE_ALTERNATE_PORT_PENALTY = 256;
+const ROUTE_BEND_PENALTY = 24;
 
 /** An absolute canvas coordinate. */
 export interface PositionedPoint {
@@ -99,6 +113,8 @@ interface NodeSize {
   width: number;
   height: number;
 }
+
+interface LayoutBox extends PositionedPoint, NodeSize {}
 
 /** Typography and box-density contract shared by layout and scene creation. */
 export interface NodeTextStyle {
@@ -344,7 +360,11 @@ function layoutBands(spec: DiagramSpec): RawLayout {
     return placed;
   });
   // Frames follow spec.groups order because bands were built in that order.
-  return { nodes, edges: positionDirectEdges(spec, nodes), groups: frames };
+  return {
+    nodes,
+    edges: positionOrthogonalEdges(spec, nodes, frames),
+    groups: frames,
+  };
 }
 
 function measureBand(
@@ -540,7 +560,11 @@ function layoutReport(spec: DiagramSpec): RawLayout {
     }
     return frame;
   });
-  return { nodes, edges: positionReportEdges(spec, nodes), groups: frames };
+  return {
+    nodes,
+    edges: positionOrthogonalEdges(spec, nodes, frames),
+    groups: frames,
+  };
 }
 
 function requireReportMembers(
@@ -930,12 +954,21 @@ function positionDirectEdges(
   });
 }
 
-function positionReportEdges(
+/**
+ * Routes manual-layout edges after node placement without model coordinates.
+ *
+ * Candidate ports and lanes remain deterministic. Hard geometry conflicts
+ * dominate the score, followed by independent-edge conflicts, short segments,
+ * alternate ports, bends, and total Manhattan length.
+ */
+function positionOrthogonalEdges(
   spec: DiagramSpec,
   nodes: PositionedNode[],
+  groups: PositionedGroup[],
 ): PositionedEdge[] {
   const byId = new Map(nodes.map((node) => [node.id, node]));
-  return spec.edges.map((edge, index) => {
+  const positioned: PositionedEdge[] = [];
+  for (const [index, edge] of spec.edges.entries()) {
     const source = byId.get(edge.from);
     const target = byId.get(edge.to);
     if (source === undefined || target === undefined) {
@@ -945,48 +978,374 @@ function positionReportEdges(
     const targetCenter = nodeCenter(target);
     const horizontal = Math.abs(targetCenter.x - sourceCenter.x)
       >= Math.abs(targetCenter.y - sourceCenter.y);
-    let points: PositionedPoint[];
-    if (horizontal) {
-      const forward = targetCenter.x >= sourceCenter.x;
-      const start = {
-        x: forward ? source.x + source.width : source.x,
-        y: sourceCenter.y,
-      };
-      const end = {
-        x: forward ? target.x : target.x + target.width,
-        y: targetCenter.y,
-      };
-      const middleX = round((start.x + end.x) / 2);
-      points = [
-        start,
-        { x: middleX, y: start.y },
-        { x: middleX, y: end.y },
-        end,
-      ];
-    } else {
-      const forward = targetCenter.y >= sourceCenter.y;
-      const start = {
-        x: sourceCenter.x,
-        y: forward ? source.y + source.height : source.y,
-      };
-      const end = {
-        x: targetCenter.x,
-        y: forward ? target.y : target.y + target.height,
-      };
-      const middleY = round((start.y + end.y) / 2);
-      points = [
-        start,
-        { x: start.x, y: middleY },
-        { x: end.x, y: middleY },
-        end,
-      ];
-    }
-    return {
+    const horizontalRoute = horizontalBoundaryRoute(
+      source,
+      target,
+      sourceCenter,
+      targetCenter,
+    );
+    const verticalRoute = verticalBoundaryRoute(
+      source,
+      target,
+      sourceCenter,
+      targetCenter,
+    );
+    positioned.push({
       id: edgeId(index),
       ...edge,
-      points: simplifyOrthogonalPoints(points),
+      points: routeOrthogonalEdge(
+        horizontal ? horizontalRoute : verticalRoute,
+        horizontal ? verticalRoute : horizontalRoute,
+        nodes.filter((node) => node.id !== source.id && node.id !== target.id),
+        groups.map((group) => groupLabelObstacle(spec.kind, group)),
+        positioned.filter((existing) => !edgesShareEndpoint(edge, existing)),
+      ),
+    });
+  }
+  return positioned;
+}
+
+function edgesShareEndpoint(
+  first: Pick<PositionedEdge, "from" | "to">,
+  second: Pick<PositionedEdge, "from" | "to">,
+): boolean {
+  return first.from === second.from
+    || first.from === second.to
+    || first.to === second.from
+    || first.to === second.to;
+}
+
+function horizontalBoundaryRoute(
+  source: PositionedNode,
+  target: PositionedNode,
+  sourceCenter: PositionedPoint,
+  targetCenter: PositionedPoint,
+): PositionedPoint[] {
+  const forward = targetCenter.x >= sourceCenter.x;
+  const start = {
+    x: forward ? source.x + source.width : source.x,
+    y: sourceCenter.y,
+  };
+  const end = {
+    x: forward ? target.x : target.x + target.width,
+    y: targetCenter.y,
+  };
+  const middleX = round((start.x + end.x) / 2);
+  return [
+    start,
+    { x: middleX, y: start.y },
+    { x: middleX, y: end.y },
+    end,
+  ];
+}
+
+function verticalBoundaryRoute(
+  source: PositionedNode,
+  target: PositionedNode,
+  sourceCenter: PositionedPoint,
+  targetCenter: PositionedPoint,
+): PositionedPoint[] {
+  const forward = targetCenter.y >= sourceCenter.y;
+  const start = {
+    x: sourceCenter.x,
+    y: forward ? source.y + source.height : source.y,
+  };
+  const end = {
+    x: targetCenter.x,
+    y: forward ? target.y : target.y + target.height,
+  };
+  const middleY = round((start.y + end.y) / 2);
+  return [
+    start,
+    { x: start.x, y: middleY },
+    { x: end.x, y: middleY },
+    end,
+  ];
+}
+
+function routeOrthogonalEdge(
+  preferred: PositionedPoint[],
+  alternate: PositionedPoint[],
+  obstacles: PositionedNode[],
+  groupLabelObstacles: ReadonlyArray<LayoutBox>,
+  positionedEdges: PositionedEdge[],
+): [PositionedPoint, PositionedPoint, ...PositionedPoint[]] {
+  const blockedRegions = [
+    ...obstacles,
+    ...groupLabelObstacles,
+  ];
+  const candidates = [
+    ...orthogonalRouteCandidates(preferred, blockedRegions, 0),
+    ...orthogonalRouteCandidates(
+      alternate,
+      blockedRegions,
+      ROUTE_ALTERNATE_PORT_PENALTY,
+    ),
+  ];
+  const clear = candidates.filter(
+    (candidate) => !pathIntersectsAnyBox(candidate.points, blockedRegions),
+  );
+  return (clear.length > 0 ? clear : candidates).reduce((best, candidate) =>
+    routeScore(candidate.points, blockedRegions, positionedEdges)
+        + candidate.portPenalty
+        < routeScore(best.points, blockedRegions, positionedEdges)
+          + best.portPenalty
+      ? candidate
+      : best
+  ).points;
+}
+
+function groupLabelObstacle(
+  kind: DiagramKind,
+  group: PositionedGroup,
+): LayoutBox {
+  if (kind !== "report") {
+    const width = Math.min(
+      group.width,
+      textWidth(group.label, STANDARD_GROUP_FONT_SIZE)
+        + STANDARD_GROUP_LABEL_PADDING_X,
+    );
+    return {
+      x: round(group.x + 10),
+      y: round(group.y + 8),
+      width: round(width),
+      height: STANDARD_GROUP_LABEL_HEIGHT,
     };
-  });
+  }
+  const width = Math.min(
+    group.width,
+    textWidth(group.label, REPORT_GROUP_FONT_SIZE)
+      + REPORT_GROUP_LABEL_PADDING_X,
+  );
+  return {
+    x: round(group.x + (group.width - width) / 2),
+    y: round(
+      group.y + (REPORT_GROUP_TOP_PADDING - REPORT_GROUP_LABEL_HEIGHT) / 2,
+    ),
+    width: round(width),
+    height: REPORT_GROUP_LABEL_HEIGHT,
+  };
+}
+
+interface OrthogonalRouteCandidate {
+  points: [PositionedPoint, PositionedPoint, ...PositionedPoint[]];
+  portPenalty: number;
+}
+
+function orthogonalRouteCandidates(
+  seed: PositionedPoint[],
+  obstacles: ReadonlyArray<LayoutBox>,
+  portPenalty: number,
+): OrthogonalRouteCandidate[] {
+  const simplifiedSeed = simplifyOrthogonalPoints(seed);
+  const start = simplifiedSeed[0];
+  const end = simplifiedSeed.at(-1);
+  if (end === undefined) {
+    throw new Error("An orthogonal route requires an end point");
+  }
+  const laneY = uniqueNumbers(
+    [
+      Math.min(start.y, end.y) - ORTHOGONAL_EDGE_CLEARANCE,
+      Math.max(start.y, end.y) + ORTHOGONAL_EDGE_CLEARANCE,
+      ...obstacles.flatMap((obstacle) => [
+        obstacle.y - ORTHOGONAL_EDGE_CLEARANCE,
+        obstacle.y + obstacle.height + ORTHOGONAL_EDGE_CLEARANCE,
+      ]),
+    ],
+  );
+  const laneX = uniqueNumbers(
+    [
+      Math.min(start.x, end.x) - ORTHOGONAL_EDGE_CLEARANCE,
+      Math.max(start.x, end.x) + ORTHOGONAL_EDGE_CLEARANCE,
+      ...obstacles.flatMap((obstacle) => [
+        obstacle.x - ORTHOGONAL_EDGE_CLEARANCE,
+        obstacle.x + obstacle.width + ORTHOGONAL_EDGE_CLEARANCE,
+      ]),
+    ],
+  );
+  return [
+    simplifiedSeed,
+    ...laneY.map((y) =>
+      simplifyOrthogonalPoints([
+        start,
+        { x: start.x, y },
+        { x: end.x, y },
+        end,
+      ])
+    ),
+    ...laneX.map((x) =>
+      simplifyOrthogonalPoints([
+        start,
+        { x, y: start.y },
+        { x, y: end.y },
+        end,
+      ])
+    ),
+  ].map((points) => ({ points, portPenalty }));
+}
+
+function uniqueNumbers(values: number[]): number[] {
+  return [...new Set(values.map(round))].sort((left, right) => left - right);
+}
+
+function routeScore(
+  points: [PositionedPoint, PositionedPoint, ...PositionedPoint[]],
+  obstacles: ReadonlyArray<LayoutBox>,
+  positionedEdges: PositionedEdge[],
+): number {
+  const intersections = pathIntersectionCount(points, obstacles);
+  const edgeConflicts = positionedEdges.reduce(
+    (sum, edge) => sum + pathConflictCount(points, edge.points),
+    0,
+  );
+  const shortSegments = segmentLengths(points).filter(
+    (length) => length < ORTHOGONAL_EDGE_CLEARANCE,
+  ).length;
+  const length = segmentLengths(points).reduce((sum, value) => sum + value, 0);
+  return intersections * ROUTE_OBSTACLE_PENALTY
+    + edgeConflicts * ROUTE_EDGE_CONFLICT_PENALTY
+    + shortSegments * ROUTE_SHORT_SEGMENT_PENALTY
+    + (points.length - 2) * ROUTE_BEND_PENALTY
+    + length;
+}
+
+function segmentLengths(
+  points: [PositionedPoint, PositionedPoint, ...PositionedPoint[]],
+): number[] {
+  const lengths: number[] = [];
+  for (let index = 1; index < points.length; index += 1) {
+    const previous = points[index - 1];
+    const current = points[index];
+    if (previous === undefined || current === undefined) continue;
+    lengths.push(
+      Math.abs(current.x - previous.x) + Math.abs(current.y - previous.y),
+    );
+  }
+  return lengths;
+}
+
+function pathIntersectsAnyBox(
+  points: [PositionedPoint, PositionedPoint, ...PositionedPoint[]],
+  boxes: ReadonlyArray<LayoutBox>,
+): boolean {
+  return pathIntersectionCount(points, boxes) > 0;
+}
+
+function pathIntersectionCount(
+  points: [PositionedPoint, PositionedPoint, ...PositionedPoint[]],
+  boxes: ReadonlyArray<LayoutBox>,
+): number {
+  let count = 0;
+  for (let index = 1; index < points.length; index += 1) {
+    const start = points[index - 1];
+    const end = points[index];
+    if (start === undefined || end === undefined) continue;
+    for (const box of boxes) {
+      if (segmentIntersectsBoxInterior(start, end, box)) count += 1;
+    }
+  }
+  return count;
+}
+
+function segmentIntersectsBoxInterior(
+  start: PositionedPoint,
+  end: PositionedPoint,
+  box: LayoutBox,
+): boolean {
+  if (start.y === end.y) {
+    return start.y > box.y
+      && start.y < box.y + box.height
+      && Math.max(Math.min(start.x, end.x), box.x)
+        < Math.min(Math.max(start.x, end.x), box.x + box.width);
+  }
+  if (start.x === end.x) {
+    return start.x > box.x
+      && start.x < box.x + box.width
+      && Math.max(Math.min(start.y, end.y), box.y)
+        < Math.min(Math.max(start.y, end.y), box.y + box.height);
+  }
+  return true;
+}
+
+function pathConflictCount(
+  first: [PositionedPoint, PositionedPoint, ...PositionedPoint[]],
+  second: [PositionedPoint, PositionedPoint, ...PositionedPoint[]],
+): number {
+  let count = 0;
+  for (let left = 1; left < first.length; left += 1) {
+    for (let right = 1; right < second.length; right += 1) {
+      const firstStart = first[left - 1];
+      const firstEnd = first[left];
+      const secondStart = second[right - 1];
+      const secondEnd = second[right];
+      if (
+        firstStart !== undefined
+        && firstEnd !== undefined
+        && secondStart !== undefined
+        && secondEnd !== undefined
+        && orthogonalSegmentsConflict(
+          firstStart,
+          firstEnd,
+          secondStart,
+          secondEnd,
+        )
+      ) {
+        count += 1;
+      }
+    }
+  }
+  return count;
+}
+
+function orthogonalSegmentsConflict(
+  firstStart: PositionedPoint,
+  firstEnd: PositionedPoint,
+  secondStart: PositionedPoint,
+  secondEnd: PositionedPoint,
+): boolean {
+  const firstHorizontal = firstStart.y === firstEnd.y;
+  const secondHorizontal = secondStart.y === secondEnd.y;
+  if (firstHorizontal && secondHorizontal) {
+    return firstStart.y === secondStart.y
+      && rangesOverlap(
+        firstStart.x,
+        firstEnd.x,
+        secondStart.x,
+        secondEnd.x,
+      );
+  }
+  if (!firstHorizontal && !secondHorizontal) {
+    return firstStart.x === secondStart.x
+      && rangesOverlap(
+        firstStart.y,
+        firstEnd.y,
+        secondStart.y,
+        secondEnd.y,
+      );
+  }
+  const horizontalStart = firstHorizontal ? firstStart : secondStart;
+  const horizontalEnd = firstHorizontal ? firstEnd : secondEnd;
+  const verticalStart = firstHorizontal ? secondStart : firstStart;
+  const verticalEnd = firstHorizontal ? secondEnd : firstEnd;
+  return verticalStart.x > Math.min(horizontalStart.x, horizontalEnd.x)
+    && verticalStart.x < Math.max(horizontalStart.x, horizontalEnd.x)
+    && horizontalStart.y > Math.min(verticalStart.y, verticalEnd.y)
+    && horizontalStart.y < Math.max(verticalStart.y, verticalEnd.y);
+}
+
+function rangesOverlap(
+  firstStart: number,
+  firstEnd: number,
+  secondStart: number,
+  secondEnd: number,
+): boolean {
+  return Math.max(
+    Math.min(firstStart, firstEnd),
+    Math.min(secondStart, secondEnd),
+  ) < Math.min(
+    Math.max(firstStart, firstEnd),
+    Math.max(secondStart, secondEnd),
+  );
 }
 
 function simplifyOrthogonalPoints(

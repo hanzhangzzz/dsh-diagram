@@ -1,5 +1,10 @@
 import type { DiagramTone } from "../core/contracts.ts";
 
+export {
+  REPORT_GROUP_FONT_SIZE,
+  STANDARD_GROUP_FONT_SIZE,
+} from "../core/layout.ts";
+
 /**
  * Excalidraw-free visual constants shared by the scene compiler and the chat
  * preview renderer. Keep this module import-light: the preview page must not
@@ -16,10 +21,8 @@ export const SOLID_TEXT_COLOR = "#ffffff";
 
 export const REPORT_TITLE_FONT_SIZE = 36;
 export const REPORT_SUMMARY_FONT_SIZE = 18;
-export const REPORT_GROUP_FONT_SIZE = 20;
 export const STANDARD_TITLE_FONT_SIZE = 24;
 export const STANDARD_SUMMARY_FONT_SIZE = 14;
-export const STANDARD_GROUP_FONT_SIZE = 15;
 
 /** One resolved fill/stroke/text color set for a semantic meaning. */
 export interface VisualPalette {

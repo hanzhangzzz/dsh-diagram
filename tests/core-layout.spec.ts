@@ -2,6 +2,10 @@ import { describe, expect, it } from "vitest";
 
 import type { DiagramSpec } from "../src/core/contracts.ts";
 import { layoutDiagram } from "../src/core/layout.ts";
+import {
+  pathsConflict,
+  segmentIntersectsBoxInterior,
+} from "./helpers/layout-geometry.ts";
 
 describe("deterministic diagram layout", () => {
   it("arranges report groups into full-width bands around aligned main columns", () => {
@@ -150,7 +154,69 @@ describe("deterministic diagram layout", () => {
       const previous = edge?.points[index - 1];
       const current = edge?.points[index];
       expect(previous?.x === current?.x || previous?.y === current?.y).toBe(true);
+      expect(
+        Math.abs((current?.x ?? 0) - (previous?.x ?? 0))
+          + Math.abs((current?.y ?? 0) - (previous?.y ?? 0)),
+      ).toBeGreaterThanOrEqual(16);
     }
+  });
+
+  it("routes report edges around unrelated nodes", () => {
+    const layout = layoutDiagram({
+      kind: "report",
+      title: "跨阶段证据链",
+      groups: [
+        { id: "source", label: "输入", placement: "main" },
+        { id: "middle", label: "处理中", placement: "main" },
+        { id: "target", label: "输出", placement: "main" },
+      ],
+      nodes: [
+        { id: "request", label: "请求", group: "source" },
+        { id: "processor", label: "处理器", group: "middle" },
+        { id: "result", label: "结果", group: "target" },
+      ],
+      edges: [{ from: "request", to: "result" }],
+    });
+    const edge = layout.edges[0];
+    const obstacle = layout.nodes.find((node) => node.id === "processor");
+
+    expect(edge).toBeDefined();
+    expect(obstacle).toBeDefined();
+    for (let index = 1; index < (edge?.points.length ?? 0); index += 1) {
+      expect(
+        segmentIntersectsBoxInterior(
+          edge?.points[index - 1] ?? { x: 0, y: 0 },
+          edge?.points[index] ?? { x: 0, y: 0 },
+          obstacle ?? { x: 0, y: 0, width: 0, height: 0 },
+        ),
+      ).toBe(false);
+    }
+  });
+
+  it("routes independent report edges without crossing or overlapping", () => {
+    const layout = layoutDiagram({
+      kind: "report",
+      title: "双通道证据链",
+      groups: [
+        { id: "input", label: "输入", placement: "main" },
+        { id: "output", label: "输出", placement: "main" },
+      ],
+      nodes: [
+        { id: "input-a", label: "输入 A", group: "input" },
+        { id: "input-b", label: "输入 B", group: "input" },
+        { id: "output-a", label: "输出 A", group: "output" },
+        { id: "output-b", label: "输出 B", group: "output" },
+      ],
+      edges: [
+        { from: "input-a", to: "output-b" },
+        { from: "input-b", to: "output-a" },
+      ],
+    });
+    const [first, second] = layout.edges;
+
+    expect(first).toBeDefined();
+    expect(second).toBeDefined();
+    expect(pathsConflict(first?.points ?? [], second?.points ?? [])).toBe(false);
   });
 
   it("keeps a sparse truthful report compact instead of inflating one column", () => {
@@ -291,6 +357,34 @@ describe("deterministic diagram layout", () => {
     // Node input order is preserved in the returned array.
     expect(layout.nodes.map((node) => node.id))
       .toEqual(["root", "gene", "env", "sub", "overt", "ata"]);
+  });
+
+  it("routes grouped architecture edges around intervening nodes", () => {
+    const layout = layoutDiagram({
+      kind: "architecture",
+      title: "处理链路",
+      groups: [{ id: "runtime", label: "运行时" }],
+      nodes: [
+        { id: "input", label: "输入", group: "runtime" },
+        { id: "worker", label: "处理器", group: "runtime" },
+        { id: "output", label: "输出", group: "runtime" },
+      ],
+      edges: [{ from: "input", to: "output" }],
+    });
+    const edge = layout.edges[0];
+    const obstacle = layout.nodes.find((node) => node.id === "worker");
+
+    expect(edge).toBeDefined();
+    expect(obstacle).toBeDefined();
+    for (let index = 1; index < (edge?.points.length ?? 0); index += 1) {
+      expect(
+        segmentIntersectsBoxInterior(
+          edge?.points[index - 1] ?? { x: 0, y: 0 },
+          edge?.points[index] ?? { x: 0, y: 0 },
+          obstacle ?? { x: 0, y: 0, width: 0, height: 0 },
+        ),
+      ).toBe(false);
+    }
   });
 
   it("keeps ungrouped architecture specs on the directed fallback", () => {

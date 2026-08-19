@@ -11,6 +11,11 @@ import {
   type PositionedGroup,
   type PositionedNode,
 } from "../src/core/layout.ts";
+import {
+  pathsConflict,
+  segmentIntersectsBoxInterior,
+  type Box,
+} from "./helpers/layout-geometry.ts";
 
 const REPORT_CASES: ReadonlyArray<{ name: string; spec: DiagramSpec }> = [
   {
@@ -138,6 +143,9 @@ describe("topic-independent report quality", () => {
       expectNoOverlaps(layout.groups);
       expectNoOverlaps(layout.nodes);
       expectNodesInsideGroups(layout);
+      expectEdgesAvoidUnrelatedNodes(layout);
+      expectIndependentEdgesDoNotConflict(layout);
+      expectRouteBudgets(layout);
       for (const edge of layout.edges) {
         for (let index = 1; index < edge.points.length; index += 1) {
           const previous = edge.points[index - 1];
@@ -150,22 +158,94 @@ describe("topic-independent report quality", () => {
   }
 });
 
-interface Box {
+interface IdentifiedBox extends Box {
   id: string;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
 }
 
-function expectNoOverlaps(boxes: ReadonlyArray<Box>): void {
+function expectEdgesAvoidUnrelatedNodes(layout: PositionedDiagram): void {
+  for (const edge of layout.edges) {
+    const obstacles = layout.nodes.filter(
+      (node) => node.id !== edge.from && node.id !== edge.to,
+    );
+    for (let index = 1; index < edge.points.length; index += 1) {
+      const start = edge.points[index - 1];
+      const end = edge.points[index];
+      expect(start).toBeDefined();
+      expect(end).toBeDefined();
+      for (const obstacle of obstacles) {
+        expect(
+          segmentIntersectsBoxInterior(
+            start ?? { x: 0, y: 0 },
+            end ?? { x: 0, y: 0 },
+            obstacle,
+          ),
+          `${edge.id}/${obstacle.id}`,
+        ).toBe(false);
+      }
+    }
+  }
+}
+
+function expectIndependentEdgesDoNotConflict(
+  layout: PositionedDiagram,
+): void {
+  for (let left = 0; left < layout.edges.length; left += 1) {
+    for (let right = left + 1; right < layout.edges.length; right += 1) {
+      const first = layout.edges[left];
+      const second = layout.edges[right];
+      expect(first).toBeDefined();
+      expect(second).toBeDefined();
+      if (
+        first === undefined
+        || second === undefined
+        || first.from === second.from
+        || first.from === second.to
+        || first.to === second.from
+        || first.to === second.to
+      ) {
+        continue;
+      }
+      expect(
+        pathsConflict(first.points, second.points),
+        `${first.id}/${second.id}`,
+      ).toBe(false);
+    }
+  }
+}
+
+function expectRouteBudgets(layout: PositionedDiagram): void {
+  for (const edge of layout.edges) {
+    expect(edge.points.length - 2, edge.id).toBeLessThanOrEqual(2);
+    const first = edge.points[0];
+    const last = edge.points.at(-1);
+    const directLength = Math.abs((last?.x ?? 0) - (first?.x ?? 0))
+      + Math.abs((last?.y ?? 0) - (first?.y ?? 0));
+    let routedLength = 0;
+    for (let index = 1; index < edge.points.length; index += 1) {
+      const previous = edge.points[index - 1];
+      const current = edge.points[index];
+      expect(previous).toBeDefined();
+      expect(current).toBeDefined();
+      const segmentLength = Math.abs((current?.x ?? 0) - (previous?.x ?? 0))
+        + Math.abs((current?.y ?? 0) - (previous?.y ?? 0));
+      routedLength += segmentLength;
+      expect(segmentLength, edge.id).toBeGreaterThanOrEqual(16);
+    }
+    expect(routedLength / directLength, edge.id).toBeLessThanOrEqual(1.35);
+  }
+}
+
+function expectNoOverlaps(boxes: ReadonlyArray<IdentifiedBox>): void {
   for (let left = 0; left < boxes.length; left += 1) {
     for (let right = left + 1; right < boxes.length; right += 1) {
       const first = boxes[left];
       const second = boxes[right];
       expect(first).toBeDefined();
       expect(second).toBeDefined();
-      expect(interiorsOverlap(first as Box, second as Box), `${first?.id}/${second?.id}`)
+      expect(
+        interiorsOverlap(first as IdentifiedBox, second as IdentifiedBox),
+        `${first?.id}/${second?.id}`,
+      )
         .toBe(false);
     }
   }

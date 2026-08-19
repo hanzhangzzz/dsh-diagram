@@ -82,7 +82,7 @@ Later sections use this short `dsh` form; substitute the `npx -y @deepseek-ai/ds
 4. Edit the diagram directly. **Saved** means the Host has completed a durable write.
 5. Export the result, or ask the Agent to call `diagram_read` before continuing from your manual changes.
 
-The plugin supports report boards, flowcharts, architecture diagrams, timelines, hierarchies, comparisons, and relationship diagrams. Evidence-heavy reports use deterministic full-width context/outcome bands, aligned main columns, semantic colors, orthogonal connectors, and converter-measured native text placement.
+The plugin supports report boards, flowcharts, architecture diagrams, timelines, hierarchies, comparisons, and relationship diagrams. Evidence-heavy reports use deterministic full-width context/outcome bands, aligned main columns, semantic colors, and converter-measured native text placement. Report and grouped-architecture connectors select stable node-boundary ports and orthogonal corridors while avoiding unrelated nodes, group headings, and independent routed edges.
 
 ## What it adds
 
