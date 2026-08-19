@@ -111,6 +111,6 @@
 - npm package: `dsh-diagram`
 - GitHub repository: `hanzhangzzz/dsh-diagram`
 - Discovery metadata: `dsh-plugin` topic and `dsh.bundle.patch`
-- Current release: `0.3.1`; the public update baseline used for its artifact verification is `0.3.0`.
+- Current release: `0.3.2`; the public update baseline used for its artifact verification is `0.3.1`.
 - Installable commit identity: 每个准备打包、提交和本地安装的开发候选都提升为唯一 prerelease 版本；不得以已有版本重新打包变化后的代码。公开 release commit 再把 prerelease 提升为对应正式 semver。
 - Upgrade evidence: 发布前用唯一 tarball 从上一公开版本执行 DSH `plugin update`，分别启动更新前后的 Web 并核对安装 manifest；公开发布后再用 npm `@latest` 复核 registry 更新路径。

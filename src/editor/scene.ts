@@ -12,6 +12,9 @@ import {
   type PersistedScene,
 } from "../core/contracts.ts";
 import {
+  EDGE_LABEL_BOX_HEIGHT,
+  EDGE_LABEL_FONT_SIZE,
+  edgeLabelBoxWidth,
   layoutDiagram,
   nodeTextStyleFor,
   REPORT_GROUP_TOP_PADDING,
@@ -272,20 +275,20 @@ export function diagramToElementSkeletons(
             {
               type: "text" as const,
               id: `text:edge:${edge.id}`,
-              // Vertical-ish edges get the label beside the line instead of
-              // on top of it; horizontal-ish edges keep it centered above.
-              ...(Math.abs(end.x - start.x) < Math.abs(end.y - start.y)
+              // The layout owns collision-aware anchors; fall back to the
+              // straight midpoint only for anchors it could not produce.
+              ...(edge.labelAnchor === undefined
                 ? {
                     x: (start.x + end.x) / 2 + 10,
                     y: (start.y + end.y) / 2 - 10,
                   }
                 : {
-                    x: (start.x + end.x) / 2 - Math.min(72, label.length * 4),
-                    y: (start.y + end.y) / 2 - 24,
+                    x: edge.labelAnchor.x - edgeLabelBoxWidth(label) / 2,
+                    y: edge.labelAnchor.y - EDGE_LABEL_BOX_HEIGHT / 2,
                   }),
               text: label,
               fontFamily: FONT_FAMILY.Helvetica,
-              fontSize: 14,
+              fontSize: EDGE_LABEL_FONT_SIZE,
               strokeColor: MUTED_COLOR,
             },
           ]),

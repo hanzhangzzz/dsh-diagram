@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
 
 import type { DiagramSpec } from "../src/core/contracts.ts";
-import { layoutDiagram } from "../src/core/layout.ts";
+import {
+  EDGE_LABEL_BOX_HEIGHT,
+  edgeLabelBoxWidth,
+  layoutDiagram,
+} from "../src/core/layout.ts";
 import {
   pathsConflict,
   segmentIntersectsBoxInterior,
@@ -571,5 +575,67 @@ describe("deterministic diagram layout", () => {
           ),
       ),
     ).toBe(true);
+  });
+});
+
+describe("edge label placement", () => {
+  const spec: DiagramSpec = {
+    kind: "architecture",
+    title: "标签避让",
+    nodes: [
+      { id: "a1", label: "上游一", group: "top" },
+      { id: "a2", label: "上游二", group: "top" },
+      { id: "b1", label: "中游一", group: "mid" },
+      { id: "b2", label: "中游二", group: "mid" },
+      { id: "c1", label: "下游一", group: "low" },
+      { id: "c2", label: "下游二", group: "low" },
+    ],
+    edges: [
+      { from: "a1", to: "b1", label: "短边标签一" },
+      { from: "a2", to: "b2", label: "短边标签二" },
+      { from: "b1", to: "b2", label: "同带相邻标签" },
+      { from: "a1", to: "c2", label: "跨带长边标签" },
+      { from: "b2", to: "c1", label: "交叉边标签" },
+      { from: "a2", to: "c1" },
+    ],
+    groups: [
+      { id: "top", label: "上层" },
+      { id: "mid", label: "中层" },
+      { id: "low", label: "下层" },
+    ],
+  };
+
+  it("anchors every labeled edge clear of all node boxes", () => {
+    const layout = layoutDiagram(spec);
+    for (const edge of layout.edges) {
+      if (edge.label === undefined) {
+        expect(edge.labelAnchor).toBeUndefined();
+        continue;
+      }
+      const anchor = edge.labelAnchor;
+      expect(anchor, `edge ${edge.id} needs a label anchor`).toBeDefined();
+      if (anchor === undefined) continue;
+      const width = edgeLabelBoxWidth(edge.label);
+      const rect = {
+        x: anchor.x - width / 2,
+        y: anchor.y - EDGE_LABEL_BOX_HEIGHT / 2,
+        width,
+        height: EDGE_LABEL_BOX_HEIGHT,
+      };
+      for (const node of layout.nodes) {
+        const overlapX = Math.min(rect.x + rect.width, node.x + node.width)
+          - Math.max(rect.x, node.x);
+        const overlapY = Math.min(rect.y + rect.height, node.y + node.height)
+          - Math.max(rect.y, node.y);
+        expect(
+          overlapX > 1 && overlapY > 1,
+          `edge ${edge.id} label overlaps node ${node.id}`,
+        ).toBe(false);
+      }
+    }
+  });
+
+  it("stays deterministic across runs", () => {
+    expect(layoutDiagram(spec)).toEqual(layoutDiagram(spec));
   });
 });

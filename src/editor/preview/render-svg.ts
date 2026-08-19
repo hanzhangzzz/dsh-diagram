@@ -3,6 +3,7 @@ import type {
   PersistedScene,
 } from "../../core/contracts.ts";
 import {
+  edgeLabelBoxWidth,
   layoutDiagram,
   nodeTextStyleFor,
   wrapPlainText,
@@ -101,11 +102,28 @@ export function renderSpecSvg(doc: Document, spec: DiagramSpec): SVGSVGElement {
       ? 0
       : summaryFontSize * DEFAULT_LINE_HEIGHT + 8)
     + 24;
+  const labelHalfWidths = diagram.edges
+    .filter((edge) => edge.label !== undefined && edge.labelAnchor !== undefined)
+    .map((edge) => ({
+      anchor: edge.labelAnchor as PositionedPoint,
+      half: edgeLabelBoxWidth(edge.label ?? "") / 2,
+    }));
   const bounds: Bounds = {
-    minX: 0,
+    minX: Math.min(
+      0,
+      ...labelHalfWidths.map(({ anchor, half }) => anchor.x - half),
+    ),
     minY: -headerHeight,
-    maxX: Math.max(diagram.width, 1),
-    maxY: Math.max(diagram.height, 1),
+    maxX: Math.max(
+      diagram.width,
+      1,
+      ...labelHalfWidths.map(({ anchor, half }) => anchor.x + half),
+    ),
+    maxY: Math.max(
+      diagram.height,
+      1,
+      ...labelHalfWidths.map(({ anchor }) => anchor.y + 12),
+    ),
   };
   const svg = svgRoot(doc, bounds);
   svg.style.background = SURFACE_COLOR;
@@ -508,10 +526,10 @@ function renderSpecEdges(
       ));
     }
     if (edge.label !== undefined) {
-      const middle = edgeMidpoint(edge.points);
+      const middle = edge.labelAnchor ?? edgeMidpoint(edge.points);
       group.append(specText(doc, {
         x: middle.x,
-        y: middle.y - 18,
+        y: edge.labelAnchor === undefined ? middle.y - 18 : middle.y - 7,
         text: edge.label,
         fontSize: 12,
         color: MUTED_COLOR,

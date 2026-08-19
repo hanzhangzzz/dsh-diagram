@@ -89,6 +89,8 @@ export interface PositionedEdge {
   to: string;
   label?: string | undefined;
   points: [PositionedPoint, PositionedPoint, ...PositionedPoint[]];
+  /** Center of the label box, chosen clear of node boxes; set iff label is. */
+  labelAnchor?: PositionedPoint | undefined;
 }
 
 /** A labeled node group with a deterministic canvas rectangle. */
@@ -785,14 +787,17 @@ function normalizeLayout(spec: DiagramSpec, raw: RawLayout): PositionedDiagram {
     x: round(node.x + offsetX),
     y: round(node.y + offsetY),
   }));
-  const edges = raw.edges.map((edge) => ({
-    ...edge,
-    points: requireEdgePoints(
-      edge.points.map((point) =>
-        roundPoint({ x: point.x + offsetX, y: point.y + offsetY }),
+  const edges = placeEdgeLabels(
+    nodes,
+    raw.edges.map((edge) => ({
+      ...edge,
+      points: requireEdgePoints(
+        edge.points.map((point) =>
+          roundPoint({ x: point.x + offsetX, y: point.y + offsetY }),
+        ),
       ),
-    ),
-  }));
+    })),
+  );
   const groups = rawGroups.map((group) => ({
     ...group,
     x: round(group.x + offsetX),
@@ -889,6 +894,181 @@ function measureNodeWithStyle(
  * sizing and by wrapPlainText, so measured boxes and inserted line breaks
  * always agree.
  */
+/** Font size every consumer renders edge labels with. */
+export const EDGE_LABEL_FONT_SIZE = 14;
+/** Estimated single-line edge label box height shared with placement tests. */
+export const EDGE_LABEL_BOX_HEIGHT = 18;
+const EDGE_LABEL_MAX_WIDTH = 220;
+const EDGE_LABEL_OFFSET = 14;
+const EDGE_LABEL_NODE_PENALTY = 10_000;
+const EDGE_LABEL_LABEL_PENALTY = 2_000;
+const EDGE_LABEL_EDGE_PENALTY = 120;
+const EDGE_LABEL_OWN_PENALTY = 40;
+
+/**
+ * Estimated edge label box width for one label text.
+ * @param label Edge label as authored.
+ * @returns Estimated width in canvas units, capped at the placement maximum.
+ */
+export function edgeLabelBoxWidth(label: string): number {
+  return Math.min(
+    textWidth(label, EDGE_LABEL_FONT_SIZE) + 8,
+    EDGE_LABEL_MAX_WIDTH,
+  );
+}
+
+interface LabelRect {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+/** Length of the part of one segment that crosses a rectangle (Liang-Barsky). */
+function segmentLengthInsideRect(
+  start: PositionedPoint,
+  end: PositionedPoint,
+  rect: LabelRect,
+): number {
+  const dx = end.x - start.x;
+  const dy = end.y - start.y;
+  let t0 = 0;
+  let t1 = 1;
+  const clips: readonly [number, number][] = [
+    [-dx, start.x - rect.x],
+    [dx, rect.x + rect.width - start.x],
+    [-dy, start.y - rect.y],
+    [dy, rect.y + rect.height - start.y],
+  ];
+  for (const [p, q] of clips) {
+    if (p === 0) {
+      if (q < 0) return 0;
+      continue;
+    }
+    const ratio = q / p;
+    if (p < 0) {
+      if (ratio > t1) return 0;
+      if (ratio > t0) t0 = ratio;
+    } else {
+      if (ratio < t0) return 0;
+      if (ratio < t1) t1 = ratio;
+    }
+  }
+  return Math.max(0, t1 - t0) * Math.hypot(dx, dy);
+}
+
+function rectOverlapArea(a: LabelRect, b: LabelRect): number {
+  const overlapX = Math.min(a.x + a.width, b.x + b.width) - Math.max(a.x, b.x);
+  const overlapY = Math.min(a.y + a.height, b.y + b.height)
+    - Math.max(a.y, b.y);
+  return overlapX > 0 && overlapY > 0 ? overlapX * overlapY : 0;
+}
+
+/**
+ * Chooses one label anchor per labeled edge, clear of node boxes.
+ *
+ * Deterministic: candidates are segment midpoints offset to either side,
+ * evaluated longest-segment-first, scored by node-box overlap (dominant),
+ * other-edge crossings, and own-path crossings; strict less-than keeps the
+ * first best candidate on ties.
+ *
+ * @param nodes Final positioned nodes.
+ * @param edges Final positioned edges in input order.
+ * @returns Edges with `labelAnchor` populated for every labeled edge.
+ */
+function placeEdgeLabels(
+  nodes: readonly PositionedNode[],
+  edges: readonly PositionedEdge[],
+): PositionedEdge[] {
+  const boxes: LabelRect[] = nodes.map((node) => ({
+    x: node.x,
+    y: node.y,
+    width: node.width,
+    height: node.height,
+  }));
+  const placed: LabelRect[] = [];
+  return edges.map((edge) => {
+    if (edge.label === undefined) return edge;
+    const width = edgeLabelBoxWidth(edge.label);
+    const height = EDGE_LABEL_BOX_HEIGHT;
+
+    const segments = edge.points
+      .slice(0, -1)
+      .map((start, index) => {
+        const end = edge.points[index + 1] as PositionedPoint;
+        return { start, end, length: Math.hypot(end.x - start.x, end.y - start.y) };
+      })
+      .filter((segment) => segment.length > 1);
+    segments.sort((a, b) => b.length - a.length);
+
+    let best: PositionedPoint | undefined;
+    let bestScore = Number.POSITIVE_INFINITY;
+    for (const [order, segment] of segments.entries()) {
+      const midX = (segment.start.x + segment.end.x) / 2;
+      const midY = (segment.start.y + segment.end.y) / 2;
+      const ux = (segment.end.x - segment.start.x) / segment.length;
+      const uy = (segment.end.y - segment.start.y) / segment.length;
+      const horizontalish = Math.abs(ux) >= Math.abs(uy);
+      const baseOffset = EDGE_LABEL_OFFSET
+        + (horizontalish ? height / 2 : width / 2);
+      for (const [tier, side] of [1, -1].flatMap((s) =>
+        [1, 2.6, 4.2].map((t) => [t, s] as const),
+      )) {
+        const offset = baseOffset * tier;
+        const candidate = {
+          x: midX - uy * offset * side,
+          y: midY + ux * offset * side,
+        };
+        const rect: LabelRect = {
+          x: candidate.x - width / 2,
+          y: candidate.y - height / 2,
+          width,
+          height,
+        };
+        // Prefer longer segments and closer tiers; keep ordering strict.
+        let score = order + (tier - 1) * 2;
+        for (const box of boxes) {
+          const area = rectOverlapArea(rect, box);
+          if (area > 0) score += EDGE_LABEL_NODE_PENALTY + area;
+        }
+        for (const other of placed) {
+          const area = rectOverlapArea(rect, other);
+          if (area > 0) score += EDGE_LABEL_LABEL_PENALTY + area;
+        }
+        for (const other of edges) {
+          const own = other.id === edge.id;
+          for (let i = 0; i < other.points.length - 1; i += 1) {
+            const inside = segmentLengthInsideRect(
+              other.points[i] as PositionedPoint,
+              other.points[i + 1] as PositionedPoint,
+              rect,
+            );
+            if (inside > 2) {
+              score += own ? EDGE_LABEL_OWN_PENALTY : EDGE_LABEL_EDGE_PENALTY;
+            }
+          }
+        }
+        if (score < bestScore) {
+          bestScore = score;
+          best = candidate;
+        }
+      }
+    }
+    const fallback = edge.points[Math.floor(edge.points.length / 2)];
+    const anchor = best ?? fallback ?? edge.points[0];
+    placed.push({
+      x: anchor.x - width / 2,
+      y: anchor.y - height / 2,
+      width,
+      height,
+    });
+    return {
+      ...edge,
+      labelAnchor: roundPoint({ x: anchor.x, y: anchor.y }),
+    };
+  });
+}
+
 export function textWidth(line: string, fontSize: number): number {
   let width = 0;
   for (const char of line) {
