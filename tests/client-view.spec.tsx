@@ -29,12 +29,11 @@ describe("DiagramView", () => {
 
 describe("client plugin", () => {
   it("registers one Chinese canvas tab in the conversation view slot", () => {
-    let registration: Record<string, unknown> | undefined;
-    let component: ComponentType<unknown> | undefined;
+    const registrations: [Record<string, unknown>, ComponentType<unknown>][] =
+      [];
     const register = vi.fn(
       (options: Record<string, unknown>, entry: ComponentType<unknown>) => {
-        registration = options;
-        component = entry;
+        registrations.push([options, entry]);
         return () => undefined;
       },
     );
@@ -43,16 +42,20 @@ describe("client plugin", () => {
         inject: vi.fn((_name: string, mount: () => unknown) => mount()),
         register,
       },
+      conversationEvents: { register: vi.fn(() => () => undefined) },
     } as unknown as Context;
 
     apply(context);
 
-    expect(registration).toMatchObject({
+    const viewRegistration = registrations.find(
+      ([options]) => options.name === "conversation.view",
+    );
+    expect(viewRegistration?.[0]).toMatchObject({
       name: "conversation.view",
       id: "diagram",
       order: 20,
       label: "画布",
     });
-    expect(component).toBe(DiagramView);
+    expect(viewRegistration?.[1]).toBe(DiagramView);
   });
 });

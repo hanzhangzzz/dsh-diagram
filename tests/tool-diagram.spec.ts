@@ -8,6 +8,7 @@ import {
   type DiagramSpec,
   type PersistedScene,
 } from "../src/core/contracts.ts";
+import { DIAGRAM_PREVIEW_META_KEY } from "../src/core/diagram-kinds.ts";
 import type {
   DiagramId,
   DiagramRecord,
@@ -115,6 +116,26 @@ describe("diagram tools", () => {
             },
           },
         },
+      },
+    });
+  });
+
+  it("projects replayable preview meta from the created identity", () => {
+    const [create] = createDiagramTools(host());
+    const value = {
+      diagramId: ID,
+      revision: "10000000-0000-4000-8000-000000000001",
+      title: SPEC.title,
+      kind: SPEC.kind,
+      canvasTab: "画布",
+    };
+
+    expect(create.output.presentationMeta?.(SPEC, value)).toEqual({
+      [DIAGRAM_PREVIEW_META_KEY]: {
+        diagramId: ID,
+        revision: "10000000-0000-4000-8000-000000000001",
+        title: SPEC.title,
+        kind: SPEC.kind,
       },
     });
   });

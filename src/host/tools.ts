@@ -13,6 +13,7 @@ import {
   type JsonValue,
   type PersistedScene,
 } from "../core/contracts.ts";
+import { createDiagramPreviewMeta } from "../core/diagram-kinds.ts";
 import {
   diagramIdSchema,
   type DiagramBusinessResult,
@@ -180,6 +181,13 @@ export function createDiagramTools(
         type: "text",
         text: `Created editable ${value.kind} diagram "${value.title}" in the current session. Open the 画布 tab to edit it. Diagram id: ${value.diagramId}; revision: ${value.revision}.`,
       }],
+      presentationMeta: (_args, value) =>
+        createDiagramPreviewMeta({
+          diagramId: value.diagramId,
+          revision: value.revision,
+          title: value.title,
+          kind: value.kind,
+        }),
     },
     async execute(args, exec) {
       exec.signal.throwIfAborted();

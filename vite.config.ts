@@ -19,8 +19,13 @@ export default defineConfig({
     cssCodeSplit: false,
     assetsDir: 'assets',
     rollupOptions: {
+      input: {
+        index: fileURLToPath(new URL('./src/editor/index.html', import.meta.url)),
+        preview: fileURLToPath(new URL('./src/editor/preview.html', import.meta.url)),
+      },
       output: {
-        entryFileNames: 'assets/editor.js',
+        entryFileNames: (chunk) =>
+          chunk.name === 'index' ? 'assets/editor.js' : 'assets/preview.js',
         chunkFileNames: 'assets/[name]-[hash].js',
         assetFileNames: 'assets/[name]-[hash][extname]',
       },

@@ -14,7 +14,7 @@ Turn any article already available in a DeepSeek Harness session into an editabl
 ## Why dsh-diagram?
 
 - **Editable, not disposable.** Continue working in a full Excalidraw canvas instead of accepting a static generated image.
-- **Built into the conversation.** Open the **Canvas** tab without leaving the DSH session that contains the article.
+- **Built into the conversation.** A live preview card lands in the chat flow right after creation, and the **Canvas** tab opens the full editor without leaving the DSH session.
 - **Safe autosave.** Revision-based compare-and-set prevents a stale editor from silently overwriting newer work.
 - **Ready to share.** Export `.excalidraw`, SVG, or PNG.
 - **Model context stays explicit.** Manual edits reach the Agent only when you ask it to call `diagram_read`.
@@ -91,6 +91,7 @@ The plugin supports report boards, flowcharts, architecture diagrams, timelines,
 | `diagram_create` | Creates a diagram for the current Agent Session from a compact semantic specification. Grouped architecture specs use banded layout; report specs use adaptive semantic regions, controlled tones, and deterministic editorial layout. |
 | `diagram_read` | Reads a bounded summary of the current editable scene into the conversation transcript. |
 | `canvas-diagram` skill | Built-in bilingual routing entry: selectable from the composer's `/` menu and matched by generic diagram requests, so the Agent reaches `diagram_create` without exact tool-name prompts. |
+| Inline chat preview | After `diagram_create`, a preview card appears in the conversation flow and always renders the diagram's current content — including later canvas edits — as a static SVG. |
 | **Canvas** tab | Opens the Excalidraw editor only when selected, keeping it out of the normal chat startup path. |
 | Diagram list | Switches between diagrams; collapses on desktop and becomes a selector on narrow screens. |
 | Autosave | Debounced durable writes with revision conflict protection and tab-local pending-draft recovery. |

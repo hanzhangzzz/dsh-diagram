@@ -4,7 +4,7 @@
 
 - Status: Active
 - Last refreshed: 2026-08-18
-- Primary product surfaces: DeepSeek Harness Web 的会话“画布”标签页，以及 `diagram_create` 的标准工具结果卡片。
+- Primary product surfaces: DeepSeek Harness Web 的会话“画布”标签页、`diagram_create` 的标准工具结果卡片，以及对话流中的 diagram 预览节点（`conversation.chat.node` keyed renderer + 同源 `preview.html` iframe）。
 - Evidence reviewed: 本地 `http://127.0.0.1:3080`；deepseek-harness 的 `packages/client/ui-conversation/src/client/contract/slots.ts`、`packages/client/ui-trajectory/src/client/index.ts`、`packages/client/ui-tool/src/client/contract/slots.ts`、`packages/client/AGENTS.md`；`cathrynlavery/diagram-design`；Excalidraw；社区 `dsh-web-ui`、`dsh-TUI` 与 `modlens` 插件。
 
 ## Brand
@@ -27,8 +27,8 @@
 
 ## Information architecture
 
-- Primary navigation: 在 DSH 会话中央现有标签组中新增“画布”；不新增前端路由，也不替换 conversation 根视图。
-- Core routes/screens: 无独立路由；画布标签包含当前会话 diagram 列表、选中 diagram 的编辑器和导出操作。
+- Primary navigation: 在 DSH 会话中央现有标签组中新增“画布”；不新增前端路由，也不替换 conversation 根视图。`diagram_create` 的 tool/result 通过 `presentationMeta` 携带 diagram 身份，Client 端注册的 conversation node 在对话流中就地渲染预览卡片。
+- Core routes/screens: 无独立路由；画布标签包含当前会话 diagram 列表、选中 diagram 的编辑器和导出操作。预览卡片挂载 `/diagram-assets/preview.html` 同源 iframe：有已保存 scene 时渲染 scene 的简化静态 SVG，未保存过则渲染同一确定性布局（`layoutDiagram`）的近似 SVG，两者都不加载 Excalidraw。
 - Content hierarchy: 当前 diagram 标题与保存状态优先，其次是画布；diagram 列表和导出操作保持次级。
 
 ## Design principles

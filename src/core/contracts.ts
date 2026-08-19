@@ -1,18 +1,8 @@
 import { z } from "zod";
 
-/** Diagram forms supported by the first plugin release. */
-export const DIAGRAM_KINDS = [
-  "flow",
-  "architecture",
-  "report",
-  "timeline",
-  "hierarchy",
-  "comparison",
-  "relationship",
-] as const;
+import { DIAGRAM_KINDS, type DiagramKind } from "./diagram-kinds.ts";
 
-/** A supported semantic diagram form. */
-export type DiagramKind = (typeof DIAGRAM_KINDS)[number];
+export { DIAGRAM_KINDS, type DiagramKind };
 
 /** Stable meanings used by the deterministic visual compiler. */
 export const DIAGRAM_TONES = [

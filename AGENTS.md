@@ -108,6 +108,16 @@ pnpm run test
 - 布局必须确定且保持输入顺序：flow 与无分组 architecture 为 Dagre LR，带分组的 architecture 使用等宽分区带状布局（组按输入顺序纵向堆叠、未分组节点为首个无容器带、行在共享内容宽度内居中换行、容器框由布局显式给出），hierarchy 为 TB，Dagre 使用 named multigraph 保留并行边；所有节点、边和分组统一经过 normalize、边界偏移和舍入。不能依赖 Dagre 返回顺序重排持久 id。
 - Host 在 init 时通过 `ctx.skills.register()` 注册 `canvas-diagram` 运行时 skill（模型与用户双向可调用），这是中文泛化提示路由到 `diagram_create` 的机制，也是输入框 `/` 命令的入口；disposer 由 `ctx.effect` 持有，`skills` 在 `static inject` 中为必需服务。删除该注册会让泛化图表请求重新流向工作区 skill。
 
+## 对话流内嵌预览（chat preview）
+
+- 预览身份链路是：`diagram_create` 的 `output.presentationMeta` 把 `{diagramId, revision, title, kind}` 写入持久化 `tool/result.meta`（`src/core/diagram-kinds.ts` 是唯一契约），Client 端 `ConversationNodeDefinition` match 该事件生成 `dsh-diagram-preview` chat node，卡片内挂载 `/diagram-assets/preview.html?sessionId&diagramId` 同源 iframe。不要为预览发明自定义 Session 事件：DSH persistence 的 `KNOWN_SESSION_EVENT_TYPES` 白名单会拒绝未知事件类型的日志。
+- `src/core/diagram-kinds.ts` 必须保持零运行时依赖（`DIAGRAM_KINDS` 单一事实源从 contracts 移到这里并 re-export）。client bundle 会内联它触达的一切；经它引入 zod 会破坏轻量 Client entry。
+- Client 端 match 只接受 `event.type === "tool/result"` 且 `event.surfaceOp === "append"` 且 meta 解析成功的事件：replace 投影可能重复同一 diagramId，而每个 `(kind, id)` 只允许一个 start。不能 import `isAppendSurfaceEvent` 等 DSH 运行时函数——client bundle purity 只允许 externals 列表内的运行时依赖，DSH 能力一律 type-only import 或走 Cordis service。
+- 预览节点组件不注册 locale namespace，因此 props 类型必须 `Omit<ChatNodeViewProps, "t">`；`sessionId` 来自 session-scope 标准 props，不接受 node data 里的会话身份。
+- `preview.html` 是独立 Vite 入口（`assets/preview.js`，rollup input `preview`），**不得 import Excalidraw、React 或任何 CSS**：有 scene 渲染 scene 的简化 SVG（`renderSceneSvg`），无 scene 用 `layoutDiagram` 渲染近似 SVG（`renderSpecSvg`），两条路径都走 DOM API 构建文本节点防注入。预览与编辑器共享 `src/editor/visual-style.ts`（无 Excalidraw 依赖的调色板与字号常量，从 scene.ts 移出）；改调色板只改这一处。
+- 预览页必须先 `list` 后 `get`（拿 Host validation policy 再解析），fork 会话或已删除的 diagram 显示“不存在”占位——fork 不复制 sidecar，这是预期行为不是 bug。传输失败保留重试按钮。
+- vite `entryFileNames` 必须保持 `index → assets/editor.js` 的稳定命名；smoke 和 Host 静态入口依赖它。
+
 ## 自动保存和 React 交互
 
 - 内容判等保留完整 `JSON.stringify(scene)` 字符串，不得改回 32-bit hash。真实 FNV 碰撞曾让第二次合法编辑被静默跳过。
