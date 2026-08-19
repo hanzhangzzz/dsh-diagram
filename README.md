@@ -101,7 +101,7 @@ The plugin does not fetch articles and does not inject UI into arbitrary website
 
 ## Compatibility
 
-| Item | Supported in `0.3.2` |
+| Item | Supported in `0.3.3` |
 | --- | --- |
 | DeepSeek Harness | `0.1.0-rc.6` |
 | Profile | `web` |
@@ -129,10 +129,10 @@ The release page publishes the same prebuilt tarball with a SHA-256 checksum:
 
 ```sh
 dsh plugin --profile web add \
-  https://github.com/hanzhangzzz/dsh-diagram/releases/download/v0.3.2/dsh-diagram-0.3.2.tgz
+  https://github.com/hanzhangzzz/dsh-diagram/releases/download/v0.3.3/dsh-diagram-0.3.3.tgz
 ```
 
-See [v0.3.2](https://github.com/hanzhangzzz/dsh-diagram/releases/tag/v0.3.2) for the checksum and release notes.
+See [v0.3.3](https://github.com/hanzhangzzz/dsh-diagram/releases/tag/v0.3.3) for the checksum and release notes.
 
 ### Remove
 

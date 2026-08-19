@@ -787,8 +787,14 @@ function normalizeLayout(spec: DiagramSpec, raw: RawLayout): PositionedDiagram {
     x: round(node.x + offsetX),
     y: round(node.y + offsetY),
   }));
+  const groups = rawGroups.map((group) => ({
+    ...group,
+    x: round(group.x + offsetX),
+    y: round(group.y + offsetY),
+  }));
   const edges = placeEdgeLabels(
     nodes,
+    groups,
     raw.edges.map((edge) => ({
       ...edge,
       points: requireEdgePoints(
@@ -798,11 +804,6 @@ function normalizeLayout(spec: DiagramSpec, raw: RawLayout): PositionedDiagram {
       ),
     })),
   );
-  const groups = rawGroups.map((group) => ({
-    ...group,
-    x: round(group.x + offsetX),
-    y: round(group.y + offsetY),
-  }));
   const maxX = Math.max(
     ...nodes.map((node) => node.x + node.width),
     ...edges.flatMap((edge) => edge.points.map((point) => point.x)),
@@ -901,7 +902,8 @@ export const EDGE_LABEL_BOX_HEIGHT = 18;
 const EDGE_LABEL_MAX_WIDTH = 220;
 const EDGE_LABEL_OFFSET = 14;
 const EDGE_LABEL_NODE_PENALTY = 10_000;
-const EDGE_LABEL_LABEL_PENALTY = 2_000;
+const EDGE_LABEL_LABEL_PENALTY = 5_000;
+const EDGE_LABEL_BORDER_PENALTY = 800;
 const EDGE_LABEL_EDGE_PENALTY = 120;
 const EDGE_LABEL_OWN_PENALTY = 40;
 
@@ -978,6 +980,7 @@ function rectOverlapArea(a: LabelRect, b: LabelRect): number {
  */
 function placeEdgeLabels(
   nodes: readonly PositionedNode[],
+  groups: readonly PositionedGroup[],
   edges: readonly PositionedEdge[],
 ): PositionedEdge[] {
   const boxes: LabelRect[] = nodes.map((node) => ({
@@ -986,6 +989,17 @@ function placeEdgeLabels(
     width: node.width,
     height: node.height,
   }));
+  // Group frame outlines as thin strips: labels may sit inside a band, but
+  // must not straddle its border line.
+  const borderStrips: LabelRect[] = groups.flatMap((group) => {
+    const t = 6;
+    return [
+      { x: group.x - t / 2, y: group.y - t / 2, width: group.width + t, height: t },
+      { x: group.x - t / 2, y: group.y + group.height - t / 2, width: group.width + t, height: t },
+      { x: group.x - t / 2, y: group.y - t / 2, width: t, height: group.height + t },
+      { x: group.x + group.width - t / 2, y: group.y - t / 2, width: t, height: group.height + t },
+    ];
+  });
   const placed: LabelRect[] = [];
   return edges.map((edge) => {
     if (edge.label === undefined) return edge;
@@ -1004,16 +1018,21 @@ function placeEdgeLabels(
     let best: PositionedPoint | undefined;
     let bestScore = Number.POSITIVE_INFINITY;
     for (const [order, segment] of segments.entries()) {
-      const midX = (segment.start.x + segment.end.x) / 2;
-      const midY = (segment.start.y + segment.end.y) / 2;
       const ux = (segment.end.x - segment.start.x) / segment.length;
       const uy = (segment.end.y - segment.start.y) / segment.length;
       const horizontalish = Math.abs(ux) >= Math.abs(uy);
       const baseOffset = EDGE_LABEL_OFFSET
         + (horizontalish ? height / 2 : width / 2);
-      for (const [tier, side] of [1, -1].flatMap((s) =>
-        [1, 2.6, 4.2].map((t) => [t, s] as const),
+      // Long corridor segments offer along-segment alternatives so two labels
+      // sharing one corridor can spread out instead of stacking.
+      const fractions = segment.length > 160 ? [0.5, 0.3, 0.7] : [0.5];
+      for (const [tier, side, fraction] of [1, -1].flatMap((s) =>
+        [1, 2.6, 4.2].flatMap((t) =>
+          fractions.map((f) => [t, s, f] as const),
+        ),
       )) {
+        const midX = segment.start.x + (segment.end.x - segment.start.x) * fraction;
+        const midY = segment.start.y + (segment.end.y - segment.start.y) * fraction;
         const offset = baseOffset * tier;
         const candidate = {
           x: midX - uy * offset * side,
@@ -1034,6 +1053,10 @@ function placeEdgeLabels(
         for (const other of placed) {
           const area = rectOverlapArea(rect, other);
           if (area > 0) score += EDGE_LABEL_LABEL_PENALTY + area;
+        }
+        for (const strip of borderStrips) {
+          const area = rectOverlapArea(rect, strip);
+          if (area > 0) score += EDGE_LABEL_BORDER_PENALTY + area;
         }
         for (const other of edges) {
           const own = other.id === edge.id;
