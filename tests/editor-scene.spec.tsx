@@ -63,6 +63,110 @@ const positioned: PositionedDiagram = {
 };
 
 describe("diagram scene compiler", () => {
+  it("renders stable semantic tones and solid outcomes independent of group order", () => {
+    const spec: DiagramSpec = {
+      kind: "report",
+      title: "Semantic color",
+      groups: [
+        {
+          id: "evidence",
+          label: "Evidence",
+          placement: "main",
+          tone: "evidence",
+        },
+        {
+          id: "gate",
+          label: "Gate",
+          placement: "main",
+          tone: "risk",
+        },
+        {
+          id: "target",
+          label: "Target",
+          placement: "bottom",
+          tone: "target",
+          direction: "row",
+        },
+      ],
+      nodes: [
+        { id: "proof", label: "Run log", group: "evidence" },
+        { id: "gap", label: "Missing", group: "gate" },
+        {
+          id: "block",
+          label: "Block merge",
+          group: "target",
+          variant: "solid",
+        },
+      ],
+      edges: [{ from: "proof", to: "gap" }, { from: "gap", to: "block" }],
+    };
+
+    const skeletons = diagramToElementSkeletons(layoutDiagram(spec));
+
+    expect(skeletons.find((element) => element.id === "group:evidence"))
+      .toMatchObject({ strokeColor: "#7e22ce", backgroundColor: "#fcfaff" });
+    expect(skeletons.find((element) => element.id === "group:gate"))
+      .toMatchObject({ strokeColor: "#dc2626", backgroundColor: "#fffafa" });
+    expect(skeletons.find((element) => element.id === "node:block"))
+      .toMatchObject({ strokeColor: "#166534", backgroundColor: "#166534" });
+    expect(skeletons.find((element) => element.id === "text:node:block"))
+      .toMatchObject({ strokeColor: "#ffffff" });
+  });
+
+  it("preserves semantic group tones outside the report recipe", () => {
+    const skeletons = diagramToElementSkeletons(layoutDiagram({
+      kind: "architecture",
+      title: "服务风险",
+      groups: [{ id: "risk", label: "风险边界", tone: "risk" }],
+      nodes: [{ id: "failure", label: "单点故障", group: "risk" }],
+      edges: [],
+    }));
+
+    expect(skeletons.find((element) => element.id === "group:risk"))
+      .toMatchObject({ strokeColor: "#dc2626", backgroundColor: "#fffafa" });
+  });
+
+  it("uses a readable report typography hierarchy instead of legacy node sizes", () => {
+    const spec: DiagramSpec = {
+      kind: "report",
+      title: "事实架构",
+      summary: "当前事实与目标闭环",
+      groups: [
+        { id: "facts", label: "1 事实面", placement: "main", tone: "evidence" },
+      ],
+      nodes: [
+        {
+          id: "detail",
+          label: "平台产物",
+          detail: "运行详情 · 断言 · 日志",
+          group: "facts",
+        },
+        {
+          id: "metric",
+          label: "117 条",
+          group: "facts",
+          variant: "compact",
+        },
+      ],
+      edges: [],
+    };
+
+    const skeletons = diagramToElementSkeletons(layoutDiagram(spec));
+
+    expect(skeletons.find((element) => element.id === "diagram:title"))
+      .toMatchObject({ fontSize: 36 });
+    expect(skeletons.find((element) => element.id === "diagram:summary"))
+      .toMatchObject({ fontSize: 18 });
+    expect(skeletons.find((element) => element.id === "text:group:facts"))
+      .toMatchObject({ fontSize: 20 });
+    expect(skeletons.find((element) => element.id === "text:node:detail"))
+      .toMatchObject({ fontSize: 18 });
+    expect(skeletons.find((element) => element.id === "detail:node:detail"))
+      .toMatchObject({ fontSize: 14 });
+    expect(skeletons.find((element) => element.id === "text:node:metric"))
+      .toMatchObject({ fontSize: 14 });
+  });
+
   it("builds stable editable ids and bound arrows from positioned semantics", () => {
     const first = diagramToElementSkeletons(positioned);
     const second = diagramToElementSkeletons(positioned);
@@ -142,6 +246,92 @@ describe("diagram scene compiler", () => {
 
     expect(scene.elements.length).toBeGreaterThanOrEqual(5);
     expect(scene.files).toEqual({});
+  });
+
+  it("centers the converter-measured label and detail as one native text cluster", () => {
+    const spec: DiagramSpec = {
+      kind: "flow",
+      title: "Native text",
+      nodes: [
+        { id: "fact", label: "真实尺寸", detail: "双击前后不跳位" },
+      ],
+      edges: [],
+    };
+    const layout = layoutDiagram(spec);
+    const positionedNode = layout.nodes[0];
+    const scene = createInitialScene(spec, DEFAULT_DIAGRAM_VALIDATION_POLICY);
+    const rectangle = scene.elements.find((element) => element.id === "node:fact");
+    const label = scene.elements.find((element) => element.id === "text:node:fact");
+    const detail = scene.elements.find((element) => element.id === "detail:node:fact");
+
+    expect(positionedNode).toBeDefined();
+    expect(rectangle).toBeDefined();
+    expect(label).toMatchObject({
+      textAlign: "center",
+      verticalAlign: "middle",
+      width: 100,
+      height: 24,
+    });
+    expect(detail).toMatchObject({
+      textAlign: "center",
+      verticalAlign: "middle",
+      width: 100,
+      height: 24,
+    });
+    expect(label?.x).toBe(
+      (rectangle?.x ?? 0) + ((rectangle?.width ?? 0) - 100) / 2,
+    );
+    expect(detail?.x).toBe(
+      (rectangle?.x ?? 0) + ((rectangle?.width ?? 0) - 100) / 2,
+    );
+    const clusterHeight = 24 + 4 + 24;
+    const clusterY = (rectangle?.y ?? 0)
+      + ((rectangle?.height ?? 0) - clusterHeight) / 2;
+    expect(label?.y).toBe(clusterY);
+    expect(detail?.y).toBe(clusterY + 24 + 4);
+  });
+
+  it("centers report headings from converter-measured native text geometry", () => {
+    const spec: DiagramSpec = {
+      kind: "report",
+      title: "发布事实架构",
+      summary: "事实 → 证据 → Merge 门",
+      groups: [
+        { id: "facts", label: "1 事实面", placement: "main" },
+      ],
+      nodes: [{ id: "fact", label: "当前行为", group: "facts" }],
+      edges: [],
+    };
+    const layout = layoutDiagram(spec);
+    const group = layout.groups[0];
+    const scene = createInitialScene(spec, DEFAULT_DIAGRAM_VALIDATION_POLICY);
+    const title = scene.elements.find((element) => element.id === "diagram:title");
+    const summary = scene.elements.find(
+      (element) => element.id === "diagram:summary",
+    );
+    const groupLabel = scene.elements.find(
+      (element) => element.id === "text:group:facts",
+    );
+
+    expect(group).toBeDefined();
+    expect(title).toMatchObject({
+      x: (layout.width - 100) / 2,
+      y: -52,
+      textAlign: "center",
+      verticalAlign: "middle",
+    });
+    expect(summary).toMatchObject({
+      x: (layout.width - 100) / 2,
+      y: -16,
+      textAlign: "center",
+      verticalAlign: "middle",
+    });
+    expect(groupLabel).toMatchObject({
+      x: (group?.x ?? 0) + ((group?.width ?? 0) - 100) / 2,
+      y: (group?.y ?? 0) + (64 - 24) / 2,
+      textAlign: "center",
+      verticalAlign: "middle",
+    });
   });
 });
 

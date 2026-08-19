@@ -43,6 +43,7 @@ vi.mock("@excalidraw/excalidraw", async () => {
           getSceneElements: () => [],
           getAppState: () => ({}),
           getFiles: () => ({}),
+          scrollToContent: vi.fn(),
         });
       }, [props.excalidrawAPI]);
       return React.createElement("div", { "data-testid": "excalidraw-loaded" });
@@ -155,18 +156,20 @@ describe("pending diagram draft recovery", () => {
         pendingScene.appState,
         pendingScene.files,
       );
-      globalThis.dispatchEvent(new Event("pagehide"));
     });
-    expect(
-      readPendingDiagramDraft(
-        storage,
-        "session-1",
-        DEFAULT_DIAGRAM_VALIDATION_POLICY,
-      ),
-    ).toMatchObject({
-      diagramId,
-      expectedRevision: originalRevision,
-      scene: pendingScene,
+    await waitFor(() => {
+      act(() => globalThis.dispatchEvent(new Event("pagehide")));
+      expect(
+        readPendingDiagramDraft(
+          storage,
+          "session-1",
+          DEFAULT_DIAGRAM_VALIDATION_POLICY,
+        ),
+      ).toMatchObject({
+        diagramId,
+        expectedRevision: originalRevision,
+        scene: pendingScene,
+      });
     });
     firstMount.unmount();
 
@@ -196,8 +199,10 @@ describe("pending diagram draft recovery", () => {
       originalRevision,
       pendingScene,
     );
-    expect(excalidrawHarness.initialData?.elements).toEqual(
-      pendingScene.elements,
+    await waitFor(() =>
+      expect(excalidrawHarness.initialData?.elements).toEqual(
+        pendingScene.elements,
+      ),
     );
     await waitFor(() => expect(storage.length).toBe(0));
   });

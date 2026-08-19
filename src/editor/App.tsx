@@ -107,6 +107,7 @@ export function DiagramApp({
   const autosaveRef = useRef<SceneAutosaveController | null>(null);
   const selectionEpochRef = useRef(0);
   const pendingDraftRef = useRef<PendingDiagramDraft | null>(null);
+  const pendingViewportFitRef = useRef(false);
   const persistPendingDraft = useCallback(
     (diagramId: string, controller: SceneAutosaveController) => {
       const draft = controller.localDraft;
@@ -258,6 +259,7 @@ export function DiagramApp({
           return;
         }
         autosaveRef.current = controller;
+        pendingViewportFitRef.current = true;
         setRecord(nextRecord);
         setScene(nextScene);
         setSceneEpoch((value) => value + 1);
@@ -312,6 +314,27 @@ export function DiagramApp({
     } as unknown as ExcalidrawInitialDataState;
   }, [scene, sceneEpoch]);
 
+  const fitPendingViewport = useCallback(
+    (elements: readonly OrderedExcalidrawElement[]) => {
+      const api = apiRef.current;
+      if (
+        !pendingViewportFitRef.current ||
+        api === null ||
+        elements.length === 0
+      ) {
+        return;
+      }
+      pendingViewportFitRef.current = false;
+      api.scrollToContent(elements, {
+        animate: false,
+        fitToViewport: true,
+        maxZoom: 1,
+        viewportZoomFactor: 0.9,
+      });
+    },
+    [],
+  );
+
   const onCanvasChange = useCallback(
     (
       elements: readonly OrderedExcalidrawElement[],
@@ -330,15 +353,17 @@ export function DiagramApp({
         return;
       }
       setCanvasError(null);
+      fitPendingViewport(elements);
       autosaveRef.current?.accept(normalized.scene);
     },
-    [limits.validationPolicy],
+    [fitPendingViewport, limits.validationPolicy],
   );
 
   const onEditorReady = useCallback((api: ExcalidrawImperativeAPI) => {
     apiRef.current = api;
+    fitPendingViewport(api.getSceneElements());
     setEditorReady(true);
-  }, []);
+  }, [fitPendingViewport]);
 
   const exportCurrent = useCallback(
     async (format: DiagramExportFormat, titleSuffix = "") => {
@@ -391,6 +416,7 @@ export function DiagramApp({
         diagramId: nextRecord.id,
       });
       pendingDraftRef.current = null;
+      pendingViewportFitRef.current = true;
       setRecord(nextRecord);
       setScene(nextScene);
       setSceneEpoch((value) => value + 1);
@@ -749,6 +775,8 @@ function diagramKindLabel(kind: DiagramSummary["kind"]): string {
       return "流程";
     case "architecture":
       return "架构";
+    case "report":
+      return "报告";
     case "timeline":
       return "时间线";
     case "hierarchy":

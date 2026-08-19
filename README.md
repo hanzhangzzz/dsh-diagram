@@ -18,6 +18,7 @@ Turn any article already available in a DeepSeek Harness session into an editabl
 - **Safe autosave.** Revision-based compare-and-set prevents a stale editor from silently overwriting newer work.
 - **Ready to share.** Export `.excalidraw`, SVG, or PNG.
 - **Model context stays explicit.** Manual edits reach the Agent only when you ask it to call `diagram_read`.
+- **Adaptive, evidence-bound structure.** The built-in skill selects a diagram recipe from the source relationships, preserves stated facts and uncertainty, and prefers a smaller truthful diagram over invented completeness.
 
 ## Quick install
 
@@ -81,13 +82,13 @@ Later sections use this short `dsh` form; substitute the `npx -y @deepseek-ai/ds
 4. Edit the diagram directly. **Saved** means the Host has completed a durable write.
 5. Export the result, or ask the Agent to call `diagram_read` before continuing from your manual changes.
 
-The plugin supports flowcharts, architecture diagrams, timelines, hierarchies, comparisons, and relationship diagrams.
+The plugin supports report boards, flowcharts, architecture diagrams, timelines, hierarchies, comparisons, and relationship diagrams. Evidence-heavy reports use deterministic full-width context/outcome bands, aligned main columns, semantic colors, orthogonal connectors, and converter-measured native text placement.
 
 ## What it adds
 
 | Surface | Behavior |
 | --- | --- |
-| `diagram_create` | Creates a diagram for the current Agent Session from a compact semantic specification. Grouped architecture specs get a banded two-dimensional layout with per-group colors. |
+| `diagram_create` | Creates a diagram for the current Agent Session from a compact semantic specification. Grouped architecture specs use banded layout; report specs use adaptive semantic regions, controlled tones, and deterministic editorial layout. |
 | `diagram_read` | Reads a bounded summary of the current editable scene into the conversation transcript. |
 | `canvas-diagram` skill | Built-in bilingual routing entry: selectable from the composer's `/` menu and matched by generic diagram requests, so the Agent reaches `diagram_create` without exact tool-name prompts. |
 | **Canvas** tab | Opens the Excalidraw editor only when selected, keeping it out of the normal chat startup path. |
@@ -99,7 +100,7 @@ The plugin does not fetch articles and does not inject UI into arbitrary website
 
 ## Compatibility
 
-| Item | Supported in `0.2.0` |
+| Item | Supported in `0.2.1-dev.1` source candidate |
 | --- | --- |
 | DeepSeek Harness | `0.1.0-rc.6` |
 | Profile | `web` |
@@ -116,12 +117,12 @@ The npm package has no install lifecycle scripts. Installation adds a bundle to 
 ### Update
 
 ```sh
-dsh plugin --profile web update dsh-diagram
+dsh plugin --profile web update dsh-diagram --latest
 ```
 
 Restart DSH Web after the update.
 
-### Install the exact GitHub Release artifact
+### Install the exact latest public GitHub Release artifact
 
 The release page publishes the same prebuilt tarball with a SHA-256 checksum:
 
@@ -195,7 +196,7 @@ Install the generated tarball from a DeepSeek Harness checkout:
 
 ```sh
 cd /path/to/deepseek-harness
-pnpm dsh plugin --profile web add /absolute/path/to/dsh-diagram-0.1.1.tgz
+pnpm dsh plugin --profile web add /absolute/path/to/dsh-diagram-VERSION.tgz
 pnpm dsh --profile web --dump-config
 pnpm dsh web
 ```
@@ -209,6 +210,21 @@ pnpm run bundle
 pnpm pack --json
 pnpm run smoke:dsh-install
 ```
+
+Every installable development commit must use a new prerelease version; never
+repack changed code under an existing version. Before a public release, pack
+once and exercise the same DSH profile update path from the previous public
+version to that exact tarball:
+
+```sh
+pnpm run smoke:dsh-install -- \
+  --tarball /absolute/path/to/dsh-diagram-VERSION.tgz \
+  --upgrade-from PREVIOUS_PUBLIC_VERSION
+```
+
+This verifies the client-side update mechanics and both pre/post-update Web
+boots without publishing the candidate. Registry discovery through `@latest`
+is verified separately after the version is publicly released.
 
 See [`DESIGN.md`](./DESIGN.md) for the product and implementation decisions.
 

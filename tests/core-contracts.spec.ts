@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   DEFAULT_DIAGRAM_VALIDATION_POLICY,
+  DIAGRAM_KINDS,
   SCENE_PROTOCOL_SECURITY_LIMITS,
   createDiagramSpecSchema,
   createSceneSchema,
@@ -36,23 +37,145 @@ describe("validation policy", () => {
 });
 
 describe("DiagramSpec validation", () => {
+  it("accepts a report with semantic regions, tones, and card variants", () => {
+    const schema = createDiagramSpecSchema(DEFAULT_DIAGRAM_VALIDATION_POLICY);
+    const spec = {
+      kind: "report",
+      title: "测试事实架构",
+      summary: "资产覆盖广；Merge 前尚未形成自动测试护栏",
+      groups: [
+        {
+          id: "governance",
+          label: "平台 E2E 强度治理",
+          placement: "top",
+          direction: "row",
+          tone: "definition",
+        },
+        {
+          id: "assets",
+          label: "测试资产",
+          placement: "main",
+          direction: "column",
+          tone: "definition",
+        },
+        {
+          id: "gate",
+          label: "Merge 门",
+          placement: "main",
+          direction: "column",
+          tone: "risk",
+        },
+        {
+          id: "target",
+          label: "目标闭环",
+          placement: "bottom",
+          direction: "row",
+          tone: "target",
+        },
+      ],
+      nodes: [
+        {
+          id: "contract",
+          label: "9 条强合同",
+          group: "governance",
+          tone: "definition",
+          variant: "compact",
+        },
+        {
+          id: "pytest",
+          label: "pytest",
+          detail: "517 文件 · 6682 函数",
+          group: "assets",
+        },
+        {
+          id: "missing",
+          label: "未执行",
+          detail: "完整 pytest · Vitest · E2E",
+          group: "gate",
+          tone: "risk",
+        },
+        {
+          id: "block",
+          label: "阻塞 Merge",
+          group: "target",
+          tone: "target",
+          variant: "solid",
+        },
+      ],
+      edges: [
+        { from: "pytest", to: "missing" },
+        { from: "missing", to: "block" },
+      ],
+    } as const;
+
+    expect(schema.parse(spec)).toEqual(spec);
+  });
+
+  it("rejects a report without a main reading region", () => {
+    const schema = createDiagramSpecSchema(DEFAULT_DIAGRAM_VALIDATION_POLICY);
+    const result = schema.safeParse({
+      kind: "report",
+      title: "No main region",
+      groups: [
+        { id: "context", label: "Context", placement: "top" },
+        { id: "outcome", label: "Outcome", placement: "bottom" },
+      ],
+      nodes: [
+        { id: "source", label: "Source", group: "context" },
+        { id: "target", label: "Target", group: "outcome" },
+      ],
+      edges: [{ from: "source", to: "target" }],
+    });
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues).toContainEqual(
+        expect.objectContaining({
+          message: "Report requires at least one main group",
+          path: ["groups"],
+        }),
+      );
+    }
+  });
+
+  it("rejects report nodes that have no semantic region", () => {
+    const schema = createDiagramSpecSchema(DEFAULT_DIAGRAM_VALIDATION_POLICY);
+    const result = schema.safeParse({
+      kind: "report",
+      title: "Ungrouped fact",
+      groups: [{ id: "facts", label: "Facts", placement: "main" }],
+      nodes: [
+        { id: "grouped", label: "Grouped", group: "facts" },
+        { id: "orphan", label: "Orphan" },
+      ],
+      edges: [],
+    });
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues).toContainEqual(
+        expect.objectContaining({
+          message: "Report nodes must belong to a group",
+          path: ["nodes", 1, "group"],
+        }),
+      );
+    }
+  });
+
   it("accepts each supported diagram kind through one strict public schema", () => {
     const schema = createDiagramSpecSchema(DEFAULT_DIAGRAM_VALIDATION_POLICY);
-    const kinds = [
-      "flow",
-      "architecture",
-      "timeline",
-      "hierarchy",
-      "comparison",
-      "relationship",
-    ] as const;
-
-    for (const kind of kinds) {
+    for (const kind of DIAGRAM_KINDS) {
+      const reportFields = kind === "report"
+        ? {
+            groups: [{ id: "main", label: "Main", placement: "main" as const }],
+            nodes: [{ id: "source", label: "Source", group: "main" }],
+          }
+        : { nodes: [{ id: "source", label: "Source" }] };
       expect(
         schema.parse({
           kind,
           title: `${kind} diagram`,
-          nodes: [{ id: "source", label: "Source" }],
+          ...reportFields,
           edges: [],
         }),
       ).toMatchObject({ kind });

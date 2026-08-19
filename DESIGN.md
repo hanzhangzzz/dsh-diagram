@@ -3,7 +3,7 @@
 ## Source of truth
 
 - Status: Active
-- Last refreshed: 2026-08-14
+- Last refreshed: 2026-08-18
 - Primary product surfaces: DeepSeek Harness Web 的会话“画布”标签页，以及 `diagram_create` 的标准工具结果卡片。
 - Evidence reviewed: 本地 `http://127.0.0.1:3080`；deepseek-harness 的 `packages/client/ui-conversation/src/client/contract/slots.ts`、`packages/client/ui-trajectory/src/client/index.ts`、`packages/client/ui-tool/src/client/contract/slots.ts`、`packages/client/AGENTS.md`；`cathrynlavery/diagram-design`；Excalidraw；社区 `dsh-web-ui`、`dsh-TUI` 与 `modlens` 插件。
 
@@ -40,10 +40,21 @@
 - Loading boundary: DSH 目前只为一个 Client 插件提供单个 `client.js`，而 Excalidraw 需要动态资源。轻量 Client 仅注册标签页，选中标签后才由同包、同源 iframe 加载独立 editor 资源，避免把完整编辑器加入每次 Web 启动路径。
 - Iframe trust: editor 与 DSH 同源并运行同一 bundle 的受信代码；iframe 不作为安全隔离边界。插件在加载时要求 WebServer 物理绑定 `127.0.0.1`，并由静态资源路径白名单、严格 CSP、插件自有的有界 RPC 路由、loopback Host/Origin 检查、Host 端 schema 校验、Session 生命周期指纹和 diagram 归属校验共同约束访问。
 
+## Generation quality contract
+
+- North-star standard, not one fixed template: `LiWork 测试事实架构` 的信息层级、留白、语义配色、可读密度和原生可编辑文字是质量基线；不同主题仍选择最能表达其关系的 report、flow、timeline、hierarchy、comparison、relationship 或 architecture 配方，不能把所有内容硬套成五栏报告。
+- Truth before density: Agent 只使用当前上下文中可支持的事实，不为满足节点数量而补造信息。输入很短、关系不明确或互相矛盾时，生成较小的忠实图，必要时在摘要中标明信息边界；“简单但真实”优先于“完整但失真”。
+- Compact semantic interface: 模型仍只提交紧凑 `DiagramSpec`。新增表现能力必须使用受控的语义角色、区域和色调，不接受像素坐标、任意颜色或完整 Excalidraw JSON。
+- Adaptive recipes: report 配方支持顶部跨域带、主体阶段列和底部结论带；其他 kind 保留各自的阅读方向。配方根据文字和节点数量确定尺寸、换行和留白，不依赖模型猜坐标。
+- Semantic color: definition、execution、external、evidence、risk、target 和 neutral 使用稳定色义；颜色由语义字段决定，不再由分组数组下标决定。颜色只是冗余编码，标题和正文仍必须独立表达含义。
+- Native text geometry: 文本先由 Excalidraw 官方转换器取得真实宽高，再按容器和文字簇重新定位。首次打开、双击进入编辑、退出编辑和导出不得引起文字跳位。
+- Backward compatibility: 已持久化的旧 `DiagramSpec` 没有新增字段时继续按原 kind 和布局生成；scene 一旦存在仍是权威数据，生成器升级不得重排用户已编辑 scene。
+- Quality gate: 确定性测试检查顺序、边界、重叠和可读密度；真实 Excalidraw 测试检查文本几何稳定；真实 DSH Web 用跨主题样本检查生成、打开、编辑、刷新和导出。随机模型输出不能替代确定性编译器门禁。
+
 ## Visual language
 
-- Color: 插件外层控件只使用 DSH 现有 CSS 变量；生成的 diagram 使用白色背景、近黑文字、低饱和中性色和单一强调色。
-- Typography: UI 继承 DSH 字体；diagram 默认使用 Excalidraw 可用的清晰无衬线字体，并限制节点文字长度。
+- Color: 插件外层控件只使用 DSH 现有 CSS 变量；生成的 diagram 使用白色背景、近黑文字、低饱和表面色和受控语义色。普通图保持克制，report 可同时使用多种语义色，但同一含义必须稳定且不能只靠颜色区分。
+- Typography: UI 继承 DSH 字体；diagram 默认使用 Excalidraw 可用的清晰无衬线字体，并限制节点文字长度。标题、分区、节点标题、正文和注释形成稳定字号层级，容器内文字按实际渲染尺寸居中。
 - Spacing/layout rhythm: 外层控件沿用 DSH 的间距变量；diagram 保持中等信息密度、稳定留白和清晰分组。
 - Shape/radius/elevation: 外层沿用 DSH 控件；diagram 采用低粗糙度矩形、圆角矩形、箭头和必要的分组边界。
 - Motion: 只保留编辑器原生交互和短暂保存状态反馈；不添加装饰动画。
@@ -99,3 +110,5 @@
 - npm package: `dsh-diagram`
 - GitHub repository: `hanzhangzzz/dsh-diagram`
 - Discovery metadata: `dsh-plugin` topic and `dsh.bundle.patch`
+- Installable commit identity: 每个准备打包、提交和本地安装的开发候选都提升为唯一 prerelease 版本；不得以已有版本重新打包变化后的代码。公开 release commit 再把 prerelease 提升为对应正式 semver。
+- Upgrade evidence: 发布前用唯一 tarball 从上一公开版本执行 DSH `plugin update`，分别启动更新前后的 Web 并核对安装 manifest；公开发布后再用 npm `@latest` 复核 registry 更新路径。

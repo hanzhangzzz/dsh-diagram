@@ -82,6 +82,43 @@ function execution(
 }
 
 describe("diagram tools", () => {
+  it("advertises report regions and semantic presentation in diagram_create", () => {
+    const [create] = createDiagramTools(host());
+
+    expect(create.parameters).toMatchObject({
+      properties: {
+        kind: { enum: expect.arrayContaining(["report"]) },
+        nodes: {
+          items: {
+            properties: {
+              tone: {
+                enum: [
+                  "neutral",
+                  "definition",
+                  "execution",
+                  "external",
+                  "evidence",
+                  "risk",
+                  "target",
+                ],
+              },
+              variant: { enum: ["card", "compact", "solid"] },
+            },
+          },
+        },
+        groups: {
+          items: {
+            properties: {
+              tone: { enum: expect.arrayContaining(["risk", "target"]) },
+              placement: { enum: ["top", "main", "bottom"] },
+              direction: { enum: ["row", "column"] },
+            },
+          },
+        },
+      },
+    });
+  });
+
   it("requires an owning agent and rejects unknown DiagramSpec fields", async () => {
     const service = host();
     const [create] = createDiagramTools(service);

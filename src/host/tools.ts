@@ -2,7 +2,11 @@ import type { SessionHeader } from "@deepseek-ai/dsh-session";
 import { defineTool, type ToolDefinition } from "@deepseek-ai/dsh-tools";
 
 import {
+  DIAGRAM_NODE_VARIANTS,
   DIAGRAM_KINDS,
+  DIAGRAM_TONES,
+  REPORT_GROUP_DIRECTIONS,
+  REPORT_GROUP_PLACEMENTS,
   createDiagramSpecSchema,
   type DiagramSpec,
   type DiagramValidationPolicy,
@@ -81,9 +85,10 @@ export function createDiagramTools(
   const create = defineTool({
     name: "diagram_create",
     description:
-      "把当前会话中的文章或讨论生成为可编辑的画布图表（架构图/流程图/时间线/层级图/对比图/关系图）。"
+      "把当前会话中的文章或讨论生成为可编辑的画布图表（报告图/架构图/流程图/时间线/层级图/对比图/关系图）。"
       + "Create an editable diagram for the current article or discussion. Supply a compact semantic graph;"
       + " the plugin lays it out deterministically. The result appears in the current DSH session's 画布 tab."
+      + " Use only facts supported by the current context; prefer a smaller truthful graph over invented completeness."
       + " Prefer this over writing standalone SVG or Mermaid files when the user wants an editable diagram.",
     parameters: {
       kind: {
@@ -114,6 +119,16 @@ export function createDiagramTools(
             detail: { type: "string" },
             group: { type: "string" },
             emphasis: { type: "boolean" },
+            tone: {
+              type: "string",
+              enum: [...DIAGRAM_TONES],
+              description: "Stable semantic color meaning; inherit the group tone when omitted.",
+            },
+            variant: {
+              type: "string",
+              enum: [...DIAGRAM_NODE_VARIANTS],
+              description: "Controlled hierarchy: card, compact metric/badge, or solid focal outcome.",
+            },
           },
         },
       },
@@ -140,6 +155,21 @@ export function createDiagramTools(
           properties: {
             id: { type: "string", required: true },
             label: { type: "string", required: true },
+            tone: {
+              type: "string",
+              enum: [...DIAGRAM_TONES],
+              description: "Stable semantic color shared by this region and its nodes.",
+            },
+            placement: {
+              type: "string",
+              enum: [...REPORT_GROUP_PLACEMENTS],
+              description: "For report diagrams: a full-width top/bottom band or a main-stage column.",
+            },
+            direction: {
+              type: "string",
+              enum: [...REPORT_GROUP_DIRECTIONS],
+              description: "For report diagrams: deterministic reading direction inside this region.",
+            },
           },
         },
       },

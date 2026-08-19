@@ -18,6 +18,7 @@
 - **自动保存不静默覆盖。** 基于 revision 的 compare-and-set 会阻止旧编辑器覆盖新版本。
 - **可以直接交付。** 支持导出 `.excalidraw`、SVG 和 PNG。
 - **模型上下文显式可控。** 只有明确要求 Agent 调用 `diagram_read`，手工修改才会进入对话记录。
+- **结构自适应且受事实约束。** 内置 skill 根据原文关系选择图表配方，保留事实与不确定性；信息不足时宁可生成更小的忠实图，也不补造“完整性”。
 
 ## 快速安装
 
@@ -81,13 +82,13 @@ dsh web
 4. 直接修改画布。“已保存”表示 Host 已完成持久化写入。
 5. 导出结果；如果希望 Agent 继续处理手工修改后的内容，先让它调用 `diagram_read`。
 
-插件支持流程图、架构图、时间线、层级图、对比图和关系图。
+插件支持报告图、流程图、架构图、时间线、层级图、对比图和关系图。信息密集的报告图采用确定性的顶部/底部通栏、对齐主体列、语义配色、正交连线和基于 Excalidraw 实际测量尺寸的原生文字定位。
 
 ## 插件增加了什么
 
 | 界面或能力 | 行为 |
 | --- | --- |
-| `diagram_create` | 根据紧凑的语义描述，为当前 Agent Session 创建 diagram。带分组的 architecture 采用分区带状二维布局并按组着色。 |
+| `diagram_create` | 根据紧凑的语义描述，为当前 Agent Session 创建 diagram。带分组的 architecture 使用分区带状布局；report 使用自适应语义区域、受控色调和确定性编辑式布局。 |
 | `diagram_read` | 把当前可编辑 scene 的受限摘要读取到正常对话记录中。 |
 | `canvas-diagram` skill | 内置中英双语路由入口：可在输入框 `/` 菜单中选择，泛化的图表请求也会自动命中，无需在提示里点名工具。 |
 | “画布”标签 | 只在用户打开时加载 Excalidraw 编辑器，不进入普通聊天首屏启动路径。 |
@@ -99,7 +100,7 @@ dsh web
 
 ## 兼容性
 
-| 项目 | `0.2.0` 支持范围 |
+| 项目 | `0.2.1-dev.1` 源码候选版支持范围 |
 | --- | --- |
 | DeepSeek Harness | `0.1.0-rc.6` |
 | Profile | `web` |
@@ -116,12 +117,12 @@ npm 包没有 install lifecycle script。安装只会把 bundle 加入指定的 
 ### 更新
 
 ```sh
-dsh plugin --profile web update dsh-diagram
+dsh plugin --profile web update dsh-diagram --latest
 ```
 
 更新后重启 DSH Web。
 
-### 安装指定的 GitHub Release 产物
+### 安装最新公开 GitHub Release 的精确产物
 
 Release 页面提供同一份预构建 tarball 及其 SHA-256 校验值：
 
@@ -195,7 +196,7 @@ pnpm pack
 
 ```sh
 cd /path/to/deepseek-harness
-pnpm dsh plugin --profile web add /absolute/path/to/dsh-diagram-0.1.1.tgz
+pnpm dsh plugin --profile web add /absolute/path/to/dsh-diagram-VERSION.tgz
 pnpm dsh --profile web --dump-config
 pnpm dsh web
 ```
@@ -209,6 +210,16 @@ pnpm run bundle
 pnpm pack --json
 pnpm run smoke:dsh-install
 ```
+
+每个可安装的开发提交都必须使用新的预发布版本，禁止修改代码后继续以旧版本号重新打包。公开发布前只打包一次，并从上一公开版本通过真实 DSH profile 更新链路更新到这一个确定的 tarball：
+
+```sh
+pnpm run smoke:dsh-install -- \
+  --tarball /absolute/path/to/dsh-diagram-VERSION.tgz \
+  --upgrade-from PREVIOUS_PUBLIC_VERSION
+```
+
+该验证不会发布候选包，但会覆盖客户端更新机制以及更新前、更新后的两次 Web 启动。npm `@latest` 的 registry 发现能力在版本公开发布后另行验证。
 
 产品和实现决策见 [`DESIGN.md`](./DESIGN.md)。
 

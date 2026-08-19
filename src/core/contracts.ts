@@ -4,6 +4,7 @@ import { z } from "zod";
 export const DIAGRAM_KINDS = [
   "flow",
   "architecture",
+  "report",
   "timeline",
   "hierarchy",
   "comparison",
@@ -12,6 +13,38 @@ export const DIAGRAM_KINDS = [
 
 /** A supported semantic diagram form. */
 export type DiagramKind = (typeof DIAGRAM_KINDS)[number];
+
+/** Stable meanings used by the deterministic visual compiler. */
+export const DIAGRAM_TONES = [
+  "neutral",
+  "definition",
+  "execution",
+  "external",
+  "evidence",
+  "risk",
+  "target",
+] as const;
+
+/** One semantic color meaning independent of input ordering. */
+export type DiagramTone = (typeof DIAGRAM_TONES)[number];
+
+/** Controlled visual hierarchy for semantic nodes. */
+export const DIAGRAM_NODE_VARIANTS = ["card", "compact", "solid"] as const;
+
+/** One controlled node presentation variant. */
+export type DiagramNodeVariant = (typeof DIAGRAM_NODE_VARIANTS)[number];
+
+/** Regions available to the adaptive report recipe. */
+export const REPORT_GROUP_PLACEMENTS = ["top", "main", "bottom"] as const;
+
+/** One report region selected from semantic reading order. */
+export type ReportGroupPlacement = (typeof REPORT_GROUP_PLACEMENTS)[number];
+
+/** Reading directions supported inside report regions. */
+export const REPORT_GROUP_DIRECTIONS = ["row", "column"] as const;
+
+/** One deterministic reading direction inside a report region. */
+export type ReportGroupDirection = (typeof REPORT_GROUP_DIRECTIONS)[number];
 
 /** Deployment-configurable limits applied at model, RPC, and durable-data inputs. */
 export interface DiagramValidationPolicy {
@@ -80,6 +113,8 @@ export interface DiagramNode {
   detail?: string | undefined;
   group?: string | undefined;
   emphasis?: boolean | undefined;
+  tone?: DiagramTone | undefined;
+  variant?: DiagramNodeVariant | undefined;
 }
 
 /** A directed semantic relationship before deterministic layout. */
@@ -93,6 +128,9 @@ export interface DiagramEdge {
 export interface DiagramGroup {
   id: string;
   label: string;
+  tone?: DiagramTone | undefined;
+  placement?: ReportGroupPlacement | undefined;
+  direction?: ReportGroupDirection | undefined;
 }
 
 /** Model-authored semantic input retained as generation provenance. */
@@ -377,6 +415,8 @@ export function createDiagramSpecSchema(
       detail: boundedText(policy.maxNodeDetailChars).optional(),
       group: idSchema.optional(),
       emphasis: z.boolean().optional(),
+      tone: z.enum(DIAGRAM_TONES).optional(),
+      variant: z.enum(DIAGRAM_NODE_VARIANTS).optional(),
     })
     .strict();
   const edgeSchema: z.ZodType<DiagramEdge> = z
@@ -390,6 +430,9 @@ export function createDiagramSpecSchema(
     .object({
       id: idSchema,
       label: boundedText(policy.maxGroupLabelChars),
+      tone: z.enum(DIAGRAM_TONES).optional(),
+      placement: z.enum(REPORT_GROUP_PLACEMENTS).optional(),
+      direction: z.enum(REPORT_GROUP_DIRECTIONS).optional(),
     })
     .strict();
 
@@ -434,9 +477,28 @@ export function createDiagramSpecSchema(
         }
         groupIds.add(group.id);
       }
+      if (
+        spec.kind === "report"
+        && !(spec.groups ?? []).some(
+          (group) => group.placement === undefined || group.placement === "main",
+        )
+      ) {
+        context.addIssue({
+          code: "custom",
+          message: "Report requires at least one main group",
+          path: ["groups"],
+        });
+      }
 
       const usedGroupIds = new Set<string>();
       for (const [index, node] of spec.nodes.entries()) {
+        if (spec.kind === "report" && node.group === undefined) {
+          context.addIssue({
+            code: "custom",
+            message: "Report nodes must belong to a group",
+            path: ["nodes", index, "group"],
+          });
+        }
         if (node.group !== undefined && !groupIds.has(node.group)) {
           context.addIssue({
             code: "custom",

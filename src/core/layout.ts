@@ -1,6 +1,12 @@
 import dagre from "@dagrejs/dagre";
 
-import type { DiagramKind, DiagramNode, DiagramSpec } from "./contracts.ts";
+import type {
+  DiagramGroup,
+  DiagramKind,
+  DiagramNode,
+  DiagramSpec,
+  ReportGroupDirection,
+} from "./contracts.ts";
 
 const CANVAS_MARGIN = 40;
 const NODE_MIN_WIDTH = 168;
@@ -13,6 +19,14 @@ export const LABEL_FONT_SIZE = 16;
 export const DETAIL_FONT_SIZE = 13;
 export const LABEL_LINE_HEIGHT = 22;
 const DETAIL_LINE_HEIGHT = 18;
+const REPORT_LABEL_FONT_SIZE = 18;
+const REPORT_DETAIL_FONT_SIZE = 14;
+const REPORT_LABEL_LINE_HEIGHT = 24;
+const REPORT_DETAIL_LINE_HEIGHT = 20;
+const REPORT_COMPACT_LABEL_FONT_SIZE = 14;
+const REPORT_COMPACT_DETAIL_FONT_SIZE = 12;
+const REPORT_COMPACT_LABEL_LINE_HEIGHT = 18;
+const REPORT_COMPACT_DETAIL_LINE_HEIGHT = 16;
 const DIRECTED_NODE_GAP = 56;
 const DIRECTED_RANK_GAP = 96;
 const BAND_MAX_CONTENT_WIDTH = 720;
@@ -28,6 +42,15 @@ const COMPARISON_COLUMN_GAP = 96;
 const COMPARISON_ROW_GAP = 48;
 const RELATIONSHIP_MIN_RADIUS = 220;
 const RELATIONSHIP_RADIUS_PER_NODE = 56;
+const REPORT_MIN_WIDTH = 560;
+const REPORT_COLUMN_GAP = 24;
+const REPORT_REGION_GAP = 32;
+const REPORT_GROUP_SIDE_PADDING = 24;
+/** Reserved report-group header height used by native text positioning. */
+export const REPORT_GROUP_TOP_PADDING = 64;
+const REPORT_GROUP_BOTTOM_PADDING = 24;
+const REPORT_NODE_GAP = 20;
+const REPORT_MAIN_INNER_MIN_WIDTH = 260;
 
 /** An absolute canvas coordinate. */
 export interface PositionedPoint {
@@ -53,9 +76,7 @@ export interface PositionedEdge {
 }
 
 /** A labeled node group with a deterministic canvas rectangle. */
-export interface PositionedGroup {
-  id: string;
-  label: string;
+export interface PositionedGroup extends DiagramGroup {
   x: number;
   y: number;
   width: number;
@@ -77,6 +98,62 @@ export interface PositionedDiagram {
 interface NodeSize {
   width: number;
   height: number;
+}
+
+/** Typography and box-density contract shared by layout and scene creation. */
+export interface NodeTextStyle {
+  minWidth: number;
+  maxWidth: number;
+  paddingX: number;
+  paddingY: number;
+  labelFontSize: number;
+  detailFontSize: number;
+  labelLineHeight: number;
+  detailLineHeight: number;
+}
+
+const STANDARD_NODE_TEXT_STYLE: Readonly<NodeTextStyle> = {
+  minWidth: NODE_MIN_WIDTH,
+  maxWidth: NODE_MAX_WIDTH,
+  paddingX: NODE_PADDING_X,
+  paddingY: NODE_PADDING_Y,
+  labelFontSize: LABEL_FONT_SIZE,
+  detailFontSize: DETAIL_FONT_SIZE,
+  labelLineHeight: LABEL_LINE_HEIGHT,
+  detailLineHeight: DETAIL_LINE_HEIGHT,
+};
+
+const REPORT_NODE_TEXT_STYLE: Readonly<NodeTextStyle> = {
+  minWidth: 220,
+  maxWidth: 420,
+  paddingX: 32,
+  paddingY: 32,
+  labelFontSize: REPORT_LABEL_FONT_SIZE,
+  detailFontSize: REPORT_DETAIL_FONT_SIZE,
+  labelLineHeight: REPORT_LABEL_LINE_HEIGHT,
+  detailLineHeight: REPORT_DETAIL_LINE_HEIGHT,
+};
+
+const REPORT_COMPACT_NODE_TEXT_STYLE: Readonly<NodeTextStyle> = {
+  minWidth: 140,
+  maxWidth: 260,
+  paddingX: 24,
+  paddingY: 18,
+  labelFontSize: REPORT_COMPACT_LABEL_FONT_SIZE,
+  detailFontSize: REPORT_COMPACT_DETAIL_FONT_SIZE,
+  labelLineHeight: REPORT_COMPACT_LABEL_LINE_HEIGHT,
+  detailLineHeight: REPORT_COMPACT_DETAIL_LINE_HEIGHT,
+};
+
+/** Returns the exact text contract used for one generated node. */
+export function nodeTextStyleFor(
+  kind: DiagramKind,
+  node: Pick<DiagramNode, "variant">,
+): Readonly<NodeTextStyle> {
+  if (kind !== "report") return STANDARD_NODE_TEXT_STYLE;
+  return node.variant === "compact"
+    ? REPORT_COMPACT_NODE_TEXT_STYLE
+    : REPORT_NODE_TEXT_STYLE;
 }
 
 interface RawLayout {
@@ -105,6 +182,9 @@ export function layoutDiagram(spec: DiagramSpec): PositionedDiagram {
       raw = (spec.groups?.length ?? 0) > 0
         ? layoutBands(spec)
         : layoutDirected(spec, "LR");
+      break;
+    case "report":
+      raw = layoutReport(spec);
       break;
     case "hierarchy":
       raw = layoutDirected(spec, "TB");
@@ -203,13 +283,13 @@ function layoutBands(spec: DiagramSpec): RawLayout {
   if (ungrouped.length > 0) {
     bands.push(measureBand(undefined, ungrouped));
   }
-  const labelByGroup = new Map<string, string>();
+  const groupById = new Map<string, DiagramGroup>();
   for (const group of spec.groups ?? []) {
     const members = spec.nodes.filter((node) => node.group === group.id);
     if (members.length === 0) {
       throw new Error(`Cannot position empty group: ${group.id}`);
     }
-    labelByGroup.set(group.id, group.label);
+    groupById.set(group.id, group);
     bands.push(measureBand(group.id, members));
   }
 
@@ -239,9 +319,12 @@ function layoutBands(spec: DiagramSpec): RawLayout {
       rowY += row.height + BAND_ROW_GAP;
     }
     if (band.groupId !== undefined) {
+      const group = groupById.get(band.groupId);
+      if (group === undefined) {
+        throw new Error(`Missing band group: ${band.groupId}`);
+      }
       frames.push({
-        id: band.groupId,
-        label: labelByGroup.get(band.groupId) ?? band.groupId,
+        ...group,
         x: round(-GROUP_SIDE_PADDING),
         y: round(cursorY - GROUP_TOP_PADDING),
         width: round(contentWidth + GROUP_SIDE_PADDING * 2),
@@ -302,6 +385,250 @@ function bandGap(previous: Band | undefined, next: Band): number {
     : GROUP_BOTTOM_PADDING;
   const nextPadding = next.groupId === undefined ? 0 : GROUP_TOP_PADDING;
   return previousPadding + BAND_VERTICAL_GAP + nextPadding;
+}
+
+interface ReportRow {
+  nodes: { node: DiagramNode; size: NodeSize }[];
+  width: number;
+  height: number;
+}
+
+interface ReportGroupMeasurement {
+  group: DiagramGroup;
+  members: DiagramNode[];
+  direction: ReportGroupDirection;
+  innerWidth: number;
+  contentHeight: number;
+  rows: ReportRow[];
+}
+
+/**
+ * Editorial board layout for evidence-backed reports.
+ *
+ * Top and bottom groups become full-width bands while main groups become
+ * aligned columns. The model describes semantic regions only; all coordinates
+ * and wrapping remain deterministic here.
+ */
+function layoutReport(spec: DiagramSpec): RawLayout {
+  const groups = spec.groups ?? [];
+  const topGroups = groups.filter((group) => group.placement === "top");
+  const mainGroups = groups.filter(
+    (group) => group.placement === undefined || group.placement === "main",
+  );
+  const bottomGroups = groups.filter((group) => group.placement === "bottom");
+  if (mainGroups.length === 0) {
+    throw new Error("A report diagram requires at least one main group");
+  }
+
+  const membersByGroup = new Map(
+    groups.map((group) => [
+      group.id,
+      spec.nodes.filter((node) => node.group === group.id),
+    ]),
+  );
+  const mainInnerWidths = mainGroups.map((group) =>
+    Math.max(
+      REPORT_MAIN_INNER_MIN_WIDTH,
+      ...requireReportMembers(group, membersByGroup).map(
+        (node) => measureReportNode(node).width,
+      ),
+    )
+  );
+  const initialBoardWidth = mainInnerWidths.reduce(
+    (sum, width) => sum + width + REPORT_GROUP_SIDE_PADDING * 2,
+    0,
+  ) + REPORT_COLUMN_GAP * (mainGroups.length - 1);
+  const boardWidth = Math.max(REPORT_MIN_WIDTH, initialBoardWidth);
+  const distributedExtra = (boardWidth - initialBoardWidth) / mainGroups.length;
+  const resolvedMainInnerWidths = mainInnerWidths.map(
+    (width) => width + distributedExtra,
+  );
+
+  const positioned = new Map<string, PositionedNode>();
+  const frameById = new Map<string, PositionedGroup>();
+  let cursorY = 0;
+
+  for (const group of topGroups) {
+    const measurement = measureReportGroup(
+      group,
+      requireReportMembers(group, membersByGroup),
+      boardWidth - REPORT_GROUP_SIDE_PADDING * 2,
+      group.direction ?? "row",
+    );
+    placeReportGroup(
+      measurement,
+      0,
+      cursorY,
+      boardWidth,
+      measurement.contentHeight
+        + REPORT_GROUP_TOP_PADDING
+        + REPORT_GROUP_BOTTOM_PADDING,
+      positioned,
+      frameById,
+    );
+    cursorY += measurement.contentHeight
+      + REPORT_GROUP_TOP_PADDING
+      + REPORT_GROUP_BOTTOM_PADDING
+      + REPORT_REGION_GAP;
+  }
+
+  const mainMeasurements = mainGroups.map((group, index) =>
+    measureReportGroup(
+      group,
+      requireReportMembers(group, membersByGroup),
+      resolvedMainInnerWidths[index] ?? REPORT_MAIN_INNER_MIN_WIDTH,
+      group.direction ?? "column",
+    )
+  );
+  const mainHeight = Math.max(
+    ...mainMeasurements.map(
+      (measurement) =>
+        measurement.contentHeight
+        + REPORT_GROUP_TOP_PADDING
+        + REPORT_GROUP_BOTTOM_PADDING,
+    ),
+  );
+  let cursorX = 0;
+  for (const measurement of mainMeasurements) {
+    const groupWidth = measurement.innerWidth + REPORT_GROUP_SIDE_PADDING * 2;
+    placeReportGroup(
+      measurement,
+      cursorX,
+      cursorY,
+      groupWidth,
+      mainHeight,
+      positioned,
+      frameById,
+    );
+    cursorX += groupWidth + REPORT_COLUMN_GAP;
+  }
+  cursorY += mainHeight + REPORT_REGION_GAP;
+
+  for (const [index, group] of bottomGroups.entries()) {
+    const measurement = measureReportGroup(
+      group,
+      requireReportMembers(group, membersByGroup),
+      boardWidth - REPORT_GROUP_SIDE_PADDING * 2,
+      group.direction ?? "row",
+    );
+    const groupHeight = measurement.contentHeight
+      + REPORT_GROUP_TOP_PADDING
+      + REPORT_GROUP_BOTTOM_PADDING;
+    placeReportGroup(
+      measurement,
+      0,
+      cursorY,
+      boardWidth,
+      groupHeight,
+      positioned,
+      frameById,
+    );
+    cursorY += groupHeight + (index === bottomGroups.length - 1 ? 0 : REPORT_REGION_GAP);
+  }
+
+  const nodes = spec.nodes.map((node) => {
+    const placed = positioned.get(node.id);
+    if (placed === undefined) {
+      throw new Error(`Report node must belong to a positioned group: ${node.id}`);
+    }
+    return placed;
+  });
+  const frames = groups.map((group) => {
+    const frame = frameById.get(group.id);
+    if (frame === undefined) {
+      throw new Error(`Missing report group position: ${group.id}`);
+    }
+    return frame;
+  });
+  return { nodes, edges: positionReportEdges(spec, nodes), groups: frames };
+}
+
+function requireReportMembers(
+  group: DiagramGroup,
+  membersByGroup: Map<string, DiagramNode[]>,
+): DiagramNode[] {
+  const members = membersByGroup.get(group.id) ?? [];
+  if (members.length === 0) {
+    throw new Error(`Cannot position empty report group: ${group.id}`);
+  }
+  return members;
+}
+
+function measureReportGroup(
+  group: DiagramGroup,
+  members: DiagramNode[],
+  innerWidth: number,
+  direction: ReportGroupDirection,
+): ReportGroupMeasurement {
+  const rows = direction === "column"
+    ? members.map((node) => {
+        const size = measureReportNode(node);
+        return {
+          nodes: [{ node, size: { width: innerWidth, height: size.height } }],
+          width: innerWidth,
+          height: size.height,
+        };
+      })
+    : packReportRows(members, innerWidth);
+  const contentHeight = rows.reduce((sum, row) => sum + row.height, 0)
+    + REPORT_NODE_GAP * (rows.length - 1);
+  return { group, members, direction, innerWidth, contentHeight, rows };
+}
+
+function packReportRows(members: DiagramNode[], innerWidth: number): ReportRow[] {
+  const rows: ReportRow[] = [];
+  let current: ReportRow = { nodes: [], width: 0, height: 0 };
+  for (const node of members) {
+    const size = measureReportNode(node);
+    const appendedWidth = current.nodes.length === 0
+      ? size.width
+      : current.width + REPORT_NODE_GAP + size.width;
+    if (current.nodes.length > 0 && appendedWidth > innerWidth) {
+      rows.push(current);
+      current = { nodes: [], width: 0, height: 0 };
+    }
+    current.nodes.push({ node, size });
+    current.width = current.nodes.length === 1
+      ? size.width
+      : current.width + REPORT_NODE_GAP + size.width;
+    current.height = Math.max(current.height, size.height);
+  }
+  rows.push(current);
+  return rows;
+}
+
+function placeReportGroup(
+  measurement: ReportGroupMeasurement,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  positioned: Map<string, PositionedNode>,
+  frameById: Map<string, PositionedGroup>,
+): void {
+  frameById.set(measurement.group.id, {
+    ...measurement.group,
+    x: round(x),
+    y: round(y),
+    width: round(width),
+    height: round(height),
+  });
+  let rowY = y + REPORT_GROUP_TOP_PADDING;
+  for (const row of measurement.rows) {
+    let rowX = x + REPORT_GROUP_SIDE_PADDING
+      + (measurement.innerWidth - row.width) / 2;
+    for (const { node, size } of row.nodes) {
+      positioned.set(node.id, {
+        ...node,
+        x: round(rowX),
+        y: round(rowY + (row.height - size.height) / 2),
+        width: round(size.width),
+        height: round(size.height),
+      });
+      rowX += size.width + REPORT_NODE_GAP;
+    }
+    rowY += row.height + REPORT_NODE_GAP;
+  }
 }
 
 function layoutTimeline(spec: DiagramSpec): RawLayout {
@@ -480,8 +807,7 @@ function positionGroups(
     const maxX = Math.max(...members.map((node) => node.x + node.width));
     const maxY = Math.max(...members.map((node) => node.y + node.height));
     return {
-      id: group.id,
-      label: group.label,
+      ...group,
       x: round(minX - GROUP_SIDE_PADDING),
       y: round(minY - GROUP_TOP_PADDING),
       width: round(maxX - minX + GROUP_SIDE_PADDING * 2),
@@ -493,27 +819,39 @@ function positionGroups(
 }
 
 function measureNode(node: DiagramNode): NodeSize {
+  return measureNodeWithStyle(node, STANDARD_NODE_TEXT_STYLE);
+}
+
+function measureReportNode(node: DiagramNode): NodeSize {
+  return measureNodeWithStyle(node, nodeTextStyleFor("report", node));
+}
+
+function measureNodeWithStyle(
+  node: DiagramNode,
+  style: Readonly<NodeTextStyle>,
+): NodeSize {
   const detailLines = node.detail?.split("\n") ?? [];
   const naturalWidth = Math.max(
-    textWidth(node.label, LABEL_FONT_SIZE),
-    ...detailLines.map((line) => textWidth(line, DETAIL_FONT_SIZE)),
+    textWidth(node.label, style.labelFontSize),
+    ...detailLines.map((line) => textWidth(line, style.detailFontSize)),
   );
   const width = Math.min(
-    NODE_MAX_WIDTH,
-    Math.max(NODE_MIN_WIDTH, naturalWidth + NODE_PADDING_X),
+    style.maxWidth,
+    Math.max(style.minWidth, naturalWidth + style.paddingX),
   );
-  const innerWidth = width - NODE_PADDING_X;
-  const labelRows = wrappedRows(node.label, LABEL_FONT_SIZE, innerWidth);
+  const innerWidth = width - style.paddingX;
+  const labelRows = wrappedRows(node.label, style.labelFontSize, innerWidth);
   const detailRows = detailLines.reduce(
-    (sum, line) => sum + wrappedRows(line, DETAIL_FONT_SIZE, innerWidth),
+    (sum, line) =>
+      sum + wrappedRows(line, style.detailFontSize, innerWidth),
     0,
   );
   return {
     width,
     height:
-      NODE_PADDING_Y
-      + labelRows * LABEL_LINE_HEIGHT
-      + detailRows * DETAIL_LINE_HEIGHT,
+      style.paddingY
+      + labelRows * style.labelLineHeight
+      + detailRows * style.detailLineHeight,
   };
 }
 
@@ -590,6 +928,89 @@ function positionDirectEdges(
       points: [nodeCenter(source), nodeCenter(target)],
     };
   });
+}
+
+function positionReportEdges(
+  spec: DiagramSpec,
+  nodes: PositionedNode[],
+): PositionedEdge[] {
+  const byId = new Map(nodes.map((node) => [node.id, node]));
+  return spec.edges.map((edge, index) => {
+    const source = byId.get(edge.from);
+    const target = byId.get(edge.to);
+    if (source === undefined || target === undefined) {
+      throw new Error(`Cannot position edge ${edge.from} -> ${edge.to}`);
+    }
+    const sourceCenter = nodeCenter(source);
+    const targetCenter = nodeCenter(target);
+    const horizontal = Math.abs(targetCenter.x - sourceCenter.x)
+      >= Math.abs(targetCenter.y - sourceCenter.y);
+    let points: PositionedPoint[];
+    if (horizontal) {
+      const forward = targetCenter.x >= sourceCenter.x;
+      const start = {
+        x: forward ? source.x + source.width : source.x,
+        y: sourceCenter.y,
+      };
+      const end = {
+        x: forward ? target.x : target.x + target.width,
+        y: targetCenter.y,
+      };
+      const middleX = round((start.x + end.x) / 2);
+      points = [
+        start,
+        { x: middleX, y: start.y },
+        { x: middleX, y: end.y },
+        end,
+      ];
+    } else {
+      const forward = targetCenter.y >= sourceCenter.y;
+      const start = {
+        x: sourceCenter.x,
+        y: forward ? source.y + source.height : source.y,
+      };
+      const end = {
+        x: targetCenter.x,
+        y: forward ? target.y : target.y + target.height,
+      };
+      const middleY = round((start.y + end.y) / 2);
+      points = [
+        start,
+        { x: start.x, y: middleY },
+        { x: end.x, y: middleY },
+        end,
+      ];
+    }
+    return {
+      id: edgeId(index),
+      ...edge,
+      points: simplifyOrthogonalPoints(points),
+    };
+  });
+}
+
+function simplifyOrthogonalPoints(
+  points: PositionedPoint[],
+): [PositionedPoint, PositionedPoint, ...PositionedPoint[]] {
+  const simplified: PositionedPoint[] = [];
+  for (const rawPoint of points) {
+    const point = roundPoint(rawPoint);
+    const previous = simplified.at(-1);
+    if (previous?.x === point.x && previous.y === point.y) continue;
+    const beforePrevious = simplified.at(-2);
+    if (
+      beforePrevious !== undefined
+      && previous !== undefined
+      && (
+        (beforePrevious.x === previous.x && previous.x === point.x)
+        || (beforePrevious.y === previous.y && previous.y === point.y)
+      )
+    ) {
+      simplified.pop();
+    }
+    simplified.push(point);
+  }
+  return requireEdgePoints(simplified);
 }
 
 function nodeCenter(node: PositionedNode): PositionedPoint {

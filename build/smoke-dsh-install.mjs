@@ -2,11 +2,11 @@
 
 import { spawn } from "node:child_process";
 import { constants as fsConstants } from "node:fs";
-import { createServer } from "node:net";
+import { createConnection, createServer } from "node:net";
 import { access, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { basename, delimiter, isAbsolute, join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { gunzipSync } from "node:zlib";
 
 const DSH_VERSION = "0.1.0-rc.6";
@@ -19,6 +19,10 @@ const DEFAULT_RPC_BODY_LIMIT_BYTES = 1_048_576 + 16_384;
 const args = parseArgs(process.argv.slice(2));
 const repoRoot = resolve(fileURLToPath(new URL("..", import.meta.url)));
 const keepTemp = flag("keep-temp");
+const upgradeFrom = option("upgrade-from", "DSH_DIAGRAM_UPGRADE_FROM");
+if (upgradeFrom === "true" || upgradeFrom?.trim() === "") {
+  throw new Error("--upgrade-from requires a package version");
+}
 const commandTimeoutMs = numberOption("command-timeout-ms", DEFAULT_COMMAND_TIMEOUT_MS);
 const installTimeoutMs = numberOption("install-timeout-ms", DEFAULT_INSTALL_TIMEOUT_MS);
 const startTimeoutMs = numberOption("start-timeout-ms", DEFAULT_START_TIMEOUT_MS);
@@ -35,12 +39,63 @@ try {
   const packageEvidence = await verifyTarball(tarball);
   const dsh = await resolveDsh(paths, env);
 
-  await runDsh(dsh, ["plugin", "--profile", "web", "add", tarball], {
-    cwd: paths.project,
-    env,
-    timeoutMs: commandTimeoutMs,
-    label: "install diagram plugin",
-  });
+  let upgrade;
+  if (upgradeFrom === undefined) {
+    await runDsh(dsh, ["plugin", "--profile", "web", "add", tarball], {
+      cwd: paths.project,
+      env,
+      timeoutMs: commandTimeoutMs,
+      label: "install diagram plugin",
+    });
+  } else {
+    await runDsh(
+      dsh,
+      ["plugin", "--profile", "web", "add", `${packageEvidence.name}@${upgradeFrom}`],
+      {
+        cwd: paths.project,
+        env,
+        timeoutMs: installTimeoutMs,
+        label: `install diagram plugin upgrade baseline ${upgradeFrom}`,
+      },
+    );
+    const before = await readInstalledPackage(paths);
+    if (before.version === packageEvidence.version) {
+      throw new Error(
+        `upgrade candidate must change version; both baseline and tarball are ${before.version}`,
+      );
+    }
+    const baseline = await withWebServer(dsh, env, paths.project, async (baseUrl) => {
+      const root = await fetchText(`${baseUrl}/`);
+      assertIncludes(root.body, "dsh-diagram", "upgrade baseline root does not include dsh-diagram");
+      const client = await fetchText(`${baseUrl}/plugins/dsh-diagram/client.js`);
+      assertStatus(client, 200, "upgrade baseline client bundle");
+      return { version: before.version, port: new URL(baseUrl).port };
+    });
+
+    const candidateSpecifier = `${packageEvidence.name}@${pathToFileURL(tarball).href}`;
+    await runDsh(
+      dsh,
+      ["plugin", "--profile", "web", "update", candidateSpecifier],
+      {
+        cwd: paths.project,
+        env,
+        timeoutMs: installTimeoutMs,
+        label: `update diagram plugin to ${packageEvidence.version}`,
+      },
+    );
+    upgrade = {
+      from: baseline.version,
+      to: packageEvidence.version,
+      source: "dsh plugin update with candidate tarball",
+    };
+  }
+
+  const installedPackage = await readInstalledPackage(paths);
+  assertPackageIdentity(
+    installedPackage,
+    packageEvidence,
+    upgradeFrom === undefined ? "installed plugin" : "updated plugin",
+  );
 
   const dumped = await runDsh(dsh, ["--profile", "web", "--dump-config"], {
     cwd: paths.project,
@@ -90,12 +145,12 @@ try {
       throw new Error("installed diagram RPC did not return the standard bad-request envelope");
     }
 
-    const oversizedRpc = await fetchText(`${baseUrl}/diagram/list`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: Buffer.alloc(DEFAULT_RPC_BODY_LIMIT_BYTES + 1),
-    });
-    assertStatus(oversizedRpc, 413, "installed oversized diagram RPC");
+    const oversizedRpcStatus = await fetchOversizedRpcStatus(baseUrl);
+    if (oversizedRpcStatus !== 413) {
+      throw new Error(
+        `installed oversized diagram RPC returned HTTP ${oversizedRpcStatus}, expected 413`,
+      );
+    }
 
     return {
       rootBytes: root.body.length,
@@ -147,6 +202,7 @@ try {
     dsh: dsh.description,
     tarball: tarball,
     package: packageEvidence,
+    upgrade,
     installed,
     removed,
     temp: keepTemp ? workRoot : undefined,
@@ -399,6 +455,49 @@ async function fetchText(url, init = {}) {
   };
 }
 
+async function fetchOversizedRpcStatus(baseUrl) {
+  const url = new URL("/diagram/list", baseUrl);
+  const port = Number(url.port);
+  return new Promise((resolvePromise, rejectPromise) => {
+    let response = "";
+    let settled = false;
+    const socket = createConnection({ host: url.hostname, port });
+    const finish = (error) => {
+      if (settled) return;
+      const match = response.match(/^HTTP\/1\.[01] (\d{3})/u);
+      if (match !== null) {
+        settled = true;
+        socket.destroy();
+        resolvePromise(Number(match[1]));
+        return;
+      }
+      if (error !== undefined) {
+        settled = true;
+        rejectPromise(error);
+      }
+    };
+    socket.setTimeout(15_000, () => finish(new Error("oversized RPC probe timed out")));
+    socket.on("connect", () => {
+      socket.write([
+        "POST /diagram/list HTTP/1.1",
+        `Host: ${url.host}`,
+        "Content-Type: application/json",
+        `Content-Length: ${DEFAULT_RPC_BODY_LIMIT_BYTES + 1}`,
+        "Connection: close",
+        "",
+        "",
+      ].join("\r\n"));
+    });
+    socket.on("data", (chunk) => {
+      response += chunk.toString("latin1");
+      finish();
+    });
+    socket.on("end", () => finish(new Error("oversized RPC probe ended without a response")));
+    socket.on("close", () => finish(new Error("oversized RPC probe closed without a response")));
+    socket.on("error", (error) => finish(error));
+  });
+}
+
 async function runCommand(command, commandArgs, options) {
   const child = spawnProcess(command, commandArgs, options);
   liveProcesses.add(child);
@@ -567,7 +666,7 @@ async function verifyTarball(tarball) {
   if (required.size > 0) {
     throw new Error(`tarball missing required scan entries: ${[...required].join(", ")}`);
   }
-  verifyPackagedManifest(packagedManifest);
+  const identity = verifyPackagedManifest(packagedManifest);
   const licenseEntries = entries.filter((entry) =>
     entry.type === "file" && normalizePackageEntry(entry.name).startsWith("third_party_licenses/")
   );
@@ -576,6 +675,7 @@ async function verifyTarball(tarball) {
   }
   return {
     file: basename(tarball),
+    ...identity,
     entries: entries.length,
     licenseEntries: licenseEntries.length,
     scannedTextEntries: scanned.length,
@@ -585,6 +685,12 @@ async function verifyTarball(tarball) {
 function verifyPackagedManifest(manifest) {
   if (manifest === undefined || manifest === null || typeof manifest !== "object") {
     throw new Error("tarball package.json is not an object");
+  }
+  if (manifest.name !== "dsh-diagram") {
+    throw new Error(`tarball package name is ${String(manifest.name)}, expected dsh-diagram`);
+  }
+  if (typeof manifest.version !== "string" || manifest.version.trim() === "") {
+    throw new Error("tarball package.json has no version");
   }
   const scripts = manifest.scripts;
   if (scripts !== undefined && (scripts === null || typeof scripts !== "object")) {
@@ -605,6 +711,32 @@ function verifyPackagedManifest(manifest) {
   const serialized = JSON.stringify(manifest);
   if (/"(?:link|file|workspace):/u.test(serialized)) {
     throw new Error("tarball package.json contains a local dependency specifier");
+  }
+  return { name: manifest.name, version: manifest.version };
+}
+
+async function readInstalledPackage(paths) {
+  const manifestPath = join(
+    paths.dshHome,
+    "profiles",
+    "web",
+    "node_modules",
+    "dsh-diagram",
+    "package.json",
+  );
+  const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
+  if (manifest === null || typeof manifest !== "object") {
+    throw new Error(`installed package manifest is invalid: ${manifestPath}`);
+  }
+  return { name: manifest.name, version: manifest.version };
+}
+
+function assertPackageIdentity(actual, expected, label) {
+  if (actual.name !== expected.name || actual.version !== expected.version) {
+    throw new Error(
+      `${label} identity is ${String(actual.name)}@${String(actual.version)}, expected `
+      + `${expected.name}@${expected.version}`,
+    );
   }
 }
 

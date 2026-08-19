@@ -24,6 +24,7 @@ const excalidrawHarness = vi.hoisted(() => ({
     | ((elements: readonly unknown[], appState: unknown, files: unknown) => void)
     | undefined,
   renderCount: 0,
+  scrollToContent: vi.fn(),
 }));
 
 vi.mock("@excalidraw/excalidraw", async () => {
@@ -58,9 +59,10 @@ vi.mock("@excalidraw/excalidraw", async () => {
       });
       React.useEffect(() => {
         props.excalidrawAPI?.({
-          getSceneElements: () => [],
+          getSceneElements: () => props.initialData?.elements ?? [],
           getAppState: () => ({}),
           getFiles: () => ({}),
+          scrollToContent: excalidrawHarness.scrollToContent,
         });
       }, [props.excalidrawAPI]);
       return React.createElement("div", {
@@ -125,6 +127,7 @@ afterEach(() => {
   excalidrawHarness.echoInitialSceneAfterEveryRender = false;
   excalidrawHarness.onChange = undefined;
   excalidrawHarness.renderCount = 0;
+  excalidrawHarness.scrollToContent.mockReset();
   cleanup();
 });
 
@@ -171,6 +174,41 @@ describe("DiagramApp", () => {
         expect((button as HTMLButtonElement).disabled).toBe(false);
       }
     });
+  });
+
+  it("fits each newly loaded scene into the viewport exactly once", async () => {
+    const client = clientWith([summary], record);
+
+    render(<DiagramApp client={client} sessionId="session-1" />);
+
+    expect(await screen.findByTestId("excalidraw-loaded")).toBeTruthy();
+    act(() => {
+      excalidrawHarness.onChange?.(
+        scene.elements,
+        scene.appState,
+        scene.files,
+      );
+    });
+
+    expect(excalidrawHarness.scrollToContent).toHaveBeenCalledOnce();
+    expect(excalidrawHarness.scrollToContent).toHaveBeenCalledWith(
+      scene.elements,
+      {
+        animate: false,
+        fitToViewport: true,
+        maxZoom: 1,
+        viewportZoomFactor: 0.9,
+      },
+    );
+
+    act(() => {
+      excalidrawHarness.onChange?.(
+        scene.elements,
+        scene.appState,
+        scene.files,
+      );
+    });
+    expect(excalidrawHarness.scrollToContent).toHaveBeenCalledOnce();
   });
 
   it("collapses and restores the diagram list without reloading the canvas", async () => {

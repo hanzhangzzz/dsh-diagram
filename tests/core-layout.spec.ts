@@ -4,6 +4,168 @@ import type { DiagramSpec } from "../src/core/contracts.ts";
 import { layoutDiagram } from "../src/core/layout.ts";
 
 describe("deterministic diagram layout", () => {
+  it("arranges report groups into full-width bands around aligned main columns", () => {
+    const spec: DiagramSpec = {
+      kind: "report",
+      title: "测试事实架构",
+      summary: "资产覆盖广；Merge 前尚未形成自动测试护栏",
+      groups: [
+        {
+          id: "governance",
+          label: "平台 E2E 强度治理",
+          placement: "top",
+          direction: "row",
+          tone: "definition",
+        },
+        {
+          id: "assets",
+          label: "测试资产",
+          placement: "main",
+          direction: "column",
+          tone: "definition",
+        },
+        {
+          id: "evidence",
+          label: "证据面",
+          placement: "main",
+          direction: "column",
+          tone: "evidence",
+        },
+        {
+          id: "gate",
+          label: "Merge 门",
+          placement: "main",
+          direction: "column",
+          tone: "risk",
+        },
+        {
+          id: "target",
+          label: "目标闭环",
+          placement: "bottom",
+          direction: "row",
+          tone: "target",
+        },
+      ],
+      nodes: [
+        { id: "contract", label: "9 条强合同", group: "governance" },
+        { id: "legacy", label: "108 条 legacy", group: "governance" },
+        {
+          id: "pytest",
+          label: "后端单测",
+          detail: "517 文件 · 6682 函数",
+          group: "assets",
+        },
+        { id: "platform", label: "平台产物", group: "evidence" },
+        { id: "missing", label: "未执行", group: "gate", tone: "risk" },
+        {
+          id: "block",
+          label: "阻塞 Merge",
+          group: "target",
+          tone: "target",
+          variant: "solid",
+        },
+      ],
+      edges: [
+        { from: "pytest", to: "platform" },
+        { from: "platform", to: "missing" },
+        { from: "missing", to: "block" },
+      ],
+    };
+
+    const layout = layoutDiagram(spec);
+    const byGroup = new Map(layout.groups.map((group) => [group.id, group]));
+    const governance = byGroup.get("governance");
+    const assets = byGroup.get("assets");
+    const evidence = byGroup.get("evidence");
+    const gate = byGroup.get("gate");
+    const target = byGroup.get("target");
+
+    expect(layoutDiagram(spec)).toEqual(layout);
+    expect(governance?.width).toBe(target?.width);
+    expect(governance?.x).toBe(target?.x);
+    expect((governance?.y ?? 0) + (governance?.height ?? 0))
+      .toBeLessThan(assets?.y ?? 0);
+    expect(assets?.y).toBe(evidence?.y);
+    expect(evidence?.y).toBe(gate?.y);
+    expect(assets?.height).toBe(evidence?.height);
+    expect(evidence?.height).toBe(gate?.height);
+    expect((assets?.x ?? 0) + (assets?.width ?? 0))
+      .toBeLessThan(evidence?.x ?? 0);
+    expect((evidence?.x ?? 0) + (evidence?.width ?? 0))
+      .toBeLessThan(gate?.x ?? 0);
+    expect((gate?.y ?? 0) + (gate?.height ?? 0))
+      .toBeLessThan(target?.y ?? 0);
+
+    for (const node of layout.nodes) {
+      const group = byGroup.get(node.group ?? "");
+      expect(group).toBeDefined();
+      expect(node.x).toBeGreaterThan(group?.x ?? Number.POSITIVE_INFINITY);
+      expect(node.y).toBeGreaterThan(group?.y ?? Number.POSITIVE_INFINITY);
+      expect(node.x + node.width).toBeLessThan(
+        (group?.x ?? 0) + (group?.width ?? 0),
+      );
+      expect(node.y + node.height).toBeLessThan(
+        (group?.y ?? 0) + (group?.height ?? 0),
+      );
+    }
+  });
+
+  it("routes report edges orthogonally between node boundaries", () => {
+    const spec: DiagramSpec = {
+      kind: "report",
+      title: "证据链",
+      groups: [
+        { id: "facts", label: "事实", placement: "main" },
+        { id: "evidence", label: "证据", placement: "main" },
+      ],
+      nodes: [
+        {
+          id: "source",
+          label: "真实执行",
+          detail: "116 通过 · 1 失败",
+          group: "facts",
+        },
+        { id: "target", label: "JUnit 产物", group: "evidence" },
+      ],
+      edges: [{ from: "source", to: "target" }],
+    };
+
+    const layout = layoutDiagram(spec);
+    const source = layout.nodes.find((node) => node.id === "source");
+    const target = layout.nodes.find((node) => node.id === "target");
+    const edge = layout.edges[0];
+
+    expect(source).toBeDefined();
+    expect(target).toBeDefined();
+    expect(edge?.points).toHaveLength(4);
+    expect(edge?.points[0]).toEqual({
+      x: (source?.x ?? 0) + (source?.width ?? 0),
+      y: (source?.y ?? 0) + (source?.height ?? 0) / 2,
+    });
+    expect(edge?.points.at(-1)).toEqual({
+      x: target?.x,
+      y: (target?.y ?? 0) + (target?.height ?? 0) / 2,
+    });
+    for (let index = 1; index < (edge?.points.length ?? 0); index += 1) {
+      const previous = edge?.points[index - 1];
+      const current = edge?.points[index];
+      expect(previous?.x === current?.x || previous?.y === current?.y).toBe(true);
+    }
+  });
+
+  it("keeps a sparse truthful report compact instead of inflating one column", () => {
+    const layout = layoutDiagram({
+      kind: "report",
+      title: "已知事实",
+      summary: "当前上下文只支持一个结论",
+      groups: [{ id: "fact", label: "事实", placement: "main" }],
+      nodes: [{ id: "known", label: "仅保留已知信息", group: "fact" }],
+      edges: [],
+    });
+
+    expect(layout.width).toBeLessThanOrEqual(640);
+  });
+
   it("lays out a flow left-to-right while preserving semantic order", () => {
     const spec: DiagramSpec = {
       kind: "flow",

@@ -8,15 +8,14 @@ import {
   EDITABLE_SCENE_ELEMENT_TYPES,
   createSceneSchema,
   type DiagramSpec,
+  type DiagramTone,
   type DiagramValidationPolicy,
   type PersistedScene,
 } from "../core/contracts.ts";
 import {
-  DETAIL_FONT_SIZE,
-  LABEL_FONT_SIZE,
-  LABEL_LINE_HEIGHT,
   layoutDiagram,
-  NODE_PADDING_X,
+  nodeTextStyleFor,
+  REPORT_GROUP_TOP_PADDING,
   wrapPlainText,
   type PositionedDiagram,
 } from "../core/layout.ts";
@@ -35,6 +34,69 @@ const BORDER_COLOR = "#98a2b3";
 const SURFACE_COLOR = "#ffffff";
 const EMPHASIS_COLOR = "#fef3c7";
 const EMPHASIS_BORDER_COLOR = "#d97706";
+const SOLID_TEXT_COLOR = "#ffffff";
+const NATIVE_TEXT_TIER_GAP = 4;
+const REPORT_HEADER_CONTENT_GAP = 32;
+const REPORT_TITLE_SUMMARY_GAP = 12;
+const REPORT_TITLE_FONT_SIZE = 36;
+const REPORT_SUMMARY_FONT_SIZE = 18;
+const REPORT_GROUP_FONT_SIZE = 20;
+const STANDARD_TITLE_FONT_SIZE = 24;
+const STANDARD_SUMMARY_FONT_SIZE = 14;
+const STANDARD_GROUP_FONT_SIZE = 15;
+
+interface VisualPalette {
+  fill: string;
+  stroke: string;
+  ink: string;
+  strong: string;
+}
+
+/** Stable color meanings shared by report regions and semantic nodes. */
+const TONE_PALETTE: Readonly<Record<DiagramTone, VisualPalette>> = {
+  neutral: {
+    fill: "#f8fafc",
+    stroke: "#64748b",
+    ink: "#334155",
+    strong: "#334155",
+  },
+  definition: {
+    fill: "#f8fbff",
+    stroke: "#2563eb",
+    ink: "#1d4ed8",
+    strong: "#2563eb",
+  },
+  execution: {
+    fill: "#f7fdf8",
+    stroke: "#15803d",
+    ink: "#166534",
+    strong: "#15803d",
+  },
+  external: {
+    fill: "#fffbeb",
+    stroke: "#d97706",
+    ink: "#b45309",
+    strong: "#d97706",
+  },
+  evidence: {
+    fill: "#fcfaff",
+    stroke: "#7e22ce",
+    ink: "#6b21a8",
+    strong: "#7e22ce",
+  },
+  risk: {
+    fill: "#fffafa",
+    stroke: "#dc2626",
+    ink: "#b91c1c",
+    strong: "#dc2626",
+  },
+  target: {
+    fill: "#f6fff8",
+    stroke: "#166534",
+    ink: "#14532d",
+    strong: "#166534",
+  },
+};
 
 /** Deterministic per-group tint cycle: band fill, band border, label ink. */
 const GROUP_PALETTE = [
@@ -46,12 +108,16 @@ const GROUP_PALETTE = [
   { fill: "#ecfeff", stroke: "#06b6d4", ink: "#0e7490" },
 ] as const;
 
-function groupPalette(index: number): (typeof GROUP_PALETTE)[number] {
+function groupPalette(index: number): VisualPalette {
   const entry = GROUP_PALETTE[index % GROUP_PALETTE.length];
   if (entry === undefined) {
     throw new Error("Group palette cycle cannot be empty");
   }
-  return entry;
+  return { ...entry, strong: entry.stroke };
+}
+
+function tonePalette(tone: DiagramTone): VisualPalette {
+  return TONE_PALETTE[tone];
 }
 
 /** Result of converting live editor state into durable JSON. */
@@ -70,10 +136,12 @@ export function createInitialScene(
   spec: DiagramSpec,
   policy: Readonly<DiagramValidationPolicy>,
 ): PersistedScene {
-  const skeletons = diagramToElementSkeletons(layoutDiagram(spec));
-  const elements = convertToExcalidrawElements(skeletons, {
+  const diagram = layoutDiagram(spec);
+  const skeletons = diagramToElementSkeletons(diagram);
+  const converted = convertToExcalidrawElements(skeletons, {
     regenerateIds: false,
   });
+  const elements = positionNativeText(converted, diagram);
   const result = normalizeEditorScene(
     elements,
     { viewBackgroundColor: "#ffffff" },
@@ -87,6 +155,116 @@ export function createInitialScene(
 }
 
 /**
+ * Repositions converter-measured node text as one centered visual cluster.
+ *
+ * Excalidraw owns the native width and height; the deterministic compiler only
+ * translates those measured elements. This keeps first render and text-edit
+ * entry on the same geometry instead of relying on pre-render font estimates.
+ */
+function positionNativeText(
+  elements: readonly unknown[],
+  diagram: PositionedDiagram,
+): unknown[] {
+  const byId = new Map<string, Record<string, unknown>>();
+  for (const element of elements) {
+    if (isRecord(element) && typeof element.id === "string") {
+      byId.set(element.id, element);
+    }
+  }
+  const positions = new Map<string, { x: number; y: number }>();
+  for (const node of diagram.nodes) {
+    const labelId = `text:node:${node.id}`;
+    const detailId = `detail:node:${node.id}`;
+    const label = measuredText(byId.get(labelId));
+    const detail = measuredText(byId.get(detailId));
+    if (label === undefined) continue;
+    const clusterHeight = label.height
+      + (detail === undefined ? 0 : NATIVE_TEXT_TIER_GAP + detail.height);
+    const clusterY = node.y + (node.height - clusterHeight) / 2;
+    positions.set(labelId, {
+      x: node.x + (node.width - label.width) / 2,
+      y: clusterY,
+    });
+    if (detail !== undefined) {
+      positions.set(detailId, {
+        x: node.x + (node.width - detail.width) / 2,
+        y: clusterY + label.height + NATIVE_TEXT_TIER_GAP,
+      });
+    }
+  }
+  if (diagram.kind === "report") {
+    const contentTop = Math.min(...diagram.groups.map((group) => group.y));
+    const title = measuredText(byId.get("diagram:title"));
+    const summary = measuredText(byId.get("diagram:summary"));
+    if (summary !== undefined) {
+      const summaryY = contentTop - REPORT_HEADER_CONTENT_GAP - summary.height;
+      positions.set("diagram:summary", {
+        x: (diagram.width - summary.width) / 2,
+        y: summaryY,
+      });
+      if (title !== undefined) {
+        positions.set("diagram:title", {
+          x: (diagram.width - title.width) / 2,
+          y: summaryY - REPORT_TITLE_SUMMARY_GAP - title.height,
+        });
+      }
+    } else if (title !== undefined) {
+      positions.set("diagram:title", {
+        x: (diagram.width - title.width) / 2,
+        y: contentTop - REPORT_HEADER_CONTENT_GAP - title.height,
+      });
+    }
+    for (const group of diagram.groups) {
+      const id = `text:group:${group.id}`;
+      const label = measuredText(byId.get(id));
+      if (label === undefined) continue;
+      positions.set(id, {
+        x: group.x + (group.width - label.width) / 2,
+        y: group.y + (REPORT_GROUP_TOP_PADDING - label.height) / 2,
+      });
+    }
+  }
+
+  return elements.map((element) => {
+    if (!isRecord(element) || typeof element.id !== "string") return element;
+    const position = positions.get(element.id);
+    if (position === undefined) return element;
+    return {
+      ...element,
+      x: position.x,
+      y: position.y,
+      textAlign: "center",
+      verticalAlign: "middle",
+    };
+  });
+}
+
+function measuredText(
+  element: Record<string, unknown> | undefined,
+): { x: number; y: number; width: number; height: number } | undefined {
+  if (
+    element === undefined
+    || element.type !== "text"
+    || typeof element.x !== "number"
+    || typeof element.y !== "number"
+    || typeof element.width !== "number"
+    || typeof element.height !== "number"
+    || !Number.isFinite(element.x)
+    || !Number.isFinite(element.y)
+    || !Number.isFinite(element.width)
+    || !Number.isFinite(element.height)
+  ) {
+    return undefined;
+  }
+  return {
+    x: element.x,
+    y: element.y,
+    width: element.width,
+    height: element.height,
+  };
+}
+
+/**
  * Maps editor-independent coordinates to Excalidraw element skeletons.
  *
  * @param diagram Deterministically positioned diagram.
@@ -96,11 +274,19 @@ export function diagramToElementSkeletons(
   diagram: PositionedDiagram,
 ): ExcalidrawElementSkeleton[] {
   const paletteByGroup = new Map(
-    diagram.groups.map((group, index) => [group.id, groupPalette(index)]),
+    diagram.groups.map((group, index) => [
+      group.id,
+      group.tone === undefined ? groupPalette(index) : tonePalette(group.tone),
+    ]),
   );
   const groups: ExcalidrawElementSkeleton[] = diagram.groups.flatMap(
     (group, index) => {
-      const palette = groupPalette(index);
+      const palette = group.tone === undefined
+        ? groupPalette(index)
+        : tonePalette(group.tone);
+      const groupFontSize = diagram.kind === "report"
+        ? REPORT_GROUP_FONT_SIZE
+        : STANDARD_GROUP_FONT_SIZE;
       return [
         {
           type: "rectangle" as const,
@@ -123,7 +309,7 @@ export function diagramToElementSkeletons(
           y: group.y + 14,
           text: group.label,
           fontFamily: FONT_FAMILY.Helvetica,
-          fontSize: 15,
+          fontSize: groupFontSize,
           strokeColor: palette.ink,
         },
       ];
@@ -180,13 +366,21 @@ export function diagramToElementSkeletons(
   const nodes: ExcalidrawElementSkeleton[] = [];
   for (const node of diagram.nodes) {
     const groupId = `node-group:${node.id}`;
-    const palette = node.group === undefined
-      ? undefined
-      : paletteByGroup.get(node.group);
-    const innerWidth = Math.max(32, node.width - NODE_PADDING_X);
+    const palette = node.tone === undefined
+      ? node.group === undefined
+        ? undefined
+        : paletteByGroup.get(node.group)
+      : tonePalette(node.tone);
+    const solid = node.variant === "solid";
+    const textStyle = nodeTextStyleFor(diagram.kind, node);
+    const innerWidth = Math.max(32, node.width - textStyle.paddingX);
     // The converter measures raw text and discards any provided width, so
     // both tiers are pre-wrapped with the same estimator that sized the box.
-    const label = wrapPlainText(node.label, LABEL_FONT_SIZE, innerWidth);
+    const label = wrapPlainText(
+      node.label,
+      textStyle.labelFontSize,
+      innerWidth,
+    );
     const labelRows = label.split("\n").length;
     nodes.push({
       type: "rectangle",
@@ -196,11 +390,17 @@ export function diagramToElementSkeletons(
       width: node.width,
       height: node.height,
       groupIds: [groupId],
-      backgroundColor: node.emphasis ? EMPHASIS_COLOR : SURFACE_COLOR,
-      strokeColor: node.emphasis
-        ? EMPHASIS_BORDER_COLOR
-        : palette?.stroke ?? BORDER_COLOR,
-      strokeWidth: node.emphasis ? 2 : 1,
+      backgroundColor: solid
+        ? (palette ?? tonePalette("neutral")).strong
+        : node.emphasis
+          ? palette?.fill ?? EMPHASIS_COLOR
+          : SURFACE_COLOR,
+      strokeColor: solid
+        ? (palette ?? tonePalette("neutral")).stroke
+        : node.emphasis
+          ? palette?.stroke ?? EMPHASIS_BORDER_COLOR
+          : palette?.stroke ?? BORDER_COLOR,
+      strokeWidth: node.emphasis || solid ? 2 : 1,
       fillStyle: "solid",
       roughness: 0,
       roundness: { type: 3 },
@@ -208,30 +408,44 @@ export function diagramToElementSkeletons(
     nodes.push({
       type: "text",
       id: `text:node:${node.id}`,
-      x: node.x + 16,
-      y: node.y + 13,
+      x: node.x + textStyle.paddingX / 2,
+      y: node.y + textStyle.paddingY / 2,
       text: label,
       groupIds: [groupId],
       fontFamily: FONT_FAMILY.Helvetica,
-      fontSize: LABEL_FONT_SIZE,
-      strokeColor: TEXT_COLOR,
+      fontSize: textStyle.labelFontSize,
+      strokeColor: solid ? SOLID_TEXT_COLOR : TEXT_COLOR,
     });
     if (node.detail !== undefined) {
       nodes.push({
         type: "text",
         id: `detail:node:${node.id}`,
-        x: node.x + 16,
-        y: node.y + 13 + labelRows * LABEL_LINE_HEIGHT + 2,
-        text: wrapPlainText(node.detail, DETAIL_FONT_SIZE, innerWidth),
+        x: node.x + textStyle.paddingX / 2,
+        y: node.y
+          + textStyle.paddingY / 2
+          + labelRows * textStyle.labelLineHeight
+          + NATIVE_TEXT_TIER_GAP,
+        text: wrapPlainText(
+          node.detail,
+          textStyle.detailFontSize,
+          innerWidth,
+        ),
         groupIds: [groupId],
         fontFamily: FONT_FAMILY.Helvetica,
-        fontSize: DETAIL_FONT_SIZE,
-        strokeColor: MUTED_COLOR,
+        fontSize: textStyle.detailFontSize,
+        strokeColor: solid ? SOLID_TEXT_COLOR : MUTED_COLOR,
       });
     }
   }
   // The header sits in negative y above the normalized content margin so a
   // wrapped summary can never collide with the first group container.
+  const report = diagram.kind === "report";
+  const titleFontSize = report
+    ? REPORT_TITLE_FONT_SIZE
+    : STANDARD_TITLE_FONT_SIZE;
+  const summaryFontSize = report
+    ? REPORT_SUMMARY_FONT_SIZE
+    : STANDARD_SUMMARY_FONT_SIZE;
   const title: ExcalidrawElementSkeleton[] = [
     {
       type: "text",
@@ -240,7 +454,7 @@ export function diagramToElementSkeletons(
       y: diagram.summary === undefined ? -44 : -76,
       text: diagram.title,
       fontFamily: FONT_FAMILY.Helvetica,
-      fontSize: 24,
+      fontSize: titleFontSize,
       strokeColor: TEXT_COLOR,
     },
     ...(diagram.summary === undefined
@@ -253,11 +467,11 @@ export function diagramToElementSkeletons(
             y: -40,
             text: wrapPlainText(
               diagram.summary,
-              14,
-              Math.min(720, Math.max(240, diagram.width - 80)),
+              summaryFontSize,
+              Math.min(report ? 960 : 720, Math.max(240, diagram.width - 80)),
             ),
             fontFamily: FONT_FAMILY.Helvetica,
-            fontSize: 14,
+            fontSize: summaryFontSize,
             strokeColor: MUTED_COLOR,
           },
         ]),
