@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import type { ChatNodeViewProps } from "@deepseek-ai/dsh-client-ui-conversation/client";
 
+import { jumpToCanvasTab } from "./canvas-tab.ts";
 import css from "./DiagramPreviewNode.module.css";
 
 /** Renderer props without the locale kit: this row registers no locale NS. */
@@ -31,7 +32,15 @@ export function DiagramPreviewNode({
     >
       <header className={css.header}>
         <span className={css.title}>{node.data.title}</span>
-        <span className={css.hint}>在「画布」标签中编辑</span>
+        <button
+          className={css.edit}
+          onClick={(event) => {
+            jumpToCanvasTab(event.currentTarget);
+          }}
+          type="button"
+        >
+          在画布中编辑
+        </button>
       </header>
       <div className={css.body}>
         {!loaded && (

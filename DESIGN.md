@@ -36,7 +36,7 @@
 - Semantic first: Agent 生成紧凑的 `DiagramSpec`，确定性编译器负责布局和 Excalidraw 元素，避免让模型直接生成脆弱的编辑器 JSON。
 - Editing is authoritative: Excalidraw scene 是保存和导出的权威文档；原始 `DiagramSpec` 只记录生成来源，不在手工编辑后覆盖 scene，也不作为 `diagram_read` 的当前内容。
 - Explicit model handoff: 手工修改不会自动进入模型上下文；只有用户要求 Agent 读取当前 diagram 时，`diagram_read` 才从当前 scene 派生受限的文字、图形和连线摘要，并通过普通 Tool Result 记录该版本。
-- Tradeoffs: 首版不改 DSH 核心，因此用户从工具结果进入编辑器时点击“画布”标签；不使用私有 store 或 DOM 查询模拟一键跳转。
+- Tradeoffs: 不改 DSH 核心。预览卡片的“在画布中编辑”按钮通过受控 DOM 降级实现跳转（在文档中查找本插件注册的 `role=tab` 且文本为“画布”的标签并模拟点击，找不到则静默无动作）；rc.6 没有公开的会话视图切换 API（chat store 按 handle 身份隔离、conversation service 不持有视图状态），待上游提供正式 API 后替换此实现。
 - Loading boundary: DSH 目前只为一个 Client 插件提供单个 `client.js`，而 Excalidraw 需要动态资源。轻量 Client 仅注册标签页，选中标签后才由同包、同源 iframe 加载独立 editor 资源，避免把完整编辑器加入每次 Web 启动路径。
 - Iframe trust: editor 与 DSH 同源并运行同一 bundle 的受信代码；iframe 不作为安全隔离边界。插件在加载时要求 WebServer 物理绑定 `127.0.0.1`，并由静态资源路径白名单、严格 CSP、插件自有的有界 RPC 路由、loopback Host/Origin 检查、Host 端 schema 校验、Session 生命周期指纹和 diagram 归属校验共同约束访问。
 

@@ -27,10 +27,20 @@
   text-overflow: ellipsis;
 }
 
-.hint {
+.edit {
   flex: none;
+  padding: 2px 8px;
+  border: 1px solid var(--dsw-alias-separator, rgb(0 0 0 / 12%));
+  border-radius: 6px;
   color: var(--dsw-alias-label-secondary, CanvasText);
   font: var(--dsw-font-xs-12, 400 0.75rem/1.5 sans-serif);
+  background: transparent;
+  cursor: pointer;
+}
+
+.edit:hover {
+  color: var(--dsw-alias-label-primary, CanvasText);
+  background: var(--dsw-alias-bg-layer-2, rgb(0 0 0 / 4%));
 }
 
 .body {
