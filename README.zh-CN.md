@@ -101,7 +101,7 @@ dsh web
 
 ## 兼容性
 
-| 项目 | `0.2.1` 支持范围 |
+| 项目 | `0.3.0` 支持范围 |
 | --- | --- |
 | DeepSeek Harness | `0.1.0-rc.6` |
 | Profile | `web` |
@@ -129,10 +129,10 @@ Release 页面提供同一份预构建 tarball 及其 SHA-256 校验值：
 
 ```sh
 dsh plugin --profile web add \
-  https://github.com/hanzhangzzz/dsh-diagram/releases/download/v0.2.1/dsh-diagram-0.2.1.tgz
+  https://github.com/hanzhangzzz/dsh-diagram/releases/download/v0.3.0/dsh-diagram-0.3.0.tgz
 ```
 
-校验值和版本说明见 [v0.2.1](https://github.com/hanzhangzzz/dsh-diagram/releases/tag/v0.2.1)。
+校验值和版本说明见 [v0.3.0](https://github.com/hanzhangzzz/dsh-diagram/releases/tag/v0.3.0)。
 
 ### 移除
 

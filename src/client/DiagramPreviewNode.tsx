@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import type { ChatNodeViewProps } from "@deepseek-ai/dsh-client-ui-conversation/client";
 
+import { writeCanvasDeepLink } from "../core/canvas-link.ts";
 import { jumpToCanvasTab } from "./canvas-tab.ts";
 import css from "./DiagramPreviewNode.module.css";
 
@@ -35,6 +36,10 @@ export function DiagramPreviewNode({
         <button
           className={css.edit}
           onClick={(event) => {
+            writeCanvasDeepLink(globalThis.sessionStorage ?? null, {
+              sessionId,
+              diagramId: node.data.diagramId,
+            });
             jumpToCanvasTab(event.currentTarget);
           }}
           type="button"

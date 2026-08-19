@@ -15,6 +15,7 @@ import {
   DEFAULT_DIAGRAM_VALIDATION_POLICY,
   type PersistedScene,
 } from "../src/core/contracts.ts";
+import { writeCanvasDeepLink } from "../src/core/canvas-link.ts";
 import type { DiagramRecord, DiagramSummary } from "../src/core/rpc.ts";
 import type { DiagramRpcClient } from "../src/editor/rpc.ts";
 
@@ -148,6 +149,45 @@ describe("DiagramApp", () => {
     expect(stylesheet).toMatch(
       /\.diagramList\[hidden\]\s*\{[^}]*\bdisplay:\s*none\s*;/,
     );
+  });
+
+  it("opens the diagram requested by the chat preview deep link and consumes it", async () => {
+    const olderId = "5f0a4a63-96eb-4b04-97a5-72e63f1e1bc7" as never;
+    const older: DiagramSummary = {
+      ...summary,
+      id: olderId,
+      title: "Older",
+      updatedAt: 1,
+    };
+    const map = new Map<string, string>();
+    const storage = {
+      get length() {
+        return map.size;
+      },
+      clear: () => map.clear(),
+      getItem: (key: string) => map.get(key) ?? null,
+      key: (index: number) => [...map.keys()][index] ?? null,
+      removeItem: (key: string) => void map.delete(key),
+      setItem: (key: string, value: string) => void map.set(key, value),
+    } as Storage;
+    writeCanvasDeepLink(storage, {
+      sessionId: "session-1",
+      diagramId: olderId as unknown as string,
+    });
+    const client = clientWith([summary, older], record);
+
+    render(
+      <DiagramApp client={client} draftStorage={storage} sessionId="session-1" />,
+    );
+
+    await waitFor(() =>
+      expect(client.get).toHaveBeenCalledWith(
+        "session-1",
+        olderId,
+        expect.anything(),
+      ),
+    );
+    expect(map.has("dsh-diagram:canvas-link:v1")).toBe(false);
   });
 
   it("bounds initialization when Excalidraw echoes the persisted scene after every render", async () => {

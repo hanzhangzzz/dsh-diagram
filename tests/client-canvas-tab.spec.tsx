@@ -67,15 +67,20 @@ describe("DiagramPreviewNode edit affordance", () => {
     },
   } as unknown as ComponentProps<typeof DiagramPreviewNode>;
 
-  it("jumps to the canvas tab when the edit button is clicked", () => {
+  it("records the deep link and jumps to the canvas tab on click", () => {
     const tab = canvasTab();
     const clicked = vi.fn();
     tab.addEventListener("click", clicked);
+    sessionStorage.clear();
 
     render(<DiagramPreviewNode {...props} />);
     fireEvent.click(screen.getByRole("button", { name: "在画布中编辑" }));
 
     expect(clicked).toHaveBeenCalledTimes(1);
+    expect(
+      JSON.parse(sessionStorage.getItem("dsh-diagram:canvas-link:v1") ?? "null"),
+    ).toEqual({ sessionId: "session-1", diagramId: "d1" });
+    sessionStorage.clear();
     tab.remove();
   });
 

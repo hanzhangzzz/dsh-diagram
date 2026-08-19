@@ -114,7 +114,7 @@ pnpm run test
 - `src/core/diagram-kinds.ts` 必须保持零运行时依赖（`DIAGRAM_KINDS` 单一事实源从 contracts 移到这里并 re-export）。client bundle 会内联它触达的一切；经它引入 zod 会破坏轻量 Client entry。
 - Client 端 match 只接受 `event.type === "tool/result"` 且 `event.surfaceOp === "append"` 且 meta 解析成功的事件：replace 投影可能重复同一 diagramId，而每个 `(kind, id)` 只允许一个 start。不能 import `isAppendSurfaceEvent` 等 DSH 运行时函数——client bundle purity 只允许 externals 列表内的运行时依赖，DSH 能力一律 type-only import 或走 Cordis service。
 - 预览节点组件不注册 locale namespace，因此 props 类型必须 `Omit<ChatNodeViewProps, "t">`；`sessionId` 来自 session-scope 标准 props，不接受 node data 里的会话身份。
-- 卡片“在画布中编辑”按钮走 `src/client/canvas-tab.ts` 的受控 DOM 降级（查找 `role=tab` 文本“画布”并模拟点击，找不到必须静默返回 false，不得 throw）。这是已记录的上游 API 缺口：rc.6 无公开视图切换 API；DSH 提供正式 API 后替换,勿再新增其他 DOM 查询。标签文本与 `conversation.view` 注册的 label 同源，改名必须同步。
+- 卡片“在画布中编辑”先把 `{sessionId, diagramId}` 写入 `src/core/canvas-link.ts` 的 one-shot sessionStorage deep link（editor 挂载时消费，选择优先级固定为 待恢复草稿 > deep link > 当前选中 > 列表第一张——草稿优先是数据安全约束，不得调换），再走 `src/client/canvas-tab.ts` 的受控 DOM 降级（查找 `role=tab` 文本“画布”并模拟点击，找不到必须静默返回 false，不得 throw）。这是已记录的上游 API 缺口：rc.6 无公开视图切换 API；DSH 提供正式 API 后替换,勿再新增其他 DOM 查询。标签文本与 `conversation.view` 注册的 label 同源，改名必须同步。
 - `preview.html` 是独立 Vite 入口（`assets/preview.js`，rollup input `preview`），**不得 import Excalidraw、React 或任何 CSS**：有 scene 渲染 scene 的简化 SVG（`renderSceneSvg`），无 scene 用 `layoutDiagram` 渲染近似 SVG（`renderSpecSvg`），两条路径都走 DOM API 构建文本节点防注入。预览与编辑器共享 `src/editor/visual-style.ts`（无 Excalidraw 依赖的调色板与字号常量，从 scene.ts 移出）；改调色板只改这一处。
 - 预览页必须先 `list` 后 `get`（拿 Host validation policy 再解析），fork 会话或已删除的 diagram 显示“不存在”占位——fork 不复制 sidecar，这是预期行为不是 bug。传输失败保留重试按钮。
 - vite `entryFileNames` 必须保持 `index → assets/editor.js` 的稳定命名；smoke 和 Host 静态入口依赖它。

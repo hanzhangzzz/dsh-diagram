@@ -20,6 +20,10 @@ import {
   EDITABLE_SCENE_ELEMENT_TYPES,
   type PersistedScene,
 } from "../core/contracts.ts";
+import {
+  clearCanvasDeepLink,
+  readCanvasDeepLink,
+} from "../core/canvas-link.ts";
 import type {
   DiagramClientLimits,
   DiagramRecord,
@@ -159,9 +163,20 @@ export function DiagramApp({
         )
           ? (pendingDraft?.diagramId ?? null)
           : null;
+        // One-shot jump target from the chat preview card. An unsaved pending
+        // draft still wins: restoring user edits outranks navigation intent.
+        const deepLink = readCanvasDeepLink(draftStorage, sessionId);
+        clearCanvasDeepLink(draftStorage);
+        const requestedId = result.value.diagrams.some(
+          (diagram) => diagram.id === deepLink?.diagramId,
+        )
+          ? (deepLink?.diagramId ?? null)
+          : null;
         setSelectedId((current) =>
           pendingDiagramId !== null
             ? pendingDiagramId
+            : requestedId !== null
+            ? requestedId
             : result.value.diagrams.some((diagram) => diagram.id === current)
             ? current
             : (result.value.diagrams[0]?.id ?? null),
