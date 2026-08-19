@@ -64,6 +64,8 @@ const ROUTE_OBSTACLE_PENALTY = 1_000_000;
 const ROUTE_EDGE_CONFLICT_PENALTY = 100_000;
 const ROUTE_SHORT_SEGMENT_PENALTY = 50_000;
 const ROUTE_ALTERNATE_PORT_PENALTY = 256;
+const ROUTE_CROSS_BAND_ALTERNATE_PORT_PENALTY = 25_000;
+const ROUTE_TANGENT_PORT_PENALTY = 10_000;
 const ROUTE_BEND_PENALTY = 24;
 
 /** An absolute canvas coordinate. */
@@ -115,6 +117,8 @@ interface NodeSize {
 }
 
 interface LayoutBox extends PositionedPoint, NodeSize {}
+
+type OrthogonalAxis = "horizontal" | "vertical";
 
 /** Typography and box-density contract shared by layout and scene creation. */
 export interface NodeTextStyle {
@@ -976,8 +980,13 @@ function positionOrthogonalEdges(
     }
     const sourceCenter = nodeCenter(source);
     const targetCenter = nodeCenter(target);
-    const horizontal = Math.abs(targetCenter.x - sourceCenter.x)
-      >= Math.abs(targetCenter.y - sourceCenter.y);
+    const routePreference = orthogonalRoutePreference(
+      spec,
+      source,
+      target,
+      sourceCenter,
+      targetCenter,
+    );
     const horizontalRoute = horizontalBoundaryRoute(
       source,
       target,
@@ -994,8 +1003,21 @@ function positionOrthogonalEdges(
       id: edgeId(index),
       ...edge,
       points: routeOrthogonalEdge(
-        horizontal ? horizontalRoute : verticalRoute,
-        horizontal ? verticalRoute : horizontalRoute,
+        {
+          axis: routePreference.axis,
+          points: routePreference.axis === "horizontal"
+            ? horizontalRoute
+            : verticalRoute,
+        },
+        {
+          axis: routePreference.axis === "horizontal"
+            ? "vertical"
+            : "horizontal",
+          points: routePreference.axis === "horizontal"
+            ? verticalRoute
+            : horizontalRoute,
+        },
+        routePreference.alternatePortPenalty,
         nodes.filter((node) => node.id !== source.id && node.id !== target.id),
         groups.map((group) => groupLabelObstacle(spec.kind, group)),
         positioned.filter((existing) => !edgesShareEndpoint(edge, existing)),
@@ -1003,6 +1025,44 @@ function positionOrthogonalEdges(
     });
   }
   return positioned;
+}
+
+function orthogonalRoutePreference(
+  spec: DiagramSpec,
+  source: PositionedNode,
+  target: PositionedNode,
+  sourceCenter: PositionedPoint,
+  targetCenter: PositionedPoint,
+): { axis: OrthogonalAxis; alternatePortPenalty: number } {
+  if (spec.kind === "report") {
+    const sourcePlacement = reportPlacementFor(spec, source);
+    const targetPlacement = reportPlacementFor(spec, target);
+    if (
+      sourcePlacement !== undefined
+      && targetPlacement !== undefined
+      && sourcePlacement !== targetPlacement
+    ) {
+      return {
+        axis: "vertical",
+        alternatePortPenalty: ROUTE_CROSS_BAND_ALTERNATE_PORT_PENALTY,
+      };
+    }
+  }
+  return {
+    axis: Math.abs(targetCenter.x - sourceCenter.x)
+        >= Math.abs(targetCenter.y - sourceCenter.y)
+      ? "horizontal"
+      : "vertical",
+    alternatePortPenalty: ROUTE_ALTERNATE_PORT_PENALTY,
+  };
+}
+
+function reportPlacementFor(
+  spec: DiagramSpec,
+  node: PositionedNode,
+): DiagramGroup["placement"] {
+  const group = spec.groups?.find((candidate) => candidate.id === node.group);
+  return group === undefined ? undefined : (group.placement ?? "main");
 }
 
 function edgesShareEndpoint(
@@ -1064,8 +1124,9 @@ function verticalBoundaryRoute(
 }
 
 function routeOrthogonalEdge(
-  preferred: PositionedPoint[],
-  alternate: PositionedPoint[],
+  preferred: OrthogonalRouteSeed,
+  alternate: OrthogonalRouteSeed,
+  alternatePortPenalty: number,
   obstacles: PositionedNode[],
   groupLabelObstacles: ReadonlyArray<LayoutBox>,
   positionedEdges: PositionedEdge[],
@@ -1075,11 +1136,17 @@ function routeOrthogonalEdge(
     ...groupLabelObstacles,
   ];
   const candidates = [
-    ...orthogonalRouteCandidates(preferred, blockedRegions, 0),
     ...orthogonalRouteCandidates(
-      alternate,
+      preferred.points,
       blockedRegions,
-      ROUTE_ALTERNATE_PORT_PENALTY,
+      0,
+      preferred.axis,
+    ),
+    ...orthogonalRouteCandidates(
+      alternate.points,
+      blockedRegions,
+      alternatePortPenalty,
+      alternate.axis,
     ),
   ];
   const clear = candidates.filter(
@@ -1132,10 +1199,16 @@ interface OrthogonalRouteCandidate {
   portPenalty: number;
 }
 
+interface OrthogonalRouteSeed {
+  axis: OrthogonalAxis;
+  points: PositionedPoint[];
+}
+
 function orthogonalRouteCandidates(
   seed: PositionedPoint[],
   obstacles: ReadonlyArray<LayoutBox>,
   portPenalty: number,
+  axis: OrthogonalAxis,
 ): OrthogonalRouteCandidate[] {
   const simplifiedSeed = simplifyOrthogonalPoints(seed);
   const start = simplifiedSeed[0];
@@ -1163,25 +1236,90 @@ function orthogonalRouteCandidates(
       ]),
     ],
   );
+  const alignedLaneCandidates = axis === "vertical"
+    ? laneY.map((y) =>
+        simplifyOrthogonalPoints([
+          start,
+          { x: start.x, y },
+          { x: end.x, y },
+          end,
+        ])
+      )
+    : laneX.map((x) =>
+        simplifyOrthogonalPoints([
+          start,
+          { x, y: start.y },
+          { x, y: end.y },
+          end,
+        ])
+      );
+  const tangentLaneCandidates = axis === "vertical"
+    ? laneX.map((x) =>
+        simplifyOrthogonalPoints([
+          start,
+          { x, y: start.y },
+          { x, y: end.y },
+          end,
+        ])
+      )
+    : laneY.map((y) =>
+        simplifyOrthogonalPoints([
+          start,
+          { x: start.x, y },
+          { x: end.x, y },
+          end,
+        ])
+      );
   return [
-    simplifiedSeed,
-    ...laneY.map((y) =>
+    ...[
+      simplifiedSeed,
+      ...alignedLaneCandidates,
+      ...orthogonalDoglegCandidates(start, end, axis, laneX, laneY),
+    ].map((points) => ({ points, portPenalty })),
+    // Tangential departure is a last resort when every normal-port route
+    // would collide with an independent edge.
+    ...tangentLaneCandidates.map((points) => ({
+      points,
+      portPenalty: portPenalty + ROUTE_TANGENT_PORT_PENALTY,
+    })),
+  ];
+}
+
+function orthogonalDoglegCandidates(
+  start: PositionedPoint,
+  end: PositionedPoint,
+  axis: OrthogonalAxis,
+  laneX: number[],
+  laneY: number[],
+): Array<[PositionedPoint, PositionedPoint, ...PositionedPoint[]]> {
+  if (axis === "vertical") {
+    const direction = end.y >= start.y ? 1 : -1;
+    const startEscapeY = start.y + direction * ORTHOGONAL_EDGE_CLEARANCE;
+    const endApproachY = end.y - direction * ORTHOGONAL_EDGE_CLEARANCE;
+    return laneX.map((x) =>
       simplifyOrthogonalPoints([
         start,
-        { x: start.x, y },
-        { x: end.x, y },
+        { x: start.x, y: startEscapeY },
+        { x, y: startEscapeY },
+        { x, y: endApproachY },
+        { x: end.x, y: endApproachY },
         end,
       ])
-    ),
-    ...laneX.map((x) =>
-      simplifyOrthogonalPoints([
-        start,
-        { x, y: start.y },
-        { x, y: end.y },
-        end,
-      ])
-    ),
-  ].map((points) => ({ points, portPenalty }));
+    );
+  }
+  const direction = end.x >= start.x ? 1 : -1;
+  const startEscapeX = start.x + direction * ORTHOGONAL_EDGE_CLEARANCE;
+  const endApproachX = end.x - direction * ORTHOGONAL_EDGE_CLEARANCE;
+  return laneY.map((y) =>
+    simplifyOrthogonalPoints([
+      start,
+      { x: startEscapeX, y: start.y },
+      { x: startEscapeX, y },
+      { x: endApproachX, y },
+      { x: endApproachX, y: end.y },
+      end,
+    ])
+  );
 }
 
 function uniqueNumbers(values: number[]): number[] {

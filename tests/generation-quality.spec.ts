@@ -145,7 +145,7 @@ describe("topic-independent report quality", () => {
       expectNodesInsideGroups(layout);
       expectEdgesAvoidUnrelatedNodes(layout);
       expectIndependentEdgesDoNotConflict(layout);
-      expectRouteBudgets(layout);
+      expectRouteBudgets(layout, parsed);
       for (const edge of layout.edges) {
         for (let index = 1; index < edge.points.length; index += 1) {
           const previous = edge.points[index - 1];
@@ -213,11 +213,54 @@ function expectIndependentEdgesDoNotConflict(
   }
 }
 
-function expectRouteBudgets(layout: PositionedDiagram): void {
+function expectRouteBudgets(
+  layout: PositionedDiagram,
+  spec: DiagramSpec,
+): void {
+  const groupPlacements = new Map(
+    spec.groups?.map((group) => [group.id, group.placement ?? "main"]),
+  );
+  const nodePlacements = new Map(
+    spec.nodes.map((node) => [
+      node.id,
+      node.group === undefined ? undefined : groupPlacements.get(node.group),
+    ]),
+  );
   for (const edge of layout.edges) {
-    expect(edge.points.length - 2, edge.id).toBeLessThanOrEqual(2);
+    const sourcePlacement = nodePlacements.get(edge.from);
+    const targetPlacement = nodePlacements.get(edge.to);
+    const crossesBand = sourcePlacement !== undefined
+      && targetPlacement !== undefined
+      && sourcePlacement !== targetPlacement;
+    expect(edge.points.length - 2, edge.id).toBeLessThanOrEqual(4);
     const first = edge.points[0];
     const last = edge.points.at(-1);
+    const second = edge.points[1];
+    const penultimate = edge.points.at(-2);
+    const source = layout.nodes.find((node) => node.id === edge.from);
+    const target = layout.nodes.find((node) => node.id === edge.to);
+    expect(source, `${edge.id}/source`).toBeDefined();
+    expect(target, `${edge.id}/target`).toBeDefined();
+    if (
+      first?.x === source?.x
+      || first?.x === (source?.x ?? 0) + (source?.width ?? 0)
+    ) {
+      expect(second?.y, `${edge.id}/source port`).toBe(first?.y);
+    } else {
+      expect(second?.x, `${edge.id}/source port`).toBe(first?.x);
+    }
+    if (
+      last?.x === target?.x
+      || last?.x === (target?.x ?? 0) + (target?.width ?? 0)
+    ) {
+      expect(penultimate?.y, `${edge.id}/target port`).toBe(last?.y);
+    } else {
+      expect(penultimate?.x, `${edge.id}/target port`).toBe(last?.x);
+    }
+    if (crossesBand) {
+      expect(edge.points[1]?.x, `${edge.id}/source port`).toBe(first?.x);
+      expect(edge.points.at(-2)?.x, `${edge.id}/target port`).toBe(last?.x);
+    }
     const directLength = Math.abs((last?.x ?? 0) - (first?.x ?? 0))
       + Math.abs((last?.y ?? 0) - (first?.y ?? 0));
     let routedLength = 0;

@@ -50,7 +50,7 @@
 - Semantic color: definition、execution、external、evidence、risk、target 和 neutral 使用稳定色义；颜色由语义字段决定，不再由分组数组下标决定。颜色只是冗余编码，标题和正文仍必须独立表达含义。
 - Native text geometry: 文本先由 Excalidraw 官方转换器取得真实宽高，再按容器和文字簇重新定位。首次打开、双击进入编辑、退出编辑和导出不得引起文字跳位。
 - Backward compatibility: 已持久化的旧 `DiagramSpec` 没有新增字段时继续按原 kind 和布局生成；scene 一旦存在仍是权威数据，生成器升级不得重排用户已编辑 scene。
-- Quality gate: 确定性测试检查顺序、边界、重叠和可读密度；跨主题 report 样本要求边不穿无关节点、独立边零交叉/零重叠、每边最多两个折点、最短线段至少 16 px、路由长度不超过端点曼哈顿距离的 1.35 倍。真实 Excalidraw 测试检查文本几何稳定；真实 DSH Web 用跨主题样本检查生成、打开、编辑、刷新和导出。随机模型输出不能替代确定性编译器门禁。
+- Quality gate: 确定性测试检查顺序、边界、重叠和可读密度；跨主题 report 样本要求边不穿无关节点、独立边零交叉/零重叠、源端和目标端都沿边框法向进出，无遮挡路径保持短路径，跨带或绕障路径最多四个折点，最短线段至少 16 px、路由长度不超过端点曼哈顿距离的 1.35 倍。真实 Excalidraw 测试检查文本几何稳定；真实 DSH Web 用跨主题样本检查生成、打开、编辑、刷新和导出。随机模型输出不能替代确定性编译器门禁。
 
 ## Visual language
 
@@ -112,6 +112,6 @@
 - GitHub repository: `hanzhangzzz/dsh-diagram`
 - Discovery metadata: `dsh-plugin` topic and `dsh.bundle.patch`
 - Current release: `0.2.1`; the public update baseline used for its artifact verification is `0.2.0`.
-- Current development candidate: `0.2.2-dev.1`; it is not a public npm or GitHub release.
+- Current development candidate: `0.2.2-dev.2`; it is not a public npm or GitHub release.
 - Installable commit identity: 每个准备打包、提交和本地安装的开发候选都提升为唯一 prerelease 版本；不得以已有版本重新打包变化后的代码。公开 release commit 再把 prerelease 提升为对应正式 semver。
 - Upgrade evidence: 发布前用唯一 tarball 从上一公开版本执行 DSH `plugin update`，分别启动更新前后的 Web 并核对安装 manifest；公开发布后再用 npm `@latest` 复核 registry 更新路径。

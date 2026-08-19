@@ -141,7 +141,8 @@ describe("deterministic diagram layout", () => {
 
     expect(source).toBeDefined();
     expect(target).toBeDefined();
-    expect(edge?.points).toHaveLength(4);
+    expect(edge?.points.length).toBeGreaterThanOrEqual(4);
+    expect(edge?.points.length).toBeLessThanOrEqual(6);
     expect(edge?.points[0]).toEqual({
       x: (source?.x ?? 0) + (source?.width ?? 0),
       y: (source?.y ?? 0) + (source?.height ?? 0) / 2,
@@ -150,6 +151,8 @@ describe("deterministic diagram layout", () => {
       x: target?.x,
       y: (target?.y ?? 0) + (target?.height ?? 0) / 2,
     });
+    expect(edge?.points[1]?.y).toBe(edge?.points[0]?.y);
+    expect(edge?.points.at(-2)?.y).toBe(edge?.points.at(-1)?.y);
     for (let index = 1; index < (edge?.points.length ?? 0); index += 1) {
       const previous = edge?.points[index - 1];
       const current = edge?.points[index];
@@ -159,6 +162,61 @@ describe("deterministic diagram layout", () => {
           + Math.abs((current?.y ?? 0) - (previous?.y ?? 0)),
       ).toBeGreaterThanOrEqual(16);
     }
+  });
+
+  it("routes report edges from a main column into a bottom band vertically", () => {
+    const layout = layoutDiagram({
+      kind: "report",
+      title: "跨带结论",
+      groups: [
+        { id: "assets", label: "资产", placement: "main" },
+        { id: "run", label: "执行", placement: "main" },
+        { id: "evidence", label: "证据", placement: "main" },
+        { id: "gate", label: "门禁", placement: "main" },
+        {
+          id: "target",
+          label: "目标闭环",
+          placement: "bottom",
+          direction: "row",
+        },
+      ],
+      nodes: [
+        { id: "asset", label: "测试资产", group: "assets" },
+        { id: "runner", label: "开发期执行", group: "run" },
+        { id: "artifact", label: "平台证据", group: "evidence" },
+        { id: "missing", label: "未执行", group: "gate" },
+        { id: "exists", label: "存在 ≠ 生效", group: "gate" },
+        { id: "block", label: "阻塞 Merge", group: "target" },
+      ],
+      edges: [
+        { from: "artifact", to: "missing" },
+        { from: "missing", to: "block" },
+      ],
+    });
+    const source = layout.nodes.find((node) => node.id === "missing");
+    const target = layout.nodes.find((node) => node.id === "block");
+    const incoming = layout.edges.find((edge) => edge.to === "missing");
+    const outgoing = layout.edges.find((edge) => edge.from === "missing");
+
+    expect(source).toBeDefined();
+    expect(target).toBeDefined();
+    expect(outgoing?.points[0]).toEqual({
+      x: (source?.x ?? 0) + (source?.width ?? 0) / 2,
+      y: (source?.y ?? 0) + (source?.height ?? 0),
+    });
+    expect(outgoing?.points.at(-1)).toEqual({
+      x: (target?.x ?? 0) + (target?.width ?? 0) / 2,
+      y: target?.y,
+    });
+    expect(outgoing?.points[0]).not.toEqual(incoming?.points.at(-1));
+    expect(outgoing?.points[1]?.x).toBe(outgoing?.points[0]?.x);
+    expect(outgoing?.points[1]?.y).toBeGreaterThan(
+      outgoing?.points[0]?.y ?? Number.POSITIVE_INFINITY,
+    );
+    expect(outgoing?.points.at(-2)?.x).toBe(outgoing?.points.at(-1)?.x);
+    expect(outgoing?.points.at(-2)?.y).toBeLessThan(
+      outgoing?.points.at(-1)?.y ?? Number.NEGATIVE_INFINITY,
+    );
   });
 
   it("routes report edges around unrelated nodes", () => {
