@@ -302,13 +302,11 @@ function shapeLinear(doc: Document, element: SceneElement): SVGElement {
     (point) =>
       [element.x + point[0], element.y + point[1]] as [number, number],
   );
-  const polyline = doc.createElementNS(SVG_NS, "polyline");
-  polyline.setAttribute(
-    "points",
-    points.map(([x, y]) => `${String(x)},${String(y)}`).join(" "),
-  );
+  const polyline = doc.createElementNS(SVG_NS, "path");
+  polyline.setAttribute("d", roundedPathD(points));
   applyPaint(polyline, element);
   polyline.setAttribute("fill", "none");
+  polyline.setAttribute("stroke-linecap", "round");
   group.append(polyline);
 
   const stroke = element.strokeColor ?? TEXT_COLOR;
@@ -334,6 +332,47 @@ function shapeLinear(doc: Document, element: SceneElement): SVGElement {
     }
   }
   return group;
+}
+
+/**
+ * Builds a path with rounded corners through a polyline.
+ * @param points Absolute polyline points.
+ * @returns SVG path data with quadratic corner rounding.
+ */
+function roundedPathD(points: readonly (readonly [number, number])[]): string {
+  if (points.length === 0) return "";
+  const first = points[0] as readonly [number, number];
+  if (points.length <= 2) {
+    return points
+      .map(([x, y], index) =>
+        `${index === 0 ? "M" : "L"}${String(x)} ${String(y)}`,
+      )
+      .join(" ");
+  }
+  const parts = [`M${String(first[0])} ${String(first[1])}`];
+  for (let index = 1; index < points.length - 1; index += 1) {
+    const previous = points[index - 1] as readonly [number, number];
+    const corner = points[index] as readonly [number, number];
+    const next = points[index + 1] as readonly [number, number];
+    const inLength = Math.hypot(corner[0] - previous[0], corner[1] - previous[1]);
+    const outLength = Math.hypot(next[0] - corner[0], next[1] - corner[1]);
+    const radius = Math.min(12, inLength / 2, outLength / 2);
+    if (radius < 1 || inLength === 0 || outLength === 0) {
+      parts.push(`L${String(corner[0])} ${String(corner[1])}`);
+      continue;
+    }
+    const inX = corner[0] - ((corner[0] - previous[0]) / inLength) * radius;
+    const inY = corner[1] - ((corner[1] - previous[1]) / inLength) * radius;
+    const outX = corner[0] + ((next[0] - corner[0]) / outLength) * radius;
+    const outY = corner[1] + ((next[1] - corner[1]) / outLength) * radius;
+    parts.push(
+      `L${String(inX)} ${String(inY)}`,
+      `Q${String(corner[0])} ${String(corner[1])} ${String(outX)} ${String(outY)}`,
+    );
+  }
+  const last = points[points.length - 1] as readonly [number, number];
+  parts.push(`L${String(last[0])} ${String(last[1])}`);
+  return parts.join(" ");
 }
 
 function arrowhead(
@@ -502,16 +541,15 @@ function renderSpecEdges(
   for (const [index, edge] of diagram.edges.entries()) {
     const group = doc.createElementNS(SVG_NS, "g");
     group.setAttribute("data-edge-index", String(index));
-    const polyline = doc.createElementNS(SVG_NS, "polyline");
+    const polyline = doc.createElementNS(SVG_NS, "path");
     polyline.setAttribute(
-      "points",
-      edge.points
-        .map((point) => `${String(point.x)},${String(point.y)}`)
-        .join(" "),
+      "d",
+      roundedPathD(edge.points.map((point) => [point.x, point.y] as const)),
     );
     polyline.setAttribute("fill", "none");
     polyline.setAttribute("stroke", BORDER_COLOR);
     polyline.setAttribute("stroke-width", "2");
+    polyline.setAttribute("stroke-linecap", "round");
     group.append(polyline);
 
     const tip = edge.points[edge.points.length - 1];

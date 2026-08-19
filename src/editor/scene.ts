@@ -267,6 +267,9 @@ export function diagramToElementSkeletons(
         end: { id: `node:${edge.to}` },
         strokeColor: MUTED_COLOR,
         roughness: 0,
+        // Rounded elbows: orthogonal routes read mechanical with hard 90°
+        // corners; proportional roundness keeps the same path but soft.
+        roundness: { type: 2 },
         endArrowhead: "arrow",
       },
       ...(label === undefined

@@ -107,6 +107,7 @@ pnpm run test
 - core layout 的边点是绝对坐标，Excalidraw `points` 是相对元素起点。转换时令 arrow `x/y` 等于首个绝对点，再让每个 point 减去起点，并保持稳定 `edge-N` id 和 `node:*` binding；禁止直接混用两种坐标。
 - 布局必须确定且保持输入顺序：flow 与无分组 architecture 为 Dagre LR，带分组的 architecture 使用等宽分区带状布局（组按输入顺序纵向堆叠、未分组节点为首个无容器带、行在共享内容宽度内居中换行、容器框由布局显式给出），hierarchy 为 TB，Dagre 使用 named multigraph 保留并行边；所有节点、边和分组统一经过 normalize、边界偏移和舍入。不能依赖 Dagre 返回顺序重排持久 id。
 - 边标签锚点由 `placeEdgeLabels` 在 normalize 后统一计算（`PositionedEdge.labelAnchor`，中心点语义）：候选=各路段中点的双侧多档垂直偏移，按段长与档位确定性评分，节点框重叠是主导罚分，已放置标签与其他边路径次之；scene 与 preview 渲染器只消费锚点，不得各自再发明中点式摆放。标签宽高估算用 `edgeLabelBoxWidth`/`EDGE_LABEL_BOX_HEIGHT`，测试与渲染共享同一契约。
+- 跨区构图纪律：分组框对"两端都不属于它"的边是**硬障碍**（在 `positionOrthogonalEdges` 注入），跨区边只走区域间走廊和两侧空白，绝不横穿无关区域；为此 generation-quality 的路程预算是 1.75×直线距离，不要为省路程收紧回去。连线拐角一律圆角：scene 箭头带 `roundness: {type: 2}`，preview 用 `roundedPathD` 的二次曲线拐角。
 - Host 在 init 时通过 `ctx.skills.register()` 注册 `canvas-diagram` 运行时 skill（模型与用户双向可调用），这是中文泛化提示路由到 `diagram_create` 的机制，也是输入框 `/` 命令的入口；disposer 由 `ctx.effect` 持有，`skills` 在 `static inject` 中为必需服务。删除该注册会让泛化图表请求重新流向工作区 skill。
 
 ## 对话流内嵌预览（chat preview）

@@ -1222,7 +1222,23 @@ function positionOrthogonalEdges(
         },
         routePreference.alternatePortPenalty,
         nodes.filter((node) => node.id !== source.id && node.id !== target.id),
-        groups.map((group) => groupLabelObstacle(spec.kind, group)),
+        [
+          ...groups.map((group) => groupLabelObstacle(spec.kind, group)),
+          // Composition discipline: a band that owns neither endpoint is a
+          // hard obstacle, so cross-band edges travel corridors and side
+          // margins instead of slicing through unrelated regions.
+          ...groups
+            .filter(
+              (group) =>
+                group.id !== source.group && group.id !== target.group,
+            )
+            .map((group) => ({
+              x: group.x,
+              y: group.y,
+              width: group.width,
+              height: group.height,
+            })),
+        ],
         positioned.filter((existing) => !edgesShareEndpoint(edge, existing)),
       ),
     });

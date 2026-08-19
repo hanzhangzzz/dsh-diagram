@@ -274,7 +274,9 @@ function expectRouteBudgets(
       routedLength += segmentLength;
       expect(segmentLength, edge.id).toBeGreaterThanOrEqual(16);
     }
-    expect(routedLength / directLength, edge.id).toBeLessThanOrEqual(1.35);
+    // Cross-region edges must detour around bands owning neither endpoint
+    // (composition discipline), so the budget admits a bounded detour.
+    expect(routedLength / directLength, edge.id).toBeLessThanOrEqual(1.75);
   }
 }
 

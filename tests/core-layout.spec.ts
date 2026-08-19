@@ -639,3 +639,46 @@ describe("edge label placement", () => {
     expect(layoutDiagram(spec)).toEqual(layoutDiagram(spec));
   });
 });
+
+describe("cross-band routing discipline", () => {
+  it("never routes an edge through a band owning neither endpoint", () => {
+    const spec: DiagramSpec = {
+      kind: "architecture",
+      title: "跨带纪律",
+      nodes: [
+        { id: "a", label: "顶", group: "top" },
+        { id: "b1", label: "中一", group: "mid" },
+        { id: "b2", label: "中二", group: "mid" },
+        { id: "c", label: "底", group: "low" },
+      ],
+      edges: [
+        { from: "a", to: "c", label: "跳带边" },
+        { from: "a", to: "b1" },
+        { from: "b2", to: "c" },
+      ],
+      groups: [
+        { id: "top", label: "上" },
+        { id: "mid", label: "中" },
+        { id: "low", label: "下" },
+      ],
+    };
+    const layout = layoutDiagram(spec);
+    const nodeGroup = new Map(spec.nodes.map((node) => [node.id, node.group]));
+    for (const edge of layout.edges) {
+      const owned = new Set([nodeGroup.get(edge.from), nodeGroup.get(edge.to)]);
+      for (const group of layout.groups) {
+        if (owned.has(group.id)) continue;
+        for (let i = 0; i < edge.points.length - 1; i += 1) {
+          expect(
+            segmentIntersectsBoxInterior(
+              edge.points[i] as { x: number; y: number },
+              edge.points[i + 1] as { x: number; y: number },
+              group,
+            ),
+            `${edge.id} crosses foreign band ${group.id}`,
+          ).toBe(false);
+        }
+      }
+    }
+  });
+});
