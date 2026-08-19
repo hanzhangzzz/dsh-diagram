@@ -82,7 +82,7 @@ Later sections use this short `dsh` form; substitute the `npx -y @deepseek-ai/ds
 4. Edit the diagram directly. **Saved** means the Host has completed a durable write.
 5. Export the result, or ask the Agent to call `diagram_read` before continuing from your manual changes.
 
-The plugin supports report boards, flowcharts, architecture diagrams, timelines, hierarchies, comparisons, and relationship diagrams. Evidence-heavy reports use deterministic full-width context/outcome bands, aligned main columns, semantic colors, orthogonal connectors, and converter-measured native text placement.
+The plugin supports report boards, flowcharts, architecture diagrams, timelines, hierarchies, comparisons, and relationship diagrams. Evidence-heavy reports use deterministic full-width context/outcome bands, aligned main columns, semantic colors, and converter-measured native text placement. Report and grouped-architecture connectors select stable node-boundary ports and orthogonal corridors while avoiding unrelated nodes, group headings, and independent routed edges.
 
 ## What it adds
 
@@ -101,7 +101,7 @@ The plugin does not fetch articles and does not inject UI into arbitrary website
 
 ## Compatibility
 
-| Item | Supported in `0.3.0` |
+| Item | Supported in `0.3.1` |
 | --- | --- |
 | DeepSeek Harness | `0.1.0-rc.6` |
 | Profile | `web` |
@@ -129,10 +129,10 @@ The release page publishes the same prebuilt tarball with a SHA-256 checksum:
 
 ```sh
 dsh plugin --profile web add \
-  https://github.com/hanzhangzzz/dsh-diagram/releases/download/v0.3.0/dsh-diagram-0.3.0.tgz
+  https://github.com/hanzhangzzz/dsh-diagram/releases/download/v0.3.1/dsh-diagram-0.3.1.tgz
 ```
 
-See [v0.3.0](https://github.com/hanzhangzzz/dsh-diagram/releases/tag/v0.3.0) for the checksum and release notes.
+See [v0.3.1](https://github.com/hanzhangzzz/dsh-diagram/releases/tag/v0.3.1) for the checksum and release notes.
 
 ### Remove
 

@@ -82,7 +82,7 @@ dsh web
 4. 直接修改画布。“已保存”表示 Host 已完成持久化写入。
 5. 导出结果；如果希望 Agent 继续处理手工修改后的内容，先让它调用 `diagram_read`。
 
-插件支持报告图、流程图、架构图、时间线、层级图、对比图和关系图。信息密集的报告图采用确定性的顶部/底部通栏、对齐主体列、语义配色、正交连线和基于 Excalidraw 实际测量尺寸的原生文字定位。
+插件支持报告图、流程图、架构图、时间线、层级图、对比图和关系图。信息密集的报告图采用确定性的顶部/底部通栏、对齐主体列、语义配色和基于 Excalidraw 实际测量尺寸的原生文字定位。报告图和带分组的架构图会选择稳定的节点边界端口与正交通道，并绕开无关节点、分组标题和已经布置的独立连线。
 
 ## 插件增加了什么
 
@@ -101,7 +101,7 @@ dsh web
 
 ## 兼容性
 
-| 项目 | `0.3.0` 支持范围 |
+| 项目 | `0.3.1` 支持范围 |
 | --- | --- |
 | DeepSeek Harness | `0.1.0-rc.6` |
 | Profile | `web` |
@@ -129,10 +129,10 @@ Release 页面提供同一份预构建 tarball 及其 SHA-256 校验值：
 
 ```sh
 dsh plugin --profile web add \
-  https://github.com/hanzhangzzz/dsh-diagram/releases/download/v0.3.0/dsh-diagram-0.3.0.tgz
+  https://github.com/hanzhangzzz/dsh-diagram/releases/download/v0.3.1/dsh-diagram-0.3.1.tgz
 ```
 
-校验值和版本说明见 [v0.3.0](https://github.com/hanzhangzzz/dsh-diagram/releases/tag/v0.3.0)。
+校验值和版本说明见 [v0.3.1](https://github.com/hanzhangzzz/dsh-diagram/releases/tag/v0.3.1)。
 
 ### 移除
 
