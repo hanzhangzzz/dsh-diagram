@@ -7,9 +7,17 @@
 [![license](https://img.shields.io/github/license/hanzhangzzz/dsh-diagram?style=flat-square)](./LICENSE)
 [![DeepSeek Harness](https://img.shields.io/badge/DeepSeek_Harness-0.1.0--rc.6-4c6ef5?style=flat-square)](https://github.com/deepseek-ai/deepseek-harness)
 
-把已经进入 DeepSeek Harness 会话的任意文章变成可编辑的 Excalidraw 画布。Agent 负责提炼结构，你直接在 DSH 中调整文字、节点和连线。
+把已经进入 DeepSeek Harness 会话的任意文章变成可编辑的 Excalidraw 画布。Agent 负责提炼结构，你直接在 DSH 中调整文字、节点和连线。不是用完即弃的 Mermaid 代码块，而是一张可以持续编辑、在对话流中预览、随时导出的活画布。
 
 ![dsh-diagram 画布演示](https://raw.githubusercontent.com/hanzhangzzz/dsh-diagram/assets/dsh-diagram-demo.gif)
+
+一行安装，然后在任意 DSH 会话输入 `/` 选择 **canvas-diagram**：
+
+```sh
+npx -y @deepseek-ai/dsh@0.1.0-rc.6 plugin --profile web add dsh-diagram@latest
+```
+
+完整前置条件与验证见[快速安装](#快速安装)。
 
 ## 为什么用 dsh-diagram？
 

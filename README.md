@@ -7,9 +7,17 @@ English | [简体中文](https://github.com/hanzhangzzz/dsh-diagram/blob/master/
 [![license](https://img.shields.io/github/license/hanzhangzzz/dsh-diagram?style=flat-square)](./LICENSE)
 [![DeepSeek Harness](https://img.shields.io/badge/DeepSeek_Harness-0.1.0--rc.6-4c6ef5?style=flat-square)](https://github.com/deepseek-ai/deepseek-harness)
 
-Turn any article already available in a DeepSeek Harness session into an editable Excalidraw canvas. The Agent creates the structure; you refine the text, nodes, and connections directly in DSH.
+Turn any article already available in a DeepSeek Harness session into an editable Excalidraw canvas. The Agent creates the structure; you refine the text, nodes, and connections directly in DSH. Not a throwaway Mermaid block — a live canvas you keep editing, previewing in the chat, and exporting.
 
 ![dsh-diagram canvas demo](https://raw.githubusercontent.com/hanzhangzzz/dsh-diagram/assets/dsh-diagram-demo.gif)
+
+One-line install, then type `/` and pick **canvas-diagram** in any DSH session:
+
+```sh
+npx -y @deepseek-ai/dsh@0.1.0-rc.6 plugin --profile web add dsh-diagram@latest
+```
+
+Full requirements and verification: [Quick install](#quick-install).
 
 ## Why dsh-diagram?
 
