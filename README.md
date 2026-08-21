@@ -7,15 +7,19 @@ English | [简体中文](https://github.com/hanzhangzzz/dsh-diagram/blob/master/
 [![license](https://img.shields.io/github/license/hanzhangzzz/dsh-diagram?style=flat-square)](./LICENSE)
 [![DeepSeek Harness](https://img.shields.io/badge/DeepSeek_Harness-0.1.0--rc.6-4c6ef5?style=flat-square)](https://github.com/deepseek-ai/deepseek-harness)
 
-Turn any article already available in a DeepSeek Harness session into an editable Excalidraw canvas. The Agent creates the structure; you refine the text, nodes, and connections directly in DSH. Not a throwaway Mermaid block — a live canvas you keep editing, previewing in the chat, and exporting.
+Your DSH session already understands the article. Turn that understanding into an Excalidraw canvas you can keep editing.
 
-![dsh-diagram canvas demo](https://raw.githubusercontent.com/hanzhangzzz/dsh-diagram/assets/dsh-diagram-demo.gif)
+The Agent creates the first structure; you refine it in DSH, autosave it, and export it. The result stays editable instead of becoming disposable Mermaid output.
 
-One-line install, then type `/` and pick **canvas-diagram** in any DSH session:
+![From a DSH article session to an editable, saved Excalidraw canvas](https://raw.githubusercontent.com/hanzhangzzz/dsh-diagram/assets/dsh-diagram-demo.gif)
+
+Install it in one command, then type `/` and pick **canvas-diagram** in any DSH session:
 
 ```sh
 npx -y @deepseek-ai/dsh@0.1.0-rc.6 plugin --profile web add dsh-diagram@latest
 ```
+
+> Useful for your DSH toolbox? Star the repo so you can find it when the next long article needs a diagram.
 
 Full requirements and verification: [Quick install](#quick-install).
 
@@ -23,10 +27,7 @@ Full requirements and verification: [Quick install](#quick-install).
 
 - **Editable, not disposable.** Continue working in a full Excalidraw canvas instead of accepting a static generated image.
 - **Built into the conversation.** A live preview card lands in the chat flow right after creation, and the **Canvas** tab opens the full editor without leaving the DSH session.
-- **Safe autosave.** Revision-based compare-and-set prevents a stale editor from silently overwriting newer work.
-- **Ready to share.** Export `.excalidraw`, SVG, or PNG.
-- **Model context stays explicit.** Manual edits reach the Agent only when you ask it to call `diagram_read`.
-- **Adaptive, evidence-bound structure.** The built-in skill selects a diagram recipe from the source relationships, preserves stated facts and uncertainty, and prefers a smaller truthful diagram over invented completeness.
+- **Saved and ready to share.** Revision-safe autosave protects newer work, and export produces `.excalidraw`, SVG, or PNG.
 
 ## Quick install
 

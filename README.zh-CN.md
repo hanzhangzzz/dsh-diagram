@@ -7,9 +7,11 @@
 [![license](https://img.shields.io/github/license/hanzhangzzz/dsh-diagram?style=flat-square)](./LICENSE)
 [![DeepSeek Harness](https://img.shields.io/badge/DeepSeek_Harness-0.1.0--rc.6-4c6ef5?style=flat-square)](https://github.com/deepseek-ai/deepseek-harness)
 
-把已经进入 DeepSeek Harness 会话的任意文章变成可编辑的 Excalidraw 画布。Agent 负责提炼结构，你直接在 DSH 中调整文字、节点和连线。不是用完即弃的 Mermaid 代码块，而是一张可以持续编辑、在对话流中预览、随时导出的活画布。
+DSH Session 已经理解文章；dsh-diagram 把这份理解变成一张可以持续编辑的 Excalidraw 画布。
 
-![dsh-diagram 画布演示](https://raw.githubusercontent.com/hanzhangzzz/dsh-diagram/assets/dsh-diagram-demo.gif)
+Agent 负责初始结构，你在 DSH 内继续修改、自动保存并导出。结果始终可编辑，而不是一次性的 Mermaid 输出。
+
+![从 DSH 文章会话到可编辑、已保存的 Excalidraw 画布](https://raw.githubusercontent.com/hanzhangzzz/dsh-diagram/assets/dsh-diagram-demo.gif)
 
 一行安装，然后在任意 DSH 会话输入 `/` 选择 **canvas-diagram**：
 
@@ -17,16 +19,15 @@
 npx -y @deepseek-ai/dsh@0.1.0-rc.6 plugin --profile web add dsh-diagram@latest
 ```
 
+> 适合放进你的 DSH 工具箱？先 Star，下一次处理长文章时就能快速找回。
+
 完整前置条件与验证见[快速安装](#快速安装)。
 
 ## 为什么用 dsh-diagram？
 
 - **生成后仍可编辑。** 得到的是完整 Excalidraw 画布，不是用完即弃的静态图片。
 - **留在当前会话。** 创建后对话流中立即出现实时预览卡片；“画布”标签打开完整编辑器，全程不离开文章上下文。
-- **自动保存不静默覆盖。** 基于 revision 的 compare-and-set 会阻止旧编辑器覆盖新版本。
-- **可以直接交付。** 支持导出 `.excalidraw`、SVG 和 PNG。
-- **模型上下文显式可控。** 只有明确要求 Agent 调用 `diagram_read`，手工修改才会进入对话记录。
-- **结构自适应且受事实约束。** 内置 skill 根据原文关系选择图表配方，保留事实与不确定性；信息不足时宁可生成更小的忠实图，也不补造“完整性”。
+- **自动保存并随时交付。** revision 保护避免旧版本覆盖新工作，支持导出 `.excalidraw`、SVG 和 PNG。
 
 ## 快速安装
 
