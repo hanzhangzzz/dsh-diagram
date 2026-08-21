@@ -11,7 +11,7 @@ DSH Session 已经理解文章；dsh-diagram 把这份理解变成一张可以�
 
 Agent 负责初始结构，你在 DSH 内继续修改、自动保存并导出。结果始终可编辑，而不是一次性的 Mermaid 输出。
 
-![从 DSH 文章会话到可编辑、已保存的 Excalidraw 画布](https://raw.githubusercontent.com/hanzhangzzz/dsh-diagram/assets/dsh-diagram-demo.gif)
+![从 DSH 文章会话到可编辑、已保存的 Excalidraw 画布](https://raw.githubusercontent.com/hanzhangzzz/dsh-diagram/assets/dsh-diagram-workflow-v1.gif)
 
 一行安装，然后在任意 DSH 会话输入 `/` 选择 **canvas-diagram**：
 
