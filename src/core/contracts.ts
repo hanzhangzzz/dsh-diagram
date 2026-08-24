@@ -18,6 +18,31 @@ export const DIAGRAM_TONES = [
 /** One semantic color meaning independent of input ordering. */
 export type DiagramTone = (typeof DIAGRAM_TONES)[number];
 
+/** Deterministic visual compilers available to one semantic diagram. */
+export const DIAGRAM_VISUAL_STYLES = ["clean", "sketchnote"] as const;
+
+/** One controlled visual compiler selected independently of diagram kind. */
+export type DiagramVisualStyle = (typeof DIAGRAM_VISUAL_STYLES)[number];
+
+/** Semantic line-art motifs compiled to editable Excalidraw primitives. */
+export const DIAGRAM_ICONS = [
+  "document",
+  "database",
+  "search",
+  "gear",
+  "shield",
+  "robot",
+  "person",
+  "target",
+  "warning",
+  "chart",
+  "brain",
+  "loop",
+] as const;
+
+/** One controlled node icon; the model never supplies icon geometry. */
+export type DiagramIcon = (typeof DIAGRAM_ICONS)[number];
+
 /** Controlled visual hierarchy for semantic nodes. */
 export const DIAGRAM_NODE_VARIANTS = ["card", "compact", "solid"] as const;
 
@@ -105,6 +130,7 @@ export interface DiagramNode {
   emphasis?: boolean | undefined;
   tone?: DiagramTone | undefined;
   variant?: DiagramNodeVariant | undefined;
+  icon?: DiagramIcon | undefined;
 }
 
 /** A directed semantic relationship before deterministic layout. */
@@ -128,6 +154,7 @@ export interface DiagramSpec {
   kind: DiagramKind;
   title: string;
   summary?: string | undefined;
+  visualStyle?: DiagramVisualStyle | undefined;
   nodes: DiagramNode[];
   edges: DiagramEdge[];
   groups?: DiagramGroup[] | undefined;
@@ -407,6 +434,7 @@ export function createDiagramSpecSchema(
       emphasis: z.boolean().optional(),
       tone: z.enum(DIAGRAM_TONES).optional(),
       variant: z.enum(DIAGRAM_NODE_VARIANTS).optional(),
+      icon: z.enum(DIAGRAM_ICONS).optional(),
     })
     .strict();
   const edgeSchema: z.ZodType<DiagramEdge> = z
@@ -431,6 +459,7 @@ export function createDiagramSpecSchema(
       kind: z.enum(DIAGRAM_KINDS),
       title: boundedText(policy.maxTitleChars),
       summary: boundedText(policy.maxSummaryChars).optional(),
+      visualStyle: z.enum(DIAGRAM_VISUAL_STYLES).optional(),
       nodes: z.array(nodeSchema).min(1).max(policy.maxNodes),
       edges: z.array(edgeSchema).max(policy.maxEdges),
       groups: z.array(groupSchema).max(policy.maxGroups).optional(),

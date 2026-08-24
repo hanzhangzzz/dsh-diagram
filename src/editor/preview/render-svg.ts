@@ -5,20 +5,20 @@ import type {
 import {
   edgeLabelBoxWidth,
   layoutDiagram,
+  NODE_ICON_SLOT_HEIGHT,
   nodeTextStyleFor,
   wrapPlainText,
   type PositionedDiagram,
   type PositionedPoint,
 } from "../../core/layout.ts";
 import {
-  BORDER_COLOR,
-  EMPHASIS_BORDER_COLOR,
-  EMPHASIS_COLOR,
-  MUTED_COLOR,
+  DIAGRAM_ICON_BOX_SIZE,
+  diagramIconPrimitives,
+} from "../diagram-icons.ts";
+import {
   REPORT_GROUP_FONT_SIZE,
   REPORT_SUMMARY_FONT_SIZE,
   REPORT_TITLE_FONT_SIZE,
-  SOLID_TEXT_COLOR,
   STANDARD_GROUP_FONT_SIZE,
   STANDARD_SUMMARY_FONT_SIZE,
   STANDARD_TITLE_FONT_SIZE,
@@ -26,10 +26,12 @@ import {
   TEXT_COLOR,
   groupPalette,
   tonePalette,
+  visualTokens,
 } from "../visual-style.ts";
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 const FONT_STACK = "'Helvetica Neue', Helvetica, Arial, sans-serif";
+const HANDWRITTEN_FONT_STACK = "Xiaolai, Excalifont, 'Kaiti SC', STKaiti, cursive";
 const PADDING = 32;
 const ARROWHEAD_LENGTH = 12;
 const ARROWHEAD_WIDTH = 9;
@@ -126,7 +128,9 @@ export function renderSpecSvg(doc: Document, spec: DiagramSpec): SVGSVGElement {
     ),
   };
   const svg = svgRoot(doc, bounds);
-  svg.style.background = SURFACE_COLOR;
+  const tokens = visualTokens(diagram.visualStyle);
+  svg.setAttribute("data-visual-style", diagram.visualStyle ?? "clean");
+  svg.style.background = tokens.background;
 
   renderSpecHeader(doc, svg, diagram, titleFontSize, summaryFontSize);
   renderSpecGroups(doc, svg, diagram);
@@ -449,7 +453,10 @@ function shapeText(doc: Document, element: SceneElement): SVGElement {
   );
   text.setAttribute("fill", element.strokeColor ?? TEXT_COLOR);
   text.setAttribute("font-size", String(fontSize));
-  text.setAttribute("font-family", FONT_STACK);
+  text.setAttribute(
+    "font-family",
+    element.fontFamily === 5 ? HANDWRITTEN_FONT_STACK : FONT_STACK,
+  );
   for (const [index, line] of lines.entries()) {
     const tspan = doc.createElementNS(SVG_NS, "tspan");
     tspan.setAttribute("x", String(anchorX));
@@ -472,6 +479,7 @@ function renderSpecHeader(
   titleFontSize: number,
   summaryFontSize: number,
 ): void {
+  const tokens = visualTokens(diagram.visualStyle);
   const centerX = diagram.width / 2;
   let cursor = -24;
   if (diagram.summary !== undefined) {
@@ -481,8 +489,9 @@ function renderSpecHeader(
       y: cursor,
       text: diagram.summary,
       fontSize: summaryFontSize,
-      color: MUTED_COLOR,
+      color: tokens.muted,
       anchor: "middle",
+      handwritten: tokens.handwritten,
     }));
     cursor -= 8;
   }
@@ -492,9 +501,10 @@ function renderSpecHeader(
     y: cursor,
     text: diagram.title,
     fontSize: titleFontSize,
-    color: TEXT_COLOR,
+    color: tokens.text,
     anchor: "middle",
     bold: true,
+    handwritten: tokens.handwritten,
   }));
 }
 
@@ -503,13 +513,14 @@ function renderSpecGroups(
   svg: SVGSVGElement,
   diagram: PositionedDiagram,
 ): void {
+  const tokens = visualTokens(diagram.visualStyle);
   const groupFontSize = diagram.kind === "report"
     ? REPORT_GROUP_FONT_SIZE
     : STANDARD_GROUP_FONT_SIZE;
   for (const [index, group] of diagram.groups.entries()) {
     const palette = group.tone === undefined
-      ? groupPalette(index)
-      : tonePalette(group.tone);
+      ? groupPalette(index, diagram.visualStyle)
+      : tonePalette(group.tone, diagram.visualStyle);
     const rect = doc.createElementNS(SVG_NS, "rect");
     rect.setAttribute("data-group-id", group.id);
     rect.setAttribute("x", String(group.x));
@@ -520,6 +531,7 @@ function renderSpecGroups(
     rect.setAttribute("fill", palette.fill);
     rect.setAttribute("stroke", palette.stroke);
     rect.setAttribute("stroke-width", "1.5");
+    if (tokens.roughness === 1) rect.setAttribute("fill-opacity", "0.62");
     svg.append(rect);
     svg.append(specText(doc, {
       x: group.x + 18,
@@ -529,6 +541,7 @@ function renderSpecGroups(
       color: palette.ink,
       anchor: "start",
       bold: true,
+      handwritten: tokens.handwritten,
     }));
   }
 }
@@ -538,6 +551,7 @@ function renderSpecEdges(
   svg: SVGSVGElement,
   diagram: PositionedDiagram,
 ): void {
+  const tokens = visualTokens(diagram.visualStyle);
   for (const [index, edge] of diagram.edges.entries()) {
     const group = doc.createElementNS(SVG_NS, "g");
     group.setAttribute("data-edge-index", String(index));
@@ -547,8 +561,8 @@ function renderSpecEdges(
       roundedPathD(edge.points.map((point) => [point.x, point.y] as const)),
     );
     polyline.setAttribute("fill", "none");
-    polyline.setAttribute("stroke", BORDER_COLOR);
-    polyline.setAttribute("stroke-width", "2");
+    polyline.setAttribute("stroke", tokens.border);
+    polyline.setAttribute("stroke-width", String(tokens.strokeWidth + 1));
     polyline.setAttribute("stroke-linecap", "round");
     group.append(polyline);
 
@@ -559,8 +573,8 @@ function renderSpecEdges(
         doc,
         [previous.x, previous.y],
         [tip.x, tip.y],
-        BORDER_COLOR,
-        2,
+        tokens.border,
+        tokens.strokeWidth + 1,
       ));
     }
     if (edge.label !== undefined) {
@@ -570,8 +584,9 @@ function renderSpecEdges(
         y: edge.labelAnchor === undefined ? middle.y - 18 : middle.y - 7,
         text: edge.label,
         fontSize: 12,
-        color: MUTED_COLOR,
+        color: tokens.muted,
         anchor: "middle",
+        handwritten: tokens.handwritten,
       }));
     }
     svg.append(group);
@@ -589,24 +604,35 @@ function renderSpecNodes(
   svg: SVGSVGElement,
   diagram: PositionedDiagram,
 ): void {
+  const tokens = visualTokens(diagram.visualStyle);
+  const groupPalettes = new Map(
+    diagram.groups.map((group, index) => [
+      group.id,
+      group.tone === undefined
+        ? groupPalette(index, diagram.visualStyle)
+        : tonePalette(group.tone, diagram.visualStyle),
+    ]),
+  );
   for (const node of diagram.nodes) {
     const palette = node.tone === undefined
-      ? undefined
-      : tonePalette(node.tone);
+      ? node.group === undefined
+        ? undefined
+        : groupPalettes.get(node.group)
+      : tonePalette(node.tone, diagram.visualStyle);
     const solid = node.variant === "solid";
     const emphasized = node.emphasis === true;
     const fill = solid
-      ? (palette?.strong ?? TEXT_COLOR)
+      ? (palette?.strong ?? tokens.text)
       : emphasized
-        ? EMPHASIS_COLOR
-        : (palette?.fill ?? SURFACE_COLOR);
+        ? (palette?.fill ?? tokens.emphasis)
+        : (palette?.fill ?? tokens.surface);
     const stroke = emphasized
-      ? EMPHASIS_BORDER_COLOR
-      : (palette?.stroke ?? BORDER_COLOR);
+      ? (palette?.stroke ?? tokens.emphasisBorder)
+      : (palette?.stroke ?? tokens.border);
     const labelColor = solid
-      ? SOLID_TEXT_COLOR
-      : (palette?.ink ?? TEXT_COLOR);
-    const detailColor = solid ? SOLID_TEXT_COLOR : MUTED_COLOR;
+      ? tokens.solidText
+      : (palette?.ink ?? tokens.text);
+    const detailColor = solid ? tokens.solidText : tokens.muted;
 
     const rect = doc.createElementNS(SVG_NS, "rect");
     rect.setAttribute("data-node-id", node.id);
@@ -618,7 +644,12 @@ function renderSpecNodes(
     rect.setAttribute("fill", fill);
     rect.setAttribute("stroke", stroke);
     rect.setAttribute("stroke-width", emphasized ? "2.5" : "1.5");
+    if (tokens.roughness === 1) rect.setAttribute("fill-opacity", "0.62");
     svg.append(rect);
+
+    if (node.icon !== undefined) {
+      renderSpecIcon(doc, svg, node, labelColor);
+    }
 
     const style = nodeTextStyleFor(diagram.kind, node);
     const textMaxWidth = node.width - style.paddingX;
@@ -638,7 +669,10 @@ function renderSpecNodes(
       + (detailLines.length === 0
         ? 0
         : 4 + detailLines.length * style.detailLineHeight);
-    let cursor = node.y + (node.height - blockHeight) / 2;
+    const iconOffset = node.icon === undefined ? 0 : NODE_ICON_SLOT_HEIGHT;
+    let cursor = node.y
+      + iconOffset
+      + (node.height - iconOffset - blockHeight) / 2;
     const centerX = node.x + node.width / 2;
     for (const line of labelLines) {
       svg.append(specText(doc, {
@@ -649,6 +683,7 @@ function renderSpecNodes(
         color: labelColor,
         anchor: "middle",
         bold: true,
+        handwritten: tokens.handwritten,
       }));
       cursor += style.labelLineHeight;
     }
@@ -661,9 +696,46 @@ function renderSpecNodes(
         fontSize: style.detailFontSize,
         color: detailColor,
         anchor: "middle",
+        handwritten: tokens.handwritten,
       }));
       cursor += style.detailLineHeight;
     }
+  }
+}
+
+function renderSpecIcon(
+  doc: Document,
+  svg: SVGSVGElement,
+  node: PositionedDiagram["nodes"][number],
+  color: string,
+): void {
+  if (node.icon === undefined) return;
+  const iconX = node.x + (node.width - DIAGRAM_ICON_BOX_SIZE) / 2;
+  const iconY = node.y + 8;
+  for (const primitive of diagramIconPrimitives(node.icon)) {
+    const element = {
+      id: `icon:node:${node.id}:${primitive.id}`,
+      type: primitive.type,
+      x: iconX + primitive.x,
+      y: iconY + primitive.y,
+      width: primitive.width,
+      height: primitive.height,
+      strokeColor: color,
+      backgroundColor: "transparent",
+      strokeWidth: 2,
+      fillStyle: "solid",
+      ...(primitive.points === undefined
+        ? {}
+        : { points: primitive.points.map(([x, y]) => [x, y]) }),
+      ...(primitive.endArrowhead === undefined
+        ? {}
+        : { endArrowhead: primitive.endArrowhead }),
+    } as unknown as SceneElement;
+    const rendered = renderSceneElement(doc, element);
+    if (rendered === null) continue;
+    rendered.setAttribute("data-icon-node-id", node.id);
+    rendered.setAttribute("data-icon-kind", node.icon);
+    svg.append(rendered);
   }
 }
 
@@ -675,6 +747,7 @@ interface SpecTextOptions {
   color: string;
   anchor: "start" | "middle";
   bold?: boolean;
+  handwritten?: boolean;
 }
 
 function specText(doc: Document, options: SpecTextOptions): SVGElement {
@@ -684,7 +757,10 @@ function specText(doc: Document, options: SpecTextOptions): SVGElement {
   text.setAttribute("text-anchor", options.anchor);
   text.setAttribute("fill", options.color);
   text.setAttribute("font-size", String(options.fontSize));
-  text.setAttribute("font-family", FONT_STACK);
+  text.setAttribute(
+    "font-family",
+    options.handwritten === true ? HANDWRITTEN_FONT_STACK : FONT_STACK,
+  );
   if (options.bold === true) text.setAttribute("font-weight", "600");
   text.textContent = options.text;
   return text;

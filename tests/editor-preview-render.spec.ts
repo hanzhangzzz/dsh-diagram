@@ -101,6 +101,31 @@ describe("renderSceneSvg", () => {
 });
 
 describe("renderSpecSvg", () => {
+  it("renders the sketchnote paper, handwriting, marker wash, and semantic icon", () => {
+    const svg = renderSpecSvg(document, {
+      kind: "flow",
+      title: "有效 AI Agent",
+      visualStyle: "sketchnote",
+      nodes: [
+        {
+          id: "foundation",
+          label: "增强型 LLM",
+          icon: "robot",
+          tone: "definition",
+        },
+      ],
+      edges: [],
+    });
+
+    expect(svg.getAttribute("data-visual-style")).toBe("sketchnote");
+    expect(svg.style.background).toBe("rgb(255, 253, 247)");
+    expect(svg.querySelector("rect[data-node-id='foundation']")?.getAttribute("fill"))
+      .toBe("#dcecf3");
+    expect(svg.querySelector("[data-icon-node-id='foundation']")).not.toBeNull();
+    expect(svg.querySelector("text")?.getAttribute("font-family"))
+      .toContain("Xiaolai");
+  });
+
   it("renders the deterministic layout with nodes, edge, labels, and title", () => {
     const svg = renderSpecSvg(document, SPEC);
 

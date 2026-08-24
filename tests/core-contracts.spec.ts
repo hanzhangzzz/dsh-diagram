@@ -37,6 +37,39 @@ describe("validation policy", () => {
 });
 
 describe("DiagramSpec validation", () => {
+  it("accepts the sketchnote visual style with controlled semantic icons", () => {
+    const schema = createDiagramSpecSchema(DEFAULT_DIAGRAM_VALIDATION_POLICY);
+    const spec = {
+      kind: "flow",
+      title: "有效 AI Agent",
+      visualStyle: "sketchnote",
+      nodes: [
+        { id: "foundation", label: "增强型 LLM", icon: "robot" },
+        { id: "gate", label: "人类检查点", icon: "warning" },
+      ],
+      edges: [{ from: "foundation", to: "gate" }],
+    } as const;
+
+    expect(schema.parse(spec)).toEqual(spec);
+  });
+
+  it("rejects arbitrary visual styles and icon names", () => {
+    const schema = createDiagramSpecSchema(DEFAULT_DIAGRAM_VALIDATION_POLICY);
+    const base = {
+      kind: "flow",
+      title: "Controlled visual vocabulary",
+      nodes: [{ id: "node", label: "Node" }],
+      edges: [],
+    };
+
+    expect(schema.safeParse({ ...base, visualStyle: "watercolor" }).success)
+      .toBe(false);
+    expect(schema.safeParse({
+      ...base,
+      nodes: [{ ...base.nodes[0], icon: "rocket" }],
+    }).success).toBe(false);
+  });
+
   it("accepts a report with semantic regions, tones, and card variants", () => {
     const schema = createDiagramSpecSchema(DEFAULT_DIAGRAM_VALIDATION_POLICY);
     const spec = {

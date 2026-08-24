@@ -89,6 +89,7 @@ describe("diagram tools", () => {
     expect(create.parameters).toMatchObject({
       properties: {
         kind: { enum: expect.arrayContaining(["report"]) },
+        visualStyle: { enum: ["clean", "sketchnote"] },
         nodes: {
           items: {
             properties: {
@@ -104,6 +105,22 @@ describe("diagram tools", () => {
                 ],
               },
               variant: { enum: ["card", "compact", "solid"] },
+              icon: {
+                enum: [
+                  "document",
+                  "database",
+                  "search",
+                  "gear",
+                  "shield",
+                  "robot",
+                  "person",
+                  "target",
+                  "warning",
+                  "chart",
+                  "brain",
+                  "loop",
+                ],
+              },
             },
           },
         },

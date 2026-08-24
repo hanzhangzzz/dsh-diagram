@@ -42,6 +42,10 @@ export const CANVAS_DIAGRAM_SKILL: SkillRegistration = {
     "   - tone 只表达稳定语义：`definition` 定义/资产，`execution` 当前执行，`external` 外部运行，"
     + "`evidence` 证据，`risk` 缺口/风险，`target` 目标，`neutral` 中性。不要用颜色替代文字。",
     "   - variant 用 `compact` 表达短指标/标签，用 `solid` 表达唯一焦点结果，其余使用 `card` 或省略。",
+    "   - 用户明确要求手绘、白板、手帐或知识信息图风格时把 `visualStyle` 设置为 `sketchnote`；"
+    + "否则省略 visualStyle，沿用清晰的 `clean` 风格。风格不改变事实和关系。",
+    "   - `icon` 只从工具给出的受控枚举中选择，用于需要快速识别的关键概念；"
+    + "不要给每个节点都加图标，也不要用图标代替 label。",
     "   - 信息不足或关系不明确时，生成更小但忠实的图，并在 summary 说明边界；"
     + "输入互相矛盾时保留冲突，不自行裁决。",
     "5. 完成后告诉用户：打开会话顶部的“画布”标签即可编辑，支持导出"

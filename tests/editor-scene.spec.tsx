@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("@excalidraw/excalidraw", () => ({
-  FONT_FAMILY: { Helvetica: 2 },
+  FONT_FAMILY: { Helvetica: 2, Excalifont: 5 },
   convertToExcalidrawElements: (
     elements: Array<Record<string, unknown>>,
   ) =>
@@ -63,6 +63,73 @@ const positioned: PositionedDiagram = {
 };
 
 describe("diagram scene compiler", () => {
+  it("compiles sketchnote styling and every controlled icon to deterministic editable primitives", () => {
+    const icons = [
+      "document",
+      "database",
+      "search",
+      "gear",
+      "shield",
+      "robot",
+      "person",
+      "target",
+      "warning",
+      "chart",
+      "brain",
+      "loop",
+    ] as const;
+    const spec: DiagramSpec = {
+      kind: "flow",
+      title: "有效 AI Agent",
+      visualStyle: "sketchnote",
+      nodes: icons.map((icon, index) => ({
+        id: `concept-${String(index)}`,
+        label: icon,
+        icon,
+        tone: index % 2 === 0 ? "definition" : "execution",
+      })),
+      edges: icons.slice(1).map((_, index) => ({
+        from: `concept-${String(index)}`,
+        to: `concept-${String(index + 1)}`,
+      })),
+    };
+
+    const diagram = layoutDiagram(spec);
+    const first = diagramToElementSkeletons(diagram);
+    const second = diagramToElementSkeletons(diagram);
+    const iconElements = first.filter((element) =>
+      element.id?.startsWith("icon:node:"),
+    );
+
+    expect(diagram.visualStyle).toBe("sketchnote");
+    expect(second).toEqual(first);
+    expect(first.find((element) => element.id === "node:concept-0"))
+      .toMatchObject({
+        backgroundColor: "#dcecf3",
+        strokeColor: "#292621",
+        fillStyle: "hachure",
+        roughness: 1,
+        strokeWidth: 2,
+      });
+    expect(first.find((element) => element.id === "text:node:concept-0"))
+      .toMatchObject({ fontFamily: 5, strokeColor: "#292621" });
+    expect(iconElements.length).toBeGreaterThanOrEqual(icons.length * 2);
+    expect(new Set(iconElements.map((element) =>
+      element.id?.split(":")[2],
+    ))).toEqual(new Set(icons.map((_, index) => `concept-${String(index)}`)));
+    expect(iconElements.every((element) =>
+      ["rectangle", "ellipse", "diamond", "line", "arrow"].includes(element.type),
+    )).toBe(true);
+    expect(iconElements.every((element) =>
+      element.groupIds?.[0] === `node-group:${element.id?.split(":")[2]}`,
+    )).toBe(true);
+
+    const scene = createInitialScene(spec, DEFAULT_DIAGRAM_VALIDATION_POLICY);
+    expect(scene.appState.viewBackgroundColor).toBe("#fffdf7");
+    expect(scene.files).toEqual({});
+    expect(scene.elements.every((element) => element.link === null)).toBe(true);
+  });
+
   it("renders stable semantic tones and solid outcomes independent of group order", () => {
     const spec: DiagramSpec = {
       kind: "report",
@@ -107,6 +174,14 @@ describe("diagram scene compiler", () => {
       .toMatchObject({ strokeColor: "#7e22ce", backgroundColor: "#fcfaff" });
     expect(skeletons.find((element) => element.id === "group:gate"))
       .toMatchObject({ strokeColor: "#dc2626", backgroundColor: "#fffafa" });
+    expect(skeletons.find((element) => element.id === "node:proof"))
+      .toMatchObject({
+        backgroundColor: "#ffffff",
+        fillStyle: "solid",
+        roughness: 0,
+      });
+    expect(skeletons.find((element) => element.id === "text:node:proof"))
+      .toMatchObject({ fontFamily: 2 });
     expect(skeletons.find((element) => element.id === "node:block"))
       .toMatchObject({ strokeColor: "#166534", backgroundColor: "#166534" });
     expect(skeletons.find((element) => element.id === "text:node:block"))

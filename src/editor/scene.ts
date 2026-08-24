@@ -16,27 +16,26 @@ import {
   EDGE_LABEL_FONT_SIZE,
   edgeLabelBoxWidth,
   layoutDiagram,
+  NODE_ICON_SLOT_HEIGHT,
   nodeTextStyleFor,
   REPORT_GROUP_TOP_PADDING,
   wrapPlainText,
   type PositionedDiagram,
 } from "../core/layout.ts";
 import {
-  BORDER_COLOR,
-  EMPHASIS_BORDER_COLOR,
-  EMPHASIS_COLOR,
-  MUTED_COLOR,
+  DIAGRAM_ICON_BOX_SIZE,
+  diagramIconPrimitives,
+} from "./diagram-icons.ts";
+import {
   REPORT_GROUP_FONT_SIZE,
   REPORT_SUMMARY_FONT_SIZE,
   REPORT_TITLE_FONT_SIZE,
-  SOLID_TEXT_COLOR,
   STANDARD_GROUP_FONT_SIZE,
   STANDARD_SUMMARY_FONT_SIZE,
   STANDARD_TITLE_FONT_SIZE,
-  SURFACE_COLOR,
-  TEXT_COLOR,
   groupPalette,
   tonePalette,
+  visualTokens,
 } from "./visual-style.ts";
 
 const APP_STATE_KEYS = [
@@ -75,7 +74,7 @@ export function createInitialScene(
   const elements = positionNativeText(converted, diagram);
   const result = normalizeEditorScene(
     elements,
-    { viewBackgroundColor: "#ffffff" },
+    { viewBackgroundColor: visualTokens(diagram.visualStyle).background },
     {},
     policy,
   );
@@ -111,7 +110,10 @@ function positionNativeText(
     if (label === undefined) continue;
     const clusterHeight = label.height
       + (detail === undefined ? 0 : NATIVE_TEXT_TIER_GAP + detail.height);
-    const clusterY = node.y + (node.height - clusterHeight) / 2;
+    const iconOffset = node.icon === undefined ? 0 : NODE_ICON_SLOT_HEIGHT;
+    const clusterY = node.y
+      + iconOffset
+      + (node.height - iconOffset - clusterHeight) / 2;
     positions.set(labelId, {
       x: node.x + (node.width - label.width) / 2,
       y: clusterY,
@@ -204,17 +206,23 @@ function measuredText(
 export function diagramToElementSkeletons(
   diagram: PositionedDiagram,
 ): ExcalidrawElementSkeleton[] {
+  const tokens = visualTokens(diagram.visualStyle);
+  const fontFamily = tokens.handwritten
+    ? FONT_FAMILY.Excalifont
+    : FONT_FAMILY.Helvetica;
   const paletteByGroup = new Map(
     diagram.groups.map((group, index) => [
       group.id,
-      group.tone === undefined ? groupPalette(index) : tonePalette(group.tone),
+      group.tone === undefined
+        ? groupPalette(index, diagram.visualStyle)
+        : tonePalette(group.tone, diagram.visualStyle),
     ]),
   );
   const groups: ExcalidrawElementSkeleton[] = diagram.groups.flatMap(
     (group, index) => {
       const palette = group.tone === undefined
-        ? groupPalette(index)
-        : tonePalette(group.tone);
+        ? groupPalette(index, diagram.visualStyle)
+        : tonePalette(group.tone, diagram.visualStyle);
       const groupFontSize = diagram.kind === "report"
         ? REPORT_GROUP_FONT_SIZE
         : STANDARD_GROUP_FONT_SIZE;
@@ -227,10 +235,12 @@ export function diagramToElementSkeletons(
           width: group.width,
           height: group.height,
           backgroundColor: palette.fill,
-          fillStyle: "solid" as const,
+          fillStyle: tokens.fillStyle,
           strokeColor: palette.stroke,
           strokeStyle: "solid" as const,
-          roughness: 0,
+          roughness: tokens.roughness,
+          strokeWidth: tokens.strokeWidth,
+          ...deterministicSketchSeed(`group:${group.id}`, diagram.visualStyle),
           roundness: { type: 3 },
         },
         {
@@ -239,7 +249,7 @@ export function diagramToElementSkeletons(
           x: group.x + 18,
           y: group.y + 14,
           text: group.label,
-          fontFamily: FONT_FAMILY.Helvetica,
+          fontFamily,
           fontSize: groupFontSize,
           strokeColor: palette.ink,
         },
@@ -265,8 +275,10 @@ export function diagramToElementSkeletons(
         points,
         start: { id: `node:${edge.from}` },
         end: { id: `node:${edge.to}` },
-        strokeColor: MUTED_COLOR,
-        roughness: 0,
+        strokeColor: tokens.muted,
+        strokeWidth: tokens.strokeWidth,
+        roughness: tokens.roughness,
+        ...deterministicSketchSeed(`edge:${edge.id}`, diagram.visualStyle),
         // Rounded elbows: orthogonal routes read mechanical with hard 90°
         // corners; proportional roundness keeps the same path but soft.
         roundness: { type: 2 },
@@ -290,9 +302,9 @@ export function diagramToElementSkeletons(
                     y: edge.labelAnchor.y - EDGE_LABEL_BOX_HEIGHT / 2,
                   }),
               text: label,
-              fontFamily: FONT_FAMILY.Helvetica,
+              fontFamily,
               fontSize: EDGE_LABEL_FONT_SIZE,
-              strokeColor: MUTED_COLOR,
+              strokeColor: tokens.muted,
             },
           ]),
     ];
@@ -304,7 +316,7 @@ export function diagramToElementSkeletons(
       ? node.group === undefined
         ? undefined
         : paletteByGroup.get(node.group)
-      : tonePalette(node.tone);
+      : tonePalette(node.tone, diagram.visualStyle);
     const solid = node.variant === "solid";
     const textStyle = nodeTextStyleFor(diagram.kind, node);
     const innerWidth = Math.max(32, node.width - textStyle.paddingX);
@@ -325,20 +337,55 @@ export function diagramToElementSkeletons(
       height: node.height,
       groupIds: [groupId],
       backgroundColor: solid
-        ? (palette ?? tonePalette("neutral")).strong
+        ? (palette ?? tonePalette("neutral", diagram.visualStyle)).strong
         : node.emphasis
-          ? palette?.fill ?? EMPHASIS_COLOR
-          : SURFACE_COLOR,
+          ? palette?.fill ?? tokens.emphasis
+          : diagram.visualStyle === "sketchnote"
+            ? palette?.fill ?? tokens.surface
+            : tokens.surface,
       strokeColor: solid
-        ? (palette ?? tonePalette("neutral")).stroke
+        ? (palette ?? tonePalette("neutral", diagram.visualStyle)).stroke
         : node.emphasis
-          ? palette?.stroke ?? EMPHASIS_BORDER_COLOR
-          : palette?.stroke ?? BORDER_COLOR,
-      strokeWidth: node.emphasis || solid ? 2 : 1,
-      fillStyle: "solid",
-      roughness: 0,
+          ? palette?.stroke ?? tokens.emphasisBorder
+          : palette?.stroke ?? tokens.border,
+      strokeWidth: tokens.roughness === 1 || node.emphasis || solid ? 2 : 1,
+      fillStyle: solid ? "solid" : tokens.fillStyle,
+      roughness: tokens.roughness,
+      ...deterministicSketchSeed(`node:${node.id}`, diagram.visualStyle),
       roundness: { type: 3 },
     });
+    if (node.icon !== undefined) {
+      const iconX = node.x + (node.width - DIAGRAM_ICON_BOX_SIZE) / 2;
+      const iconY = node.y + 8;
+      const iconColor = solid ? tokens.solidText : tokens.text;
+      for (const primitive of diagramIconPrimitives(node.icon)) {
+        const id = `icon:node:${node.id}:${primitive.id}`;
+        nodes.push({
+          type: primitive.type,
+          id,
+          x: iconX + primitive.x,
+          y: iconY + primitive.y,
+          width: primitive.width,
+          height: primitive.height,
+          groupIds: [groupId],
+          backgroundColor: "transparent",
+          strokeColor: iconColor,
+          strokeWidth: 2,
+          fillStyle: "solid",
+          roughness: tokens.roughness,
+          ...deterministicSketchSeed(id, diagram.visualStyle),
+          ...(primitive.points === undefined
+            ? {}
+            : {
+                points: primitive.points.map(([x, y]) => [x, y] as [number, number]),
+                roundness: { type: 2 as const },
+              }),
+          ...(primitive.endArrowhead === undefined
+            ? {}
+            : { endArrowhead: primitive.endArrowhead }),
+        } as ExcalidrawElementSkeleton);
+      }
+    }
     nodes.push({
       type: "text",
       id: `text:node:${node.id}`,
@@ -346,9 +393,9 @@ export function diagramToElementSkeletons(
       y: node.y + textStyle.paddingY / 2,
       text: label,
       groupIds: [groupId],
-      fontFamily: FONT_FAMILY.Helvetica,
+      fontFamily,
       fontSize: textStyle.labelFontSize,
-      strokeColor: solid ? SOLID_TEXT_COLOR : TEXT_COLOR,
+      strokeColor: solid ? tokens.solidText : tokens.text,
     });
     if (node.detail !== undefined) {
       nodes.push({
@@ -365,9 +412,9 @@ export function diagramToElementSkeletons(
           innerWidth,
         ),
         groupIds: [groupId],
-        fontFamily: FONT_FAMILY.Helvetica,
+        fontFamily,
         fontSize: textStyle.detailFontSize,
-        strokeColor: solid ? SOLID_TEXT_COLOR : MUTED_COLOR,
+        strokeColor: solid ? tokens.solidText : tokens.muted,
       });
     }
   }
@@ -387,9 +434,9 @@ export function diagramToElementSkeletons(
       x: 40,
       y: diagram.summary === undefined ? -44 : -76,
       text: diagram.title,
-      fontFamily: FONT_FAMILY.Helvetica,
+      fontFamily,
       fontSize: titleFontSize,
-      strokeColor: TEXT_COLOR,
+      strokeColor: tokens.text,
     },
     ...(diagram.summary === undefined
       ? []
@@ -404,13 +451,25 @@ export function diagramToElementSkeletons(
               summaryFontSize,
               Math.min(report ? 960 : 720, Math.max(240, diagram.width - 80)),
             ),
-            fontFamily: FONT_FAMILY.Helvetica,
+            fontFamily,
             fontSize: summaryFontSize,
-            strokeColor: MUTED_COLOR,
+            strokeColor: tokens.muted,
           },
         ]),
   ];
   return [...groups, ...edges, ...nodes, ...title];
+}
+
+function deterministicSketchSeed(
+  id: string,
+  style: PositionedDiagram["visualStyle"],
+): { seed: number } | Record<string, never> {
+  if (style !== "sketchnote") return {};
+  let seed = 17;
+  for (const character of id) {
+    seed = (seed * 131 + (character.codePointAt(0) ?? 0)) % 2_147_483_647;
+  }
+  return { seed: Math.max(1, seed) };
 }
 
 /**

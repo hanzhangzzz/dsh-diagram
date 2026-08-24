@@ -2,9 +2,11 @@ import type { SessionHeader } from "@deepseek-ai/dsh-session";
 import { defineTool, type ToolDefinition } from "@deepseek-ai/dsh-tools";
 
 import {
+  DIAGRAM_ICONS,
   DIAGRAM_NODE_VARIANTS,
   DIAGRAM_KINDS,
   DIAGRAM_TONES,
+  DIAGRAM_VISUAL_STYLES,
   REPORT_GROUP_DIRECTIONS,
   REPORT_GROUP_PLACEMENTS,
   createDiagramSpecSchema,
@@ -107,6 +109,12 @@ export function createDiagramTools(
         type: "string",
         description: "Optional one-sentence explanation of the diagram's message.",
       },
+      visualStyle: {
+        type: "string",
+        enum: [...DIAGRAM_VISUAL_STYLES],
+        description:
+          "Optional visual compiler. Use sketchnote only when the user asks for a hand-drawn, whiteboard, or editorial infographic style; omission preserves clean.",
+      },
       nodes: {
         type: "array",
         required: true,
@@ -129,6 +137,12 @@ export function createDiagramTools(
               type: "string",
               enum: [...DIAGRAM_NODE_VARIANTS],
               description: "Controlled hierarchy: card, compact metric/badge, or solid focal outcome.",
+            },
+            icon: {
+              type: "string",
+              enum: [...DIAGRAM_ICONS],
+              description:
+                "Optional semantic line-art motif. Use sparingly when it improves scanning; geometry remains plugin-owned.",
             },
           },
         },

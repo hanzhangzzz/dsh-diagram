@@ -26,6 +26,7 @@ Full requirements and verification: [Quick install](#quick-install).
 ## Why dsh-diagram?
 
 - **Editable, not disposable.** Continue working in a full Excalidraw canvas instead of accepting a static generated image.
+- **Clean or sketchnote.** Keep the default precise diagram, or ask for a warm-paper editorial sketch with handwritten text, marker washes, and editable semantic line icons.
 - **Built into the conversation.** A live preview card lands in the chat flow right after creation, and the **Canvas** tab opens the full editor without leaving the DSH session.
 - **Saved and ready to share.** Revision-safe autosave protects newer work, and export produces `.excalidraw`, SVG, or PNG.
 
@@ -87,17 +88,23 @@ Later sections use this short `dsh` form; substitute the `npx -y @deepseek-ai/ds
    Create one clear diagram for this article. Choose the most suitable diagram type, call diagram_create, and keep the title and node labels concise.
    ```
 
+   For the optional editorial hand-drawn treatment, say so explicitly:
+
+   ```text
+   Turn this article into an editable sketchnote diagram. Use semantic icons only for the key concepts.
+   ```
+
 3. After the tool finishes, select **Canvas** at the top of the conversation.
 4. Edit the diagram directly. **Saved** means the Host has completed a durable write.
 5. Export the result, or ask the Agent to call `diagram_read` before continuing from your manual changes.
 
-The plugin supports report boards, flowcharts, architecture diagrams, timelines, hierarchies, comparisons, and relationship diagrams. Evidence-heavy reports use deterministic full-width context/outcome bands, aligned main columns, semantic colors, and converter-measured native text placement. Report and grouped-architecture connectors select stable node-boundary ports and orthogonal corridors while avoiding unrelated nodes, group headings, and independent routed edges.
+The plugin supports report boards, flowcharts, architecture diagrams, timelines, hierarchies, comparisons, and relationship diagrams. Visual style is independent of diagram type: omitted/`clean` preserves the original rendering, while `sketchnote` uses warm paper, near-black ink, low-saturation marker fills, handwritten text, and a controlled set of native Excalidraw icons. Evidence-heavy reports use deterministic full-width context/outcome bands, aligned main columns, semantic colors, and converter-measured native text placement. Report and grouped-architecture connectors select stable node-boundary ports and orthogonal corridors while avoiding unrelated nodes, group headings, and independent routed edges.
 
 ## What it adds
 
 | Surface | Behavior |
 | --- | --- |
-| `diagram_create` | Creates a diagram for the current Agent Session from a compact semantic specification. Grouped architecture specs use banded layout; report specs use adaptive semantic regions, controlled tones, and deterministic editorial layout. |
+| `diagram_create` | Creates a diagram for the current Agent Session from a compact semantic specification. `visualStyle: "sketchnote"` selects the optional hand-drawn compiler; controlled `icon` values compile to editable native primitives rather than images. |
 | `diagram_read` | Reads a bounded summary of the current editable scene into the conversation transcript. |
 | `canvas-diagram` skill | Built-in bilingual routing entry: selectable from the composer's `/` menu and matched by generic diagram requests, so the Agent reaches `diagram_create` without exact tool-name prompts. |
 | Inline chat preview | After `diagram_create`, a preview card appears in the conversation flow and always renders the diagram's current content — including later canvas edits — as a static SVG. |

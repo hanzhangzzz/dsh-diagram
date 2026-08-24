@@ -11,6 +11,10 @@ describe("canvas-diagram generation guidance", () => {
     expect(content).toContain("placement");
     expect(content).toContain("tone");
     expect(content).toContain("variant");
+    expect(content).toContain("visualStyle");
+    expect(content).toContain("`sketchnote`");
+    expect(content).toContain("icon");
+    expect(content).toContain("不要给每个节点都加图标");
     expect(content).toContain("不得为了凑数量补造事实");
     expect(content).toContain("信息不足或关系不明确");
     expect(content).not.toContain("宁多勿少");

@@ -5,6 +5,7 @@ import type {
   DiagramKind,
   DiagramNode,
   DiagramSpec,
+  DiagramVisualStyle,
   ReportGroupDirection,
 } from "./contracts.ts";
 
@@ -14,6 +15,8 @@ const NODE_MAX_WIDTH = 340;
 /** Horizontal node padding; the scene compiler derives text width from it. */
 export const NODE_PADDING_X = 32;
 const NODE_PADDING_Y = 26;
+/** Vertical space reserved above node text for a controlled semantic icon. */
+export const NODE_ICON_SLOT_HEIGHT = 54;
 /** Node text metrics shared with the scene compiler's text elements. */
 export const LABEL_FONT_SIZE = 16;
 export const DETAIL_FONT_SIZE = 13;
@@ -106,6 +109,7 @@ export interface PositionedDiagram {
   kind: DiagramKind;
   title: string;
   summary?: string;
+  visualStyle?: DiagramVisualStyle;
   width: number;
   height: number;
   nodes: PositionedNode[];
@@ -819,6 +823,7 @@ function normalizeLayout(spec: DiagramSpec, raw: RawLayout): PositionedDiagram {
     kind: spec.kind,
     title: spec.title,
     ...(spec.summary === undefined ? {} : { summary: spec.summary }),
+    ...(spec.visualStyle === undefined ? {} : { visualStyle: spec.visualStyle }),
     width: round(maxX + CANVAS_MARGIN),
     height: round(maxY + CANVAS_MARGIN),
     nodes,
@@ -884,6 +889,7 @@ function measureNodeWithStyle(
     width,
     height:
       style.paddingY
+      + (node.icon === undefined ? 0 : NODE_ICON_SLOT_HEIGHT)
       + labelRows * style.labelLineHeight
       + detailRows * style.detailLineHeight,
   };

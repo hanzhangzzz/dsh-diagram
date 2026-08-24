@@ -3,15 +3,15 @@
 ## Source of truth
 
 - Status: Active
-- Last refreshed: 2026-08-18
+- Last refreshed: 2026-08-24
 - Primary product surfaces: DeepSeek Harness Web 的会话“画布”标签页、`diagram_create` 的标准工具结果卡片，以及对话流中的 diagram 预览节点（`conversation.chat.node` keyed renderer + 同源 `preview.html` iframe）。
-- Evidence reviewed: 本地 `http://127.0.0.1:3080`；deepseek-harness 的 `packages/client/ui-conversation/src/client/contract/slots.ts`、`packages/client/ui-trajectory/src/client/index.ts`、`packages/client/ui-tool/src/client/contract/slots.ts`、`packages/client/AGENTS.md`；`cathrynlavery/diagram-design`；Excalidraw；社区 `dsh-web-ui`、`dsh-TUI` 与 `modlens` 插件。
+- Evidence reviewed: 本地 `http://127.0.0.1:3080`；deepseek-harness 的 `packages/client/ui-conversation/src/client/contract/slots.ts`、`packages/client/ui-trajectory/src/client/index.ts`、`packages/client/ui-tool/src/client/contract/slots.ts`、`packages/client/AGENTS.md`；`cathrynlavery/diagram-design`；Excalidraw；社区 `dsh-web-ui`、`dsh-TUI` 与 `modlens` 插件；用户批准的企业手绘知识信息图基线 `output/imagegen/effective-ai-agents-sketchnote-demo-v2.png`。
 
 ## Brand
 
 - Personality: 清晰、克制、可编辑，优先表达文章中的关系和论点，不追求装饰性复杂度。
 - Trust signals: 保存状态和 revision 可见；冲突不静默覆盖；导出格式明确；生成内容始终可手工修订。
-- Avoid: 渐变、装饰性插画、过度拥挤、随机配色、DOM 布局 hack、不可编辑的静态图作为权威数据。
+- Avoid: 渐变、无语义装饰、过度拥挤、随机配色、DOM 布局 hack、不可编辑的静态图作为权威数据。
 
 ## Product goals
 
@@ -45,6 +45,8 @@
 - North-star standard, not one fixed template: `LiWork 测试事实架构` 的信息层级、留白、语义配色、可读密度和原生可编辑文字是质量基线；不同主题仍选择最能表达其关系的 report、flow、timeline、hierarchy、comparison、relationship 或 architecture 配方，不能把所有内容硬套成五栏报告。
 - Truth before density: Agent 只使用当前上下文中可支持的事实，不为满足节点数量而补造信息。输入很短、关系不明确或互相矛盾时，生成较小的忠实图，必要时在摘要中标明信息边界；“简单但真实”优先于“完整但失真”。
 - Compact semantic interface: 模型仍只提交紧凑 `DiagramSpec`。新增表现能力必须使用受控的语义角色、区域和色调，不接受像素坐标、任意颜色或完整 Excalidraw JSON。
+- Orthogonal visual style: `visualStyle` 与 report、flow、architecture 等 `kind` 正交。省略时继续使用 `clean`；`sketchnote` 只改变确定性视觉编译，不改变事实、边方向、布局身份、Session 所有权或 scene 权威性。
+- Controlled editable iconography: 节点可从受控 `icon` 词汇选择一个语义图标。每个图标必须编译为受支持的 Excalidraw rectangle、ellipse、diamond、line、arrow、freedraw 或 text 并与节点分组；禁止图片、任意 SVG path、emoji 字形、远程资源和模型提交的图标坐标。
 - Adaptive recipes: report 配方支持顶部跨域带、主体阶段列和底部结论带；其他 kind 保留各自的阅读方向。配方根据文字和节点数量确定尺寸、换行和留白，不依赖模型猜坐标。
 - Obstacle-aware routing: report 与带分组的 architecture 在节点布局完成后，从水平/垂直边界端口和正交通道候选中确定性择优；无关节点、分组标题文字盒和已布置的独立边是障碍，边交叉、短线段、额外折点与绕行长度进入固定评分。共享语义端点的边允许在同一节点汇合，但模型仍不能提交端口、通道或坐标。
 - Semantic color: definition、execution、external、evidence、risk、target 和 neutral 使用稳定色义；颜色由语义字段决定，不再由分组数组下标决定。颜色只是冗余编码，标题和正文仍必须独立表达含义。
@@ -54,17 +56,17 @@
 
 ## Visual language
 
-- Color: 插件外层控件只使用 DSH 现有 CSS 变量；生成的 diagram 使用白色背景、近黑文字、低饱和表面色和受控语义色。普通图保持克制，report 可同时使用多种语义色，但同一含义必须稳定且不能只靠颜色区分。
-- Typography: UI 继承 DSH 字体；diagram 默认使用 Excalidraw 可用的清晰无衬线字体，并限制节点文字长度。标题、分区、节点标题、正文和注释形成稳定字号层级，容器内文字按实际渲染尺寸居中。
+- Color: 插件外层控件只使用 DSH 现有 CSS 变量；生成的 diagram 使用白色或暖白纸张背景、近黑文字、低饱和表面色和受控语义色。`sketchnote` 使用粉蓝、杏橙、薄荷绿、浅黄的稳定马克笔色阶；同一 tone 的含义不因风格改变，且不能只靠颜色区分。
+- Typography: UI 继承 DSH 字体；`clean` 使用清晰无衬线字体，`sketchnote` 使用 Excalifont 并由 Excalidraw 已自托管的 Xiaolai 覆盖中文手写 fallback。标题、分区、节点标题、正文和注释形成稳定字号层级，容器内文字按实际渲染尺寸居中。
 - Spacing/layout rhythm: 外层控件沿用 DSH 的间距变量；diagram 保持中等信息密度、稳定留白和清晰分组。
-- Shape/radius/elevation: 外层沿用 DSH 控件；diagram 采用低粗糙度矩形、圆角矩形、箭头和必要的分组边界。
+- Shape/radius/elevation: 外层沿用 DSH 控件；`clean` 采用低粗糙度矩形、圆角矩形和箭头；`sketchnote` 使用可复现 seed 的轻度 roughness、较粗近黑轮廓、hachure/半透明马克笔底纹和开放式图标节点，但不得牺牲文字或连线可读性。
 - Motion: 只保留编辑器原生交互和短暂保存状态反馈；不添加装饰动画。
-- Imagery/iconography: 复用 DSH 图标；不引入独立图标体系。
+- Imagery/iconography: 插件 UI 复用 DSH 图标；diagram 的 `sketchnote` 风格拥有一套小型受控语义图标词汇，由原生 Excalidraw 图元编译并保持可编辑，不引入运行时图片、图标字体、CDN 或第二套 UI 图标体系。
 
 ## Components
 
 - Existing components to reuse: `conversation.view`、`tool.call.toolview`、DSH Client runtime hooks、CSS 变量和 Excalidraw React 组件。
-- New/changed components: `DiagramView` iframe 容器、editor 内的 `DiagramList`、`DiagramCanvas`、`DiagramToolbar` 和保存冲突提示；工具结果使用 DSH 标准 generic card。
+- New/changed components: `DiagramView` iframe 容器、editor 内的 `DiagramList`、`DiagramCanvas`、`DiagramToolbar` 和保存冲突提示；工具结果使用 DSH 标准 generic card；初始 scene 编译器和轻量 preview 共享风格 token 与受控图标配方。
 - Variants and states: 无 diagram、加载中、编辑中、保存中、已保存、保存失败、revision 冲突、只读恢复。
 - Token/component ownership: DSH 拥有应用外层 token；Excalidraw 拥有画布交互；插件拥有 diagram 初始视觉规则和外层组件。
 
@@ -104,7 +106,7 @@
 - Performance constraints: Excalidraw 只在“画布”标签实际挂载后加载；聊天首屏和 DSH `client.js` 不包含画布依赖；自动保存需去抖并避免高频 durable session event。
 - Compatibility constraints: DeepSeek Harness `0.1.0-rc.6`，Node `^22.19.0 || >=24.0.0`，ESM，外置 `dsh.bundle.patch` 安装；WebServer 必须绑定 `127.0.0.1`；Host/Client RPC 的输入和返回在不可信边界验证，请求在 JSON 解析前受字节上限约束；scene 拒绝可嵌入网页、外链和可执行内容，并限制序列化体积、元素数、单段文字长度及全域持久化字节数。
 - Static delivery constraints: editor route 仅响应 `GET`/`HEAD`，只提供构建目录内的 MIME 白名单文件；路径逃逸和缺失文件返回 404，入口不缓存、带内容哈希的资源可长期缓存，插件卸载后整条路由消失。
-- Test/screenshot expectations: 单元测试覆盖 `DiagramSpec` 验证、布局和 CAS；built-artifact smoke 覆盖 bundle exports；真实 DSH Web 验收覆盖生成、编辑、刷新、导出和冲突错误；产品可见输出增加 keyless snapshot 或记录缺失的外置插件 harness 支持。
+- Test/screenshot expectations: 单元测试覆盖 `DiagramSpec` 验证、布局、风格默认兼容、受控图标和 CAS；built-artifact smoke 覆盖 bundle exports；sketchnote 基准 scene 必须只有允许的原生元素、空 files、零 link，并在真实 DSH Web 覆盖生成、打开、编辑、保存、刷新和 SVG/PNG/Excalidraw 导出；最终截图按批准基线检查纸张、墨线、马克笔色阶、图标隐喻、开放构图与中文可读性。
 
 ## Release surface
 
