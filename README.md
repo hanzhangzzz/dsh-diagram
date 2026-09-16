@@ -19,6 +19,8 @@ Install it in one command, then type `/` and pick **canvas-diagram** in any DSH 
 npx -y @deepseek-ai/dsh@0.1.5-rc.1 plugin --profile web add dsh-diagram@latest
 ```
 
+> pnpm 11 holds back versions published less than 24 hours ago (`minimumReleaseAge`, default 1440 minutes). Right after a release, `dsh-diagram@latest` may still resolve to the previous version; pin the version instead, e.g. `dsh-diagram@0.5.0`.
+
 > Useful for your DSH toolbox? Star the repo so you can find it when the next long article needs a diagram.
 
 Full requirements and verification: [Quick install](#quick-install).

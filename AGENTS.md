@@ -159,6 +159,7 @@ pnpm run test
 9. CSS Grid 自动 placement 在空 notice 行下会把 canvas body 放错行；布局测试必须断言显式 row。
 10. 同一 `file:` spec 和相同版本会被 pnpm profile lock/cache 复用；真实安装修复必须提升版本或明确刷新隔离 profile，不能看到源码已改就假定已安装产物已变。
 11. README 提前声称尚未发布的 npm/tag/Release 会制造 404；发布完成前必须分别核 registry、tag、asset 和渲染页面。
+12. pnpm 11 默认 `minimumReleaseAge=1440`：`dsh plugin add dsh-diagram@latest` 只是转发 `pnpm add`，发布后 24 小时内会静默解析到上一版（0.5.0 发布后实测装到 0.4.0，并在新 DSH 上再次启动失败）。发布当天的公开复验和给用户的升级命令必须写显式版本 `dsh-diagram@X.Y.Z`；不要把这个现象误诊为 npm 传播延迟。
 
 ## 测试与验证
 
@@ -236,7 +237,7 @@ test ! -e lib/index.js.map
 6. 提交并推送 release commit；commit author/committer 必须是 huajuan404。创建指向该 commit 的 `vX.Y.Z` tag。当前 release tags 是 lightweight、commit 未签名；只能核验 tag ref、commit SHA 和 author/committer，不能声称 tag 已签名。
 7. 用最终 tarball 发布 npm，再把同一字节文件和 `.sha256` 上传到 GitHub Release。不要分别重新 pack。
 8. 下载两个公开来源并比较 SHA-256；确认 `npm view dsh-diagram@latest`、GitHub latest Release、tag SHA 和 `origin/master` 一致。
-9. 从公开 npm `@latest` 建全新隔离 profile，真实执行 add、dump-config、update、Web 启动、浏览器加载和 remove。不能用本地 `lib/` 或旧 profile 代替。
+9. 从公开 npm 建全新隔离 profile，真实执行 add、dump-config、update、Web 启动、浏览器加载和 remove。不能用本地 `lib/` 或旧 profile 代替。发布当天用显式 `dsh-diagram@X.Y.Z`（pnpm 11 的 `minimumReleaseAge` 会让 `@latest` 在 24 小时内解析到上一版，见踩坑 12）。
 10. npm 默认页面可能短暂缓存旧 README；registry metadata 和 `/package/dsh-diagram/v/X.Y.Z` 是版本发布后的确定性检查入口。GitHub CDN 偶发 TLS reset 时用 `gh release download` 复核 asset，网络错误不能被误诊为包错误。
 
 仓库当前没有 GitHub Actions workflow；push tag 不会自动 publish npm、生成 Release 或上传 checksum。上述动作都是显式人工步骤，不能因为 tag 存在就报告发布完成。

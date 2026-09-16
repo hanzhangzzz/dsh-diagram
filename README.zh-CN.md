@@ -19,6 +19,8 @@ Agent 负责初始结构，你在 DSH 内继续修改、自动保存并导出。
 npx -y @deepseek-ai/dsh@0.1.5-rc.1 plugin --profile web add dsh-diagram@latest
 ```
 
+> pnpm 11 默认会把发布不满 24 小时的版本排除在解析之外（`minimumReleaseAge`，默认 1440 分钟）。新版本刚发布时 `dsh-diagram@latest` 可能仍装到上一版；此时请显式指定版本，例如 `dsh-diagram@0.5.0`。
+
 > 适合放进你的 DSH 工具箱？先 Star，下一次处理长文章时就能快速找回。
 
 完整前置条件与验证见[快速安装](#快速安装)。
