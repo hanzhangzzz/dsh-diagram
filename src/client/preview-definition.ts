@@ -1,7 +1,5 @@
-import type {
-  ChatConversationViewNode,
-  ConversationNodeDefinition,
-} from "@deepseek-ai/dsh-client-runtime/client";
+import type { ChatConversationViewNode } from "@deepseek-ai/dsh-client-ui-chat/client";
+import type { ConversationNodeDefinition } from "@deepseek-ai/dsh-client-ui-conversation/client";
 import type { SessionEvent } from "@deepseek-ai/dsh-session/types";
 
 import {
@@ -12,7 +10,7 @@ import {
 /** Keyed chat renderer kind owned by this plugin. */
 export const DIAGRAM_PREVIEW_NODE_KIND = "dsh-diagram-preview";
 
-declare module "@deepseek-ai/dsh-client-ui-conversation/client" {
+declare module "@deepseek-ai/dsh-client-ui-chat/client" {
   interface ChatNodeDataMap {
     "dsh-diagram-preview": DiagramPreviewMeta;
   }

@@ -5,9 +5,9 @@ import type { ComponentProps, ComponentType } from "react";
 import type { Context } from "@deepseek-ai/cordis";
 import type { SessionEvent } from "@deepseek-ai/dsh-session/types";
 import type {
-  ConversationMatch,
   ConversationNodeContext,
-} from "@deepseek-ai/dsh-client-runtime/client";
+  ConversationStartMatch,
+} from "@deepseek-ai/dsh-client-ui-conversation/client";
 import { describe, expect, it, vi } from "vitest";
 
 import { createDiagramPreviewMeta } from "../src/core/diagram-kinds.ts";
@@ -46,10 +46,9 @@ function resultEvent(overrides: Record<string, unknown> = {}): SessionEvent {
   } as unknown as SessionEvent;
 }
 
-function matchOf(event: SessionEvent): ConversationMatch {
+function matchOf(event: SessionEvent): ConversationStartMatch {
   return {
     event,
-    view: undefined,
     role: "start",
     location: { kind: "unresolved" },
   };
@@ -57,7 +56,7 @@ function matchOf(event: SessionEvent): ConversationMatch {
 
 function contextOf(
   state: DiagramPreviewState | undefined,
-  match: ConversationMatch,
+  match: ConversationStartMatch,
 ): ConversationNodeContext<DiagramPreviewState> {
   return {
     key: `${DIAGRAM_PREVIEW_NODE_KIND}:${META.diagramId}`,
@@ -187,7 +186,7 @@ describe("client plugin registration", () => {
         inject: vi.fn((_name: string, mount: () => unknown) => mount()),
         register,
       },
-      conversationEvents: { register: registerDefinition },
+      uiConversation: { events: { register: registerDefinition } },
     } as unknown as Context;
 
     apply(context);

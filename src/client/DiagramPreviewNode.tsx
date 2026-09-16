@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
-import type { ChatNodeViewProps } from "@deepseek-ai/dsh-client-ui-conversation/client";
+import type { ChatNodeViewProps } from "@deepseek-ai/dsh-client-ui-chat/client";
+import type {} from "@deepseek-ai/dsh-client-ui-session/client";
 
 import { writeCanvasDeepLink } from "../core/canvas-link.ts";
 import { jumpToCanvasTab } from "./canvas-tab.ts";

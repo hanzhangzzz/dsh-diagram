@@ -42,7 +42,7 @@ describe("client plugin", () => {
         inject: vi.fn((_name: string, mount: () => unknown) => mount()),
         register,
       },
-      conversationEvents: { register: vi.fn(() => () => undefined) },
+      uiConversation: { events: { register: vi.fn(() => () => undefined) } },
     } as unknown as Context;
 
     apply(context);

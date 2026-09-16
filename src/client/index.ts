@@ -1,6 +1,8 @@
 import type { Context } from "@deepseek-ai/cordis";
-import type {} from "@deepseek-ai/dsh-client-runtime/client";
+import type {} from "@deepseek-ai/dsh-client-ui-renderer/client";
+import type {} from "@deepseek-ai/dsh-client-ui-session/client";
 import type {} from "@deepseek-ai/dsh-client-ui-conversation/client";
+import type {} from "@deepseek-ai/dsh-client-ui-chat/client";
 
 import { DiagramView } from "./DiagramView.tsx";
 import { DiagramPreviewNode } from "./DiagramPreviewNode.tsx";
@@ -10,7 +12,7 @@ import {
 } from "./preview-definition.ts";
 
 /** Required client services. */
-export const inject = ["slots", "conversationEvents"];
+export const inject = ["slots", "uiConversation"];
 
 /**
  * Registers the session-scoped canvas view and the inline chat preview node.
@@ -29,7 +31,7 @@ export function apply(ctx: Context): void {
       DiagramView,
     ),
   );
-  ctx.conversationEvents.register(diagramPreviewDefinition);
+  ctx.uiConversation.events.register(diagramPreviewDefinition);
   ctx.slots.inject("conversation.chat.node", () =>
     ctx.slots.register(
       {

@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import type { ConvViewProps } from "@deepseek-ai/dsh-client-ui-conversation/client";
+import type {} from "@deepseek-ai/dsh-client-ui-session/client";
 
 import css from "./DiagramView.module.css";
 

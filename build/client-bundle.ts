@@ -14,7 +14,6 @@ const CLIENT_EXTERNALS = [
   '@deepseek-ai/cordis',
   '@deepseek-ai/dsh-client-ui-slots',
   '@deepseek-ai/dsh-client-ui-primitives',
-  '@deepseek-ai/dsh-client-web-react',
 ] as const
 
 /** Compile a CSS Module into a class map and defer style injection to factory materialization. */

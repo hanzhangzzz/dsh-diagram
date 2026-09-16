@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { SessionId, type SessionHeader } from "@deepseek-ai/dsh-session";
+import { SESSION_FORMAT_VERSION } from "@deepseek-ai/dsh-session/types";
 
 import {
   DEFAULT_DIAGRAM_VALIDATION_POLICY,
@@ -47,7 +48,8 @@ const SPEC: DiagramSpec = {
 
 function session(id: string, createdAt: number, cwd?: string): SessionHeader {
   return {
-    version: 0,
+    version: SESSION_FORMAT_VERSION,
+    isSeeded: false,
     id: SessionId(id),
     createdAt,
     ...(cwd === undefined ? {} : { cwd }),

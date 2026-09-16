@@ -104,7 +104,7 @@
 - Framework/styling system: DSH Client 插件、React、CSS Modules、DSH CSS 变量；Host、轻量 Client 与 Vite 构建的同源 editor 从同一 npm bundle 发布。iframe 是编辑器资源的按需加载边界，不是独立产品路由。
 - Design-token constraints: DSH 标签容器使用现有 CSS 变量；iframe 文档无法继承父文档 token，因此编辑器 UI 先读取同名变量并提供中性字面 fallback。不引入 Tailwind 或第二套组件库。
 - Performance constraints: Excalidraw 只在“画布”标签实际挂载后加载；聊天首屏和 DSH `client.js` 不包含画布依赖；自动保存需去抖并避免高频 durable session event。
-- Compatibility constraints: DeepSeek Harness `0.1.1-rc.2`（并向下验证 `0.1.1-rc.1`、`0.1.0-rc.8`、`0.1.0-rc.6`），Node `^22.19.0 || >=24.0.0`，ESM，外置 `dsh.bundle.patch` 安装；WebServer 必须绑定 `127.0.0.1`；Host/Client RPC 的输入和返回在不可信边界验证，请求在 JSON 解析前受字节上限约束；scene 拒绝可嵌入网页、外链和可执行内容，并限制序列化体积、元素数、单段文字长度及全域持久化字节数。
+- Compatibility constraints: DeepSeek Harness `0.1.5-rc.1`（并验证 `0.1.5-rc.2`、`0.1.2-rc.1`；`0.1.1-rc.2` 及更早版本由 dsh-diagram `0.4.0` 覆盖），Node `^22.19.0 || >=24.0.0`，ESM，外置 `dsh.bundle.patch` 安装；WebServer 必须绑定 `127.0.0.1`；Host/Client RPC 的输入和返回在不可信边界验证，请求在 JSON 解析前受字节上限约束；scene 拒绝可嵌入网页、外链和可执行内容，并限制序列化体积、元素数、单段文字长度及全域持久化字节数。
 - Static delivery constraints: editor route 仅响应 `GET`/`HEAD`，只提供构建目录内的 MIME 白名单文件；路径逃逸和缺失文件返回 404，入口不缓存、带内容哈希的资源可长期缓存，插件卸载后整条路由消失。
 - Test/screenshot expectations: 单元测试覆盖 `DiagramSpec` 验证、布局、风格默认兼容、受控图标和 CAS；built-artifact smoke 覆盖 bundle exports；sketchnote 基准 scene 必须只有允许的原生元素、空 files、零 link，并在真实 DSH Web 覆盖生成、打开、编辑、保存、刷新和 SVG/PNG/Excalidraw 导出；最终截图按批准基线检查纸张、墨线、马克笔色阶、图标隐喻、开放构图与中文可读性。
 
@@ -113,6 +113,6 @@
 - npm package: `dsh-diagram`
 - GitHub repository: `hanzhangzzz/dsh-diagram`
 - Discovery metadata: `dsh-plugin` topic and `dsh.bundle.patch`
-- Current release: `0.4.0`; the public update baseline used for its artifact verification is `0.3.4`.
+- Current release: `0.5.0`; the public update baseline used for its artifact verification is `0.4.0`.
 - Installable commit identity: 每个准备打包、提交和本地安装的开发候选都提升为唯一 prerelease 版本；不得以已有版本重新打包变化后的代码。公开 release commit 再把 prerelease 提升为对应正式 semver。
 - Upgrade evidence: 发布前用唯一 tarball 从上一公开版本执行 DSH `plugin update`，分别启动更新前后的 Web 并核对安装 manifest；公开发布后再用 npm `@latest` 复核 registry 更新路径。

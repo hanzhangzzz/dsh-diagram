@@ -1,12 +1,12 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
-import type { ConnectionRpcHandler } from "@deepseek-ai/dsh-client-connection";
 import {
   clientRequestSchema,
   RpcId,
-  type RpcResult,
+  type ConnectionRpcHandler,
+  type ConnectionRpcResult,
   type RpcId as RpcIdType,
   type ServerResponse as RpcServerResponse,
-} from "@deepseek-ai/dsh-host-apiproxy/api";
+} from "@deepseek-ai/dsh-client-connection";
 
 import { DIAGRAM_RPC_CHANNEL } from "../core/rpc.ts";
 
@@ -128,7 +128,7 @@ export function createDiagramHttpRpcHandler(
     res.on("close", () => {
       if (!res.writableEnded) abort.abort();
     });
-    let result: RpcResult<unknown>;
+    let result: ConnectionRpcResult<unknown>;
     try {
       result = await handler(endpoint, envelope.data.payload, abort.signal);
     } catch (error) {
@@ -144,7 +144,7 @@ export function createDiagramHttpRpcHandler(
 function writeRpcResponse(
   res: ServerResponse,
   rpcId: RpcIdType,
-  result: RpcResult<unknown>,
+  result: ConnectionRpcResult<unknown>,
 ): void {
   const response: RpcServerResponse = { type: "server-response", rpcId, result };
   const responseBody = JSON.stringify(response);

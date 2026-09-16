@@ -1,9 +1,9 @@
 import { z } from "zod";
-import {
+import type {
+  ClientRequest,
   RpcId,
-  serverResponseSchema,
-  type ClientRequest,
-} from "@deepseek-ai/dsh-host-apiproxy/api";
+  ServerResponse,
+} from "@deepseek-ai/dsh-client-connection/client";
 
 import {
   DEFAULT_DIAGRAM_VALIDATION_POLICY,
@@ -26,6 +26,29 @@ import {
   type DiagramRpcEndpoint,
   type DiagramSaveValue,
 } from "../core/rpc.ts";
+
+/**
+ * DSH `server-response` envelope. The browser half of `dsh-client-connection`
+ * exports only the wire types, so the editor validates against them here; the
+ * Host keeps using DSH's own `clientRequestSchema`.
+ */
+const serverResponseSchema: z.ZodType<ServerResponse> = z
+  .object({
+    type: z.literal("server-response"),
+    rpcId: z.string().min(1).transform((id) => id as RpcId),
+    result: z.discriminatedUnion("ok", [
+      z.object({ ok: z.literal(true), value: z.unknown().nonoptional() }),
+      z.object({
+        ok: z.literal(false),
+        error: z.object({
+          code: z.string(),
+          message: z.string(),
+          details: z.record(z.string(), z.unknown()),
+        }),
+      }),
+    ]),
+  })
+  .strict();
 
 const listPolicyProbeSchema = z
   .object({
@@ -88,7 +111,7 @@ export function createDiagramRpcClient(
     payload: unknown,
     signal?: AbortSignal,
   ): Promise<unknown> => {
-    const rpcId = RpcId(mintRpcId());
+    const rpcId = mintRpcId() as RpcId;
     const message: ClientRequest = {
       type: "client-request",
       rpcId,

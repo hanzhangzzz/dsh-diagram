@@ -53,18 +53,16 @@ declare module "@deepseek-ai/cordis" {
 
 /** Minimal live and persisted Session sources used at every RPC admission. */
 export interface DiagramSessionSources {
-  /** Live Session lookup, used before and after a durable catalog read. */
+  /** Live Session lookup, used before and after the durable metadata read. */
   readonly sessions: {
     get(id: SessionId): { readonly header: SessionHeader } | undefined;
   };
-  /** Durable Session existence catalog and authoritative lifecycle inspection. */
+  /** Durable Session metadata with typed absence; never opens or resumes. */
   readonly persistence: {
-    listSnapshots(signal?: AbortSignal): Promise<readonly {
-      readonly header: SessionHeader;
-    }[]>;
-    inspect(id: SessionId, signal?: AbortSignal): Promise<{
-      readonly meta: SessionHeader;
-    }>;
+    stat(
+      id: SessionId,
+      options?: { readonly signal?: AbortSignal },
+    ): Promise<{ readonly header: SessionHeader } | undefined>;
   };
 }
 
@@ -81,9 +79,9 @@ export type DiagramSessionResolution =
 
 /**
  * Resolves the authoritative Session header without creating or resuming it.
- * @param sources Live store plus persistence catalog and inspector.
+ * @param sources Live store plus durable metadata reader.
  * @param rawSessionId Session id supplied at the RPC boundary.
- * @param signal Caller cancellation forwarded to persistence reads.
+ * @param signal Caller cancellation forwarded to the persistence read.
  * @returns The exact current lifecycle or session-not-found.
  */
 export async function resolveDiagramSession(
@@ -94,31 +92,21 @@ export async function resolveDiagramSession(
   signal.throwIfAborted();
   const sessionId = SessionId(String(rawSessionId));
   const initialLive = sources.sessions.get(sessionId)?.header;
-  if (initialLive === undefined) {
-    const snapshots = await sources.persistence.listSnapshots(signal);
-    signal.throwIfAborted();
-    if (!snapshots.some((snapshot) => snapshot.header.id === sessionId)
-      && sources.sessions.get(sessionId) === undefined) {
-      return {
-        ok: false,
-        error: { code: "session-not-found", sessionId },
-      };
-    }
-  }
-  const inspection = await sources.persistence.inspect(sessionId, signal);
+  const snapshot = await sources.persistence.stat(sessionId, { signal });
   signal.throwIfAborted();
   const currentLive = sources.sessions.get(sessionId)?.header;
   if (currentLive !== undefined) {
     return { ok: true, value: currentLive };
   }
-  if (initialLive !== undefined
-    && !sameSessionLifecycle(initialLive, inspection.meta)) {
+  if (snapshot === undefined
+    || (initialLive !== undefined
+      && !sameSessionLifecycle(initialLive, snapshot.header))) {
     return {
       ok: false,
       error: { code: "session-not-found", sessionId },
     };
   }
-  return { ok: true, value: inspection.meta };
+  return { ok: true, value: snapshot.header };
 }
 
 function sameSessionLifecycle(left: SessionHeader, right: SessionHeader): boolean {

@@ -5,7 +5,7 @@ English | [简体中文](https://github.com/hanzhangzzz/dsh-diagram/blob/master/
 [![npm version](https://img.shields.io/npm/v/dsh-diagram?style=flat-square)](https://www.npmjs.com/package/dsh-diagram)
 [![GitHub release](https://img.shields.io/github/v/release/hanzhangzzz/dsh-diagram?display_name=tag&style=flat-square)](https://github.com/hanzhangzzz/dsh-diagram/releases/latest)
 [![license](https://img.shields.io/github/license/hanzhangzzz/dsh-diagram?style=flat-square)](./LICENSE)
-[![DeepSeek Harness](https://img.shields.io/badge/DeepSeek_Harness-0.1.0--rc.6-4c6ef5?style=flat-square)](https://github.com/deepseek-ai/deepseek-harness)
+[![DeepSeek Harness](https://img.shields.io/badge/DeepSeek_Harness-0.1.5--rc.1-4c6ef5?style=flat-square)](https://github.com/deepseek-ai/deepseek-harness)
 
 Your DSH session already understands the article. Turn that understanding into an Excalidraw canvas you can keep editing.
 
@@ -16,7 +16,7 @@ The Agent creates the first structure; you refine it in DSH, autosave it, and ex
 Install it in one command, then type `/` and pick **canvas-diagram** in any DSH session:
 
 ```sh
-npx -y @deepseek-ai/dsh@0.1.1-rc.2 plugin --profile web add dsh-diagram@latest
+npx -y @deepseek-ai/dsh@0.1.5-rc.1 plugin --profile web add dsh-diagram@latest
 ```
 
 > Useful for your DSH toolbox? Star the repo so you can find it when the next long article needs a diagram.
@@ -34,7 +34,7 @@ Full requirements and verification: [Quick install](#quick-install).
 
 Requirements:
 
-- DeepSeek Harness `0.1.1-rc.2` (latest); also verified on `0.1.1-rc.1`, `0.1.0-rc.8` and `0.1.0-rc.6`
+- DeepSeek Harness `0.1.5-rc.1` (latest); also verified on `0.1.5-rc.2` and `0.1.2-rc.1`. DSH `0.1.1-rc.2` and older need dsh-diagram `0.4.0`
 - Node.js `^22.19.0` or `>=24.0.0`
 - pnpm `>=10` on `PATH` (the DSH plugin command delegates package management to pnpm)
 - DSH Web bound to `127.0.0.1`
@@ -42,9 +42,9 @@ Requirements:
 DeepSeek Harness does not install a global `dsh` command by default; the official way to launch it is through `npx`. The commands below work on any machine that meets the requirements:
 
 ```sh
-npx -y @deepseek-ai/dsh@0.1.1-rc.2 plugin --profile web add dsh-diagram@latest
-npx -y @deepseek-ai/dsh@0.1.1-rc.2 --profile web --dump-config
-npx -y @deepseek-ai/dsh@0.1.1-rc.2 web
+npx -y @deepseek-ai/dsh@0.1.5-rc.1 plugin --profile web add dsh-diagram@latest
+npx -y @deepseek-ai/dsh@0.1.5-rc.1 --profile web --dump-config
+npx -y @deepseek-ai/dsh@0.1.5-rc.1 web
 ```
 
 The config dump should contain this block:
@@ -77,7 +77,7 @@ dsh --profile web --dump-config
 dsh web
 ```
 
-Later sections use this short `dsh` form; substitute the `npx -y @deepseek-ai/dsh@0.1.1-rc.2` or `pnpm dsh` prefix that matches how you run DSH.
+Later sections use this short `dsh` form; substitute the `npx -y @deepseek-ai/dsh@0.1.5-rc.1` or `pnpm dsh` prefix that matches how you run DSH.
 
 ## Create your first diagram
 
@@ -117,9 +117,9 @@ The plugin does not fetch articles and does not inject UI into arbitrary website
 
 ## Compatibility
 
-| Item | Supported in `0.4.0` |
+| Item | Supported in `0.5.0` |
 | --- | --- |
-| DeepSeek Harness | `0.1.1-rc.2`, `0.1.1-rc.1`, `0.1.0-rc.8`, `0.1.0-rc.6` |
+| DeepSeek Harness | `0.1.5-rc.1`, `0.1.5-rc.2`, `0.1.2-rc.1` (older DSH: use `dsh-diagram@0.4.0`) |
 | Profile | `web` |
 | Web bind address | `127.0.0.1` only |
 | Node.js | `^22.19.0` or `>=24.0.0` |
@@ -145,10 +145,10 @@ The release page publishes the same prebuilt tarball with a SHA-256 checksum:
 
 ```sh
 dsh plugin --profile web add \
-  https://github.com/hanzhangzzz/dsh-diagram/releases/download/v0.4.0/dsh-diagram-0.4.0.tgz
+  https://github.com/hanzhangzzz/dsh-diagram/releases/download/v0.5.0/dsh-diagram-0.5.0.tgz
 ```
 
-See [v0.4.0](https://github.com/hanzhangzzz/dsh-diagram/releases/tag/v0.4.0) for the checksum and release notes.
+See [v0.5.0](https://github.com/hanzhangzzz/dsh-diagram/releases/tag/v0.5.0) for the checksum and release notes.
 
 ### Remove
 

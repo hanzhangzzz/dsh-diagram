@@ -9,7 +9,7 @@ import { basename, delimiter, isAbsolute, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { gunzipSync } from "node:zlib";
 
-const DEFAULT_DSH_VERSION = "0.1.1-rc.2";
+const DEFAULT_DSH_VERSION = "0.1.5-rc.1";
 const DEFAULT_COMMAND_TIMEOUT_MS = 120_000;
 const DEFAULT_INSTALL_TIMEOUT_MS = 420_000;
 const DEFAULT_START_TIMEOUT_MS = 90_000;
@@ -69,10 +69,10 @@ try {
         `upgrade candidate must change version; both baseline and tarball are ${before.version}`,
       );
     }
-    const baseline = await withWebServer(dsh, env, paths.project, async (baseUrl) => {
-      const root = await fetchText(`${baseUrl}/`);
+    const baseline = await withWebServer(dsh, env, paths.project, async (baseUrl, browser) => {
+      const root = await fetchText(`${baseUrl}/`, { headers: browser.headers });
       assertIncludes(root.body, "dsh-diagram", "upgrade baseline root does not include dsh-diagram");
-      const client = await fetchText(`${baseUrl}/plugins/dsh-diagram/client.js`);
+      const client = await fetchText(clientBundleUrl(baseUrl, root.body), { headers: browser.headers });
       assertStatus(client, 200, "upgrade baseline client bundle");
       return { version: before.version, port: new URL(baseUrl).port };
     });
@@ -110,12 +110,13 @@ try {
   });
   assertIncludes(dumped.stdout, "dsh-diagram", "dumped config does not include dsh-diagram");
 
-  const installed = await withWebServer(dsh, env, paths.project, async (baseUrl) => {
-    const root = await fetchText(`${baseUrl}/`);
+  const installed = await withWebServer(dsh, env, paths.project, async (baseUrl, browser) => {
+    const root = await fetchText(`${baseUrl}/`, { headers: browser.headers });
     assertBootDocument(root.body, "installed root is not the DSH boot document");
     assertIncludes(root.body, "dsh-diagram", "installed root boot entries do not include dsh-diagram");
 
-    const client = await fetchText(`${baseUrl}/plugins/dsh-diagram/client.js`);
+    // The boot graph names the revisioned bundle endpoint; older DSH served a fixed path.
+    const client = await fetchText(clientBundleUrl(baseUrl, root.body), { headers: browser.headers });
     assertStatus(client, 200, "installed client bundle");
     assertIncludes(client.body, "window.__ModuleLoader__.load", "client bundle does not use the DSH module loader");
     assertIncludes(client.body, "dsh-diagram", "client bundle does not register id dsh-diagram");
@@ -181,8 +182,8 @@ try {
   });
   assertNotIncludes(removedDump.stdout, "dsh-diagram", "removed config still includes dsh-diagram");
 
-  const removed = await withWebServer(dsh, env, paths.project, async (baseUrl) => {
-    const root = await fetchText(`${baseUrl}/`);
+  const removed = await withWebServer(dsh, env, paths.project, async (baseUrl, browser) => {
+    const root = await fetchText(`${baseUrl}/`, { headers: browser.headers });
     assertBootDocument(root.body, "removed root is not the DSH boot document");
     assertNotIncludes(root.body, "dsh-diagram", "removed root boot entries still include dsh-diagram");
 
@@ -406,6 +407,7 @@ async function withWebServer(dsh, env, cwd, callback) {
     "127.0.0.1",
     "--port",
     String(port),
+    "--no-open",
   ], {
     cwd,
     env,
@@ -415,11 +417,46 @@ async function withWebServer(dsh, env, cwd, callback) {
   const baseUrl = `http://127.0.0.1:${port}`;
   try {
     await waitForHttp(`${baseUrl}/`, startTimeoutMs);
-    return await callback(baseUrl);
+    return await callback(baseUrl, await browserSession(child, baseUrl));
   } finally {
     liveProcesses.delete(child);
     await terminate(child);
   }
+}
+
+/**
+ * Exchange the one-time login URL that `dsh web` prints for its browser cookie.
+ * DSH 0.1.2+ answers the unauthenticated index with 401/404 and prints
+ * `dsh web: http://127.0.0.1:<port>/?token=...`; the redirect sets the
+ * HttpOnly session cookie every later index request must carry. A DSH that
+ * prints no token URL is treated as cookie-less.
+ */
+async function browserSession(child, baseUrl) {
+  const deadline = Date.now() + 5_000;
+  let loginUrl;
+  while (loginUrl === undefined && Date.now() < deadline) {
+    const output = `${child.stdoutText}\n${child.stderrText}`;
+    loginUrl = output.match(/https?:\/\/[^\s]*[?&]token=[A-Za-z0-9_-]+/u)?.[0];
+    if (loginUrl === undefined) await delay(200);
+  }
+  if (loginUrl === undefined) return { authenticated: false, headers: {} };
+  const login = new URL(loginUrl);
+  const response = await fetch(new URL(`${login.pathname}${login.search}`, baseUrl), {
+    redirect: "manual",
+    signal: AbortSignal.timeout(15_000),
+  });
+  await response.text();
+  const cookies = response.headers.getSetCookie().map((cookie) => cookie.split(";")[0]);
+  if ((response.status !== 303 && response.status !== 302) || cookies.length === 0) {
+    throw new Error(`dsh web token login answered HTTP ${response.status} without a session cookie`);
+  }
+  return { authenticated: true, headers: { cookie: cookies.join("; ") } };
+}
+
+/** Resolve the plugin's client bundle endpoint from the boot graph, with the legacy fixed path as fallback. */
+function clientBundleUrl(baseUrl, rootBody) {
+  const entry = rootBody.match(/"id":"dsh-diagram","url":"([^"]+)"/u)?.[1];
+  return new URL(entry === undefined ? "/plugins/dsh-diagram/client.js" : entry.replace(/&amp;/g, "&"), baseUrl).href;
 }
 
 async function choosePort() {

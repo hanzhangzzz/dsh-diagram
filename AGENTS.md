@@ -64,17 +64,17 @@ pnpm run test
 ## Host、生命周期与 DSH 集成
 
 - 普通插件工作不得修改 DeepSeek Harness 源码。发现 DSH API 缺口时，先记录上游需求；插件仍以当前公开 DSH 版本为发布目标。
-- 构建目标是 DSH `0.1.1-rc.2`（npm `latest`）：devDependencies 精确锁到它，`build/smoke-dsh-install.mjs` 的 `DEFAULT_DSH_VERSION` 与之一致。运行时支持面是 `0.1.0-rc.6 || 0.1.0-rc.8 || 0.1.1-rc.1 || 0.1.1-rc.2`，四版都经过真实安装验证。升级时同时更新 peerDependencies、devDependencies、README 徽章和兼容表、smoke 默认版本及真实安装测试。
+- 构建目标是 DSH `0.1.5-rc.1`（npm `latest`，其子包解析为 `0.1.5-rc.2`）：devDependencies 精确锁到 `0.1.5-rc.2`，`build/smoke-dsh-install.mjs` 的 `DEFAULT_DSH_VERSION` 是 `0.1.5-rc.1`。运行时支持面是 `0.1.2-rc.1 || 0.1.5-rc.1 || 0.1.5-rc.2`，三版都经过真实安装验证。DSH 在 0.1.2 移除了 `dsh-host-apiproxy` 与 `dsh-client-runtime`（RPC envelope 契约迁入 `dsh-client-connection`，会话节点类型拆入 `dsh-client-ui-conversation/client` 与 `dsh-client-ui-chat/client`，`slots` 由 `dsh-client-ui-renderer` 提供，事件注册表变为 `ctx.uiConversation.events`），因此 `0.1.1-rc.2` 及更早版本只能由 dsh-diagram `0.4.0` 覆盖，不要试图在同一 artifact 内兼容两套包布局。升级时同时更新 peerDependencies、devDependencies、README 徽章和兼容表、smoke 默认版本及真实安装测试。
 - peerDependencies 用显式并集列举受支持版本，不要写成 `^0.1.0-rc.6` 这类范围：semver 规定预发布版本只匹配同 `major.minor.patch` 且自身带预发布的比较符，因此 `^0.1.0-rc.6` 匹配不到 `0.1.1-rc.2`（已实测为 `false`）。也不要退回单版精确锁——那正是曾让 npm 在混合版本树上抛 ERESOLVE 的原因。新增受支持版本必须先跑通 smoke 再加进并集。
-- `package.json.dsh.compatibility` 的 `dshReleases` 与 `dshOperations` 是 DSH STORE 读取的逐版本兼容声明，也是唯一由我们自己给出的兼容证据。只允许写入 `smoke:dsh-install` 真实跑出来的结论；未执行的项写 `unknown`，不得由版本范围推导（商店明确规定范围不能替代精确记录）。当前 `0.1.0-rc.6`/`0.1.0-rc.8`/`0.1.1-rc.1`/`0.1.1-rc.2` 四版 install/start/uninstall 均为 `passed`，rollback 未测故为 `unknown`。
+- `package.json.dsh.compatibility` 的 `dshReleases` 与 `dshOperations` 是 DSH STORE 读取的逐版本兼容声明，也是唯一由我们自己给出的兼容证据。只允许写入 `smoke:dsh-install` 真实跑出来的结论；未执行的项写 `unknown`，不得由版本范围推导（商店明确规定范围不能替代精确记录）。当前 `0.1.2-rc.1`/`0.1.5-rc.1`/`0.1.5-rc.2` 三版 install/start/uninstall 均为 `passed`，rollback 未测故为 `unknown`。
 - smoke 支持 `--dsh-version`（或 `DSH_DIAGRAM_DSH_VERSION`）选择目标 DSH，和 `--dsh-bin`（或 `DSH_BIN`）复用已装好的 DSH。多版本取证用这两个入口，不要为此改动 smoke 的隔离逻辑。
 - smoke 断言只能锚定 DSH 的**行为契约**，不能锚定某一版的源码写法。已踩过两次：boot 全局从 `window.__DSH_BOOT__` 变为 `globalThis["__DSH_BOOT__"]`；卸载后 `/diagram-assets` 从回落 SPA 变为返回 404。两处都曾把插件正常的情况误报成不兼容，现分别由 `isBootDocument` 和「404 或 SPA 皆可、其余失败」的不变量断言覆盖。
 - 不要对 DSH Service class 使用跨包 `instanceof`。DSH 的 source launch 和已构建 npm artifact 可能加载同一 class 的两个模块实例，导致合法 service 被误判。依赖 Cordis `static inject` 等待服务，再通过 `ctx.get("serviceKey")` 取得结构化接口。
 - 注册必须跟随 Cordis 生命周期。WebServer route 用 `ctx.effect()` 包装 disposer；`Tools.register()` 自己已经注册 effect，不要重复包装成嵌套 effect。
 - 初始化顺序是：验证物理 bind、取得依赖、打开 storage-domain、注册关闭 effect、注册静态资源和 RPC、注册工具。失败时不得留下半注册入口。
 - 插件只允许 `webServer.host === "127.0.0.1"`。不要把 `authority: loopback` 或 Host header 检查误当作 socket 级本机认证，也不要在没有完整鉴权设计时开放 `0.0.0.0`。
-- Session 查询不得创建、恢复或改变 Session。当前 DSH persistence 缺少 typed absent lookup，因此 cold lookup 先读 snapshot catalog 再 inspect；不要通过匹配异常文本推断 not-found。
-- catalog/inspect 是异步的，前后都要复核 live Session，防止查询期间 lifecycle 被替换。`diagram_create`/`diagram_read` 的 Session 只来自 `exec.agent.session.header`，不能接受模型提供的 session id。
+- Session 查询不得创建、恢复或改变 Session。cold lookup 只用 `sessionPersistence.stat(id)`：它返回 snapshot 或 `undefined`，是 typed absent lookup；不要用 `open`/`list` 代替，也不要通过匹配异常文本推断 not-found。
+- `stat` 是异步的，前后都要复核 live Session，防止查询期间 lifecycle 被替换。`diagram_create`/`diagram_read` 的 Session 只来自 `exec.agent.session.header`，不能接受模型提供的 session id。
 - repository 对同一 diagram 串行化保存，对创建和全局字节预算分别串行化；dispose 先关闭新写入，再等待已接纳写入完成。
 
 ## RPC 与静态资源安全
@@ -197,7 +197,7 @@ pnpm run smoke:dsh-install -- --tarball "$DSH_DIAGRAM_TARBALL"
 shasum -a 256 "$DSH_DIAGRAM_TARBALL"
 ```
 
-`smoke:dsh-install` 是发布门禁，不是普通单元测试的替代品。传入最终 tarball 时，它在隔离的 HOME/DSH_HOME 中安装公开 DSH 和该 artifact，启动 Web，检查 boot、Client、editor CSP、RPC body cap，再卸载并确认入口消失；它不读取或修改相邻的 DSH 源码 checkout。无 `--tarball` 时 smoke 会重新 bundle 和 pack，因此发布验证必须显式传入唯一 artifact。涉及可见 UI 时还要做真实浏览器验收。
+`smoke:dsh-install` 是发布门禁，不是普通单元测试的替代品。传入最终 tarball 时，它在隔离的 HOME/DSH_HOME 中安装公开 DSH 和该 artifact，以 `--no-open` 启动 Web，用进程日志里打印的一次性 `?token=` 登录 URL 换取 DSH 0.1.2+ 的浏览器会话 cookie（未登录的根路径返回 401/404，不是 boot 文档），从 boot 图里解析 `dsh-diagram` 的带 rev 的 bundle URL，检查 boot、Client、editor CSP、RPC body cap，再卸载并确认入口消失；它不读取或修改相邻的 DSH 源码 checkout。无 `--tarball` 时 smoke 会重新 bundle 和 pack，因此发布验证必须显式传入唯一 artifact。涉及可见 UI 时还要做真实浏览器验收。
 
 构建后额外检查：
 

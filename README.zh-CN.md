@@ -5,7 +5,7 @@
 [![npm version](https://img.shields.io/npm/v/dsh-diagram?style=flat-square)](https://www.npmjs.com/package/dsh-diagram)
 [![GitHub release](https://img.shields.io/github/v/release/hanzhangzzz/dsh-diagram?display_name=tag&style=flat-square)](https://github.com/hanzhangzzz/dsh-diagram/releases/latest)
 [![license](https://img.shields.io/github/license/hanzhangzzz/dsh-diagram?style=flat-square)](./LICENSE)
-[![DeepSeek Harness](https://img.shields.io/badge/DeepSeek_Harness-0.1.0--rc.6-4c6ef5?style=flat-square)](https://github.com/deepseek-ai/deepseek-harness)
+[![DeepSeek Harness](https://img.shields.io/badge/DeepSeek_Harness-0.1.5--rc.1-4c6ef5?style=flat-square)](https://github.com/deepseek-ai/deepseek-harness)
 
 DSH Session 已经理解文章；dsh-diagram 把这份理解变成一张可以持续编辑的 Excalidraw 画布。
 
@@ -16,7 +16,7 @@ Agent 负责初始结构，你在 DSH 内继续修改、自动保存并导出。
 一行安装，然后在任意 DSH 会话输入 `/` 选择 **canvas-diagram**：
 
 ```sh
-npx -y @deepseek-ai/dsh@0.1.1-rc.2 plugin --profile web add dsh-diagram@latest
+npx -y @deepseek-ai/dsh@0.1.5-rc.1 plugin --profile web add dsh-diagram@latest
 ```
 
 > 适合放进你的 DSH 工具箱？先 Star，下一次处理长文章时就能快速找回。
@@ -34,7 +34,7 @@ npx -y @deepseek-ai/dsh@0.1.1-rc.2 plugin --profile web add dsh-diagram@latest
 
 前置条件：
 
-- DeepSeek Harness `0.1.1-rc.2`（最新版）；`0.1.1-rc.1`、`0.1.0-rc.8`、`0.1.0-rc.6` 同样经过真实安装验证
+- DeepSeek Harness `0.1.5-rc.1`（最新版）；`0.1.5-rc.2`、`0.1.2-rc.1` 同样经过真实安装验证。DSH `0.1.1-rc.2` 及更早版本请使用 dsh-diagram `0.4.0`
 - Node.js `^22.19.0` 或 `>=24.0.0`
 - `PATH` 中可用的 pnpm `>=10`（DSH 的插件命令会把包管理交给 pnpm）
 - DSH Web 绑定 `127.0.0.1`
@@ -42,9 +42,9 @@ npx -y @deepseek-ai/dsh@0.1.1-rc.2 plugin --profile web add dsh-diagram@latest
 DeepSeek Harness 默认不会安装全局 `dsh` 命令，官方启动方式是通过 `npx`。满足前置条件的机器都可以直接执行：
 
 ```sh
-npx -y @deepseek-ai/dsh@0.1.1-rc.2 plugin --profile web add dsh-diagram@latest
-npx -y @deepseek-ai/dsh@0.1.1-rc.2 --profile web --dump-config
-npx -y @deepseek-ai/dsh@0.1.1-rc.2 web
+npx -y @deepseek-ai/dsh@0.1.5-rc.1 plugin --profile web add dsh-diagram@latest
+npx -y @deepseek-ai/dsh@0.1.5-rc.1 --profile web --dump-config
+npx -y @deepseek-ai/dsh@0.1.5-rc.1 web
 ```
 
 配置输出中应出现：
@@ -77,7 +77,7 @@ dsh --profile web --dump-config
 dsh web
 ```
 
-后文各节以短形式 `dsh` 书写；请按你实际的启动方式替换为 `npx -y @deepseek-ai/dsh@0.1.1-rc.2` 或 `pnpm dsh` 前缀。
+后文各节以短形式 `dsh` 书写；请按你实际的启动方式替换为 `npx -y @deepseek-ai/dsh@0.1.5-rc.1` 或 `pnpm dsh` 前缀。
 
 ## 创建第一张图
 
@@ -117,9 +117,9 @@ dsh web
 
 ## 兼容性
 
-| 项目 | `0.4.0` 支持范围 |
+| 项目 | `0.5.0` 支持范围 |
 | --- | --- |
-| DeepSeek Harness | `0.1.1-rc.2`、`0.1.1-rc.1`、`0.1.0-rc.8`、`0.1.0-rc.6` |
+| DeepSeek Harness | `0.1.5-rc.1`、`0.1.5-rc.2`、`0.1.2-rc.1`（更早的 DSH 请用 `dsh-diagram@0.4.0`） |
 | Profile | `web` |
 | Web 绑定地址 | 仅 `127.0.0.1` |
 | Node.js | `^22.19.0` 或 `>=24.0.0` |
@@ -145,10 +145,10 @@ Release 页面提供同一份预构建 tarball 及其 SHA-256 校验值：
 
 ```sh
 dsh plugin --profile web add \
-  https://github.com/hanzhangzzz/dsh-diagram/releases/download/v0.4.0/dsh-diagram-0.4.0.tgz
+  https://github.com/hanzhangzzz/dsh-diagram/releases/download/v0.5.0/dsh-diagram-0.5.0.tgz
 ```
 
-校验值和版本说明见 [v0.4.0](https://github.com/hanzhangzzz/dsh-diagram/releases/tag/v0.4.0)。
+校验值和版本说明见 [v0.5.0](https://github.com/hanzhangzzz/dsh-diagram/releases/tag/v0.5.0)。
 
 ### 移除
 
