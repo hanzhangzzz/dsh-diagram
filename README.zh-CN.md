@@ -2,66 +2,49 @@
 
 [English](https://github.com/hanzhangzzz/dsh-diagram/blob/master/README.md) | 简体中文
 
-[![npm version](https://img.shields.io/npm/v/dsh-diagram?style=flat-square)](https://www.npmjs.com/package/dsh-diagram)
-[![GitHub release](https://img.shields.io/github/v/release/hanzhangzzz/dsh-diagram?display_name=tag&style=flat-square)](https://github.com/hanzhangzzz/dsh-diagram/releases/latest)
-[![license](https://img.shields.io/github/license/hanzhangzzz/dsh-diagram?style=flat-square)](./LICENSE)
-[![DeepSeek Harness](https://img.shields.io/badge/DeepSeek_Harness-0.1.5--rc.1-4c6ef5?style=flat-square)](https://github.com/deepseek-ai/deepseek-harness)
+[![npm version](https://img.shields.io/npm/v/dsh-diagram?style=flat-square)](https://www.npmjs.com/package/dsh-diagram) [![GitHub release](https://img.shields.io/github/v/release/hanzhangzzz/dsh-diagram?display_name=tag&style=flat-square)](https://github.com/hanzhangzzz/dsh-diagram/releases/latest) [![license](https://img.shields.io/github/license/hanzhangzzz/dsh-diagram?style=flat-square)](./LICENSE) [![DeepSeek Harness](https://img.shields.io/badge/DeepSeek_Harness-0.1.5--rc.1-4c6ef5?style=flat-square)](https://github.com/deepseek-ai/deepseek-harness)
 
-**dsh-diagram 是 DeepSeek Harness（DSH）的画布插件。** 在现有对话里生成图表，打开同一会话的“画布”标签继续编辑、保存和导出。
+**把 DSH 里读过的文章，变成可以继续修改、保存和导出的图。**
 
-**入口：** 在 DSH 输入 `/` 选择 **canvas-diagram** → 对话内生成预览 → 点击“在画布中编辑”或顶部“画布”标签。
+这是 DeepSeek Harness（DSH）Web 的画布插件。Agent 先整理图表，你在同一会话中用 Excalidraw 修改文字和布局；不必把结果搬到另一个应用里重画。
 
-![在 DSH 中打开画布、修改文字、拖动节点、调整颜色并自动保存](https://raw.githubusercontent.com/hanzhangzzz/dsh-diagram/b0c1bf08a4fc9248be16c22d8c920604a0e6090d/editorial-preview/dsh-editable-workflow.gif)
-
-真实操作：对话预览 → 打开画布 → 手动改标题、拖节点和改颜色 → 刷新后修改仍保留 → 对话预览同步更新。
-
-> 当前源码预览：`0.6.0-editorial.3` 的真实 DSH 操作录制。该版本尚未发布到 npm；下面的安装命令目前安装稳定版 `0.5.0`。
-
-一行安装，然后在任意 DSH 会话输入 `/` 选择 **canvas-diagram**：
+已有 DSH Web 的用户，在终端安装：
 
 ```sh
-npx -y @deepseek-ai/dsh@0.1.5-rc.1 plugin --profile web add dsh-diagram@latest
+npx -y @deepseek-ai/dsh@0.1.5-rc.1 plugin --profile web add dsh-diagram@0.5.0
 ```
 
-> pnpm 11 默认会把发布不满 24 小时的版本排除在解析之外（`minimumReleaseAge`，默认 1440 分钟）。新版本刚发布时 `dsh-diagram@latest` 可能仍装到上一版；此时请显式指定版本，例如 `dsh-diagram@0.5.0`。
+![在 DSH 画布中修改文字、保存并导出](https://raw.githubusercontent.com/hanzhangzzz/dsh-diagram/0d74a27d902160305099fb8cf2db958a77394b65/stable-0.5.0/readme-workflow.gif)
 
-> 适合放进你的 DSH 工具箱？先 Star，下一次处理长文章时就能快速找回。
+**稳定版 0.5.0 的真实操作演示。** 展示同一文章会话中的画布与手动编辑；片段经过裁切与近景放大，未展示模型生成等待。先在 DSH 输入 `/` 选择 **canvas-diagram**，生成后打开顶部“画布”标签。
 
-完整前置条件与验证见[快速安装](#快速安装)。
+## 先完成一次试用
 
-## 为什么用 dsh-diagram？
+**重启 DSH Web**，在会话中提供一段文章内容，输入 `/` 选择 **canvas-diagram**，然后发送：
 
-- **生成后仍可编辑。** 得到的是完整 Excalidraw 画布，不是用完即弃的静态图片。
-- **清晰图与手绘信息图可选。** 默认保持精确克制；也可以显式要求暖白纸张、手写文字、低饱和马克笔色块和可编辑语义线稿图标。
-- **留在当前会话。** 创建后对话流中立即出现实时预览卡片；“画布”标签打开完整编辑器，全程不离开文章上下文。
-- **自动保存并随时交付。** revision 保护避免旧版本覆盖新工作，支持导出 `.excalidraw`、SVG 和 PNG。
+```text
+把上面的文章整理为一张图，只保留三个主要步骤，每个节点用短句。
+请使用画布，我需要继续修改和导出。
+```
 
-<details>
-<summary>查看 DSH 对话中的预览与“在画布中编辑”入口</summary>
+打开顶部“画布”标签，改一处文字，等到“已保存”，再点 **PNG** 导出。找不到入口时，先看[快速安装](#快速安装)和[常见问题](#常见问题)。尚未使用 DSH？先按 [DSH 官方说明](https://github.com/deepseek-ai/deepseek-harness)完成宿主与模型配置，再安装此插件。
 
-Agent 生成图表后，预览直接出现在当前对话中。右上角“在画布中编辑”和会话顶部“画布”标签都可进入上面的编辑器。
+## 为什么留在 DSH 里画？
 
-![DSH 对话中的图表预览与编辑入口](https://raw.githubusercontent.com/hanzhangzzz/dsh-diagram/34505294d34c460471b70820e96da03c3f80410a/editorial-preview/dsh-chat-preview.jpg)
+- **沿用文章上下文。** 文章已在当前对话中，直接让 Agent 整理成图；插件本身不抓取网页。
+- **生成后继续改。** 在 Excalidraw 中调整文字、节点和布局，自动保存到当前会话。
+- **带走可继续使用的结果。** 导出 PNG/SVG 用于分享，或导出 `.excalidraw` 继续编辑。要让 Agent 理解手动修改，请先让它读取画布。
 
-</details>
+### 一个实际导出结果
 
-<details>
-<summary>查看导出效果：同一内容，清晰与手绘两种风格</summary>
+这张三阶段报告看板来自一次真实发布复盘。下图由已发布的 **0.5.0** 生成，在画布中手动调整后导出，不是界面模型图。点击查看大图。
 
-以下是插件画布导出的 PNG，不是独立应用界面。两种风格在 0.5.0 已支持；这里展示 0.6.0-editorial.3 改进后的效果。
-
-![新版清晰风格：发布完成的三个检查点](https://raw.githubusercontent.com/hanzhangzzz/dsh-diagram/6427235eb0148edcb21bee65ea2a3fa7c9bb5c11/editorial-preview/clean-report.png)
-
-![同一发布复盘的手绘风格](https://raw.githubusercontent.com/hanzhangzzz/dsh-diagram/6427235eb0148edcb21bee65ea2a3fa7c9bb5c11/editorial-preview/sketchnote-report.png)
-
-</details>
+[![0.5.0 导出的发布检查点报告](https://raw.githubusercontent.com/hanzhangzzz/dsh-diagram/0d74a27d902160305099fb8cf2db958a77394b65/stable-0.5.0/release-report.png)](https://raw.githubusercontent.com/hanzhangzzz/dsh-diagram/0d74a27d902160305099fb8cf2db958a77394b65/stable-0.5.0/release-report.png)
 
 <details>
-<summary>已发布 0.5.0 的操作演示：创建、编辑与保存</summary>
+<summary>正在开发的新版效果</summary>
 
-![从 DSH 文章会话到可编辑、已保存的 Excalidraw 画布](https://raw.githubusercontent.com/hanzhangzzz/dsh-diagram/assets/dsh-diagram-workflow-v1.gif)
-
-这是稳定版的真实操作录像；界面和图表外观与上方源码预览有所不同。
+源码中的 `0.6.0-editorial.3` 尚未发布到 npm，不能通过上面的稳定版命令获得。[查看新版操作预览](https://raw.githubusercontent.com/hanzhangzzz/dsh-diagram/b0c1bf08a4fc9248be16c22d8c920604a0e6090d/editorial-preview/dsh-editable-workflow.gif)。首页上方的演示和导出图均使用已发布版本。
 
 </details>
 
@@ -77,7 +60,7 @@ Agent 生成图表后，预览直接出现在当前对话中。右上角“在�
 DeepSeek Harness 默认不会安装全局 `dsh` 命令，官方启动方式是通过 `npx`。满足前置条件的机器都可以直接执行：
 
 ```sh
-npx -y @deepseek-ai/dsh@0.1.5-rc.1 plugin --profile web add dsh-diagram@latest
+npx -y @deepseek-ai/dsh@0.1.5-rc.1 plugin --profile web add dsh-diagram@0.5.0
 npx -y @deepseek-ai/dsh@0.1.5-rc.1 --profile web --dump-config
 npx -y @deepseek-ai/dsh@0.1.5-rc.1 web
 ```
@@ -92,12 +75,15 @@ npx -y @deepseek-ai/dsh@0.1.5-rc.1 web
 
 如果 DSH Web 已经在运行，添加或更新插件后需要重启。打开一个已有会话后，顶部应出现“画布”标签。
 
+<details>
+<summary>其他启动方式：源码 checkout 或全局 dsh 命令</summary>
+
 ### 从 DSH 源码运行
 
 在与受支持发行版 API 匹配的 DeepSeek Harness 源码目录执行相同命令，前缀改为 `pnpm dsh`：
 
 ```sh
-pnpm dsh plugin --profile web add dsh-diagram@latest
+pnpm dsh plugin --profile web add dsh-diagram@0.5.0
 pnpm dsh --profile web --dump-config
 pnpm dsh web
 ```
@@ -107,12 +93,14 @@ pnpm dsh web
 如果你全局安装了 CLI 或配置了 shell alias，短形式效果相同：
 
 ```sh
-dsh plugin --profile web add dsh-diagram@latest
+dsh plugin --profile web add dsh-diagram@0.5.0
 dsh --profile web --dump-config
 dsh web
 ```
 
 后文各节以短形式 `dsh` 书写；请按你实际的启动方式替换为 `npx -y @deepseek-ai/dsh@0.1.5-rc.1` 或 `pnpm dsh` 前缀。
+
+</details>
 
 ## 创建第一张图
 
@@ -133,7 +121,7 @@ dsh web
 4. 直接修改画布。“已保存”表示 Host 已完成持久化写入。
 5. 导出结果；如果希望 Agent 继续处理手工修改后的内容，先让它调用 `diagram_read`。
 
-插件支持报告图、流程图、架构图、时间线、层级图、对比图和关系图。视觉风格与图类型正交：省略或使用 `clean` 会保留原有渲染；`sketchnote` 使用暖白纸张、近黑墨线、低饱和马克笔填充、手写字体和一组受控的原生 Excalidraw 图标。信息密集的报告图采用确定性的顶部/底部通栏、对齐主体列、语义配色和基于 Excalidraw 实际测量尺寸的原生文字定位。报告图和带分组的架构图会选择稳定的节点边界端口与正交通道，并绕开无关节点、分组标题和已经布置的独立连线。
+支持报告图、流程图、架构图、时间线、层级图、对比图和关系图。可以要求 `sketchnote` 手绘风格，或保留默认的 `clean` 清晰风格。
 
 ## 插件增加了什么
 
@@ -205,6 +193,10 @@ dsh plugin --profile web remove dsh-diagram
 - DSH Web 绑定 `0.0.0.0` 时插件会拒绝加载；当前版本不把画布 RPC 暴露到局域网。
 
 ## 常见问题
+
+### 刚发布的版本没有装上？
+
+pnpm 11 的 `minimumReleaseAge` 默认会排除发布不满 24 小时的版本。发布当天请指定精确版本，不要依赖 `@latest`；上面的试用命令已经固定到演示使用的 `0.5.0`。
 
 ### 为什么没有“画布”标签？
 
