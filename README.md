@@ -2,66 +2,49 @@
 
 English | [简体中文](https://github.com/hanzhangzzz/dsh-diagram/blob/master/README.zh-CN.md)
 
-[![npm version](https://img.shields.io/npm/v/dsh-diagram?style=flat-square)](https://www.npmjs.com/package/dsh-diagram)
-[![GitHub release](https://img.shields.io/github/v/release/hanzhangzzz/dsh-diagram?display_name=tag&style=flat-square)](https://github.com/hanzhangzzz/dsh-diagram/releases/latest)
-[![license](https://img.shields.io/github/license/hanzhangzzz/dsh-diagram?style=flat-square)](./LICENSE)
-[![DeepSeek Harness](https://img.shields.io/badge/DeepSeek_Harness-0.1.5--rc.1-4c6ef5?style=flat-square)](https://github.com/deepseek-ai/deepseek-harness)
+[![npm version](https://img.shields.io/npm/v/dsh-diagram?style=flat-square)](https://www.npmjs.com/package/dsh-diagram) [![GitHub release](https://img.shields.io/github/v/release/hanzhangzzz/dsh-diagram?display_name=tag&style=flat-square)](https://github.com/hanzhangzzz/dsh-diagram/releases/latest) [![license](https://img.shields.io/github/license/hanzhangzzz/dsh-diagram?style=flat-square)](./LICENSE) [![DeepSeek Harness](https://img.shields.io/badge/DeepSeek_Harness-0.1.5--rc.1-4c6ef5?style=flat-square)](https://github.com/deepseek-ai/deepseek-harness)
 
-**dsh-diagram is a canvas plugin for DeepSeek Harness (DSH).** Generate a diagram in your existing conversation, then open the same session’s **Canvas** tab to edit, save, and export it.
+**Turn an article you have read in DSH into a diagram you can keep editing, saving, and exporting.**
 
-**Where to find it:** type `/` in DSH and select **canvas-diagram** → get a preview in the conversation → click **Edit in canvas** or the **Canvas** tab.
+A canvas plugin for DeepSeek Harness (DSH) Web. The Agent drafts the structure; you refine text and layout in Excalidraw inside the same session, without rebuilding the result in another app.
 
-![Open the DSH canvas, edit text, drag a node, change its color, and autosave](https://raw.githubusercontent.com/hanzhangzzz/dsh-diagram/b0c1bf08a4fc9248be16c22d8c920604a0e6090d/editorial-preview/dsh-editable-workflow.gif)
-
-Real interaction: chat preview → open canvas → edit the title, drag a node, and change its color → reload with edits preserved → updated preview in the conversation.
-
-> Current source preview: a real DSH interaction recording from `0.6.0-editorial.3` (Chinese UI). This version is not on npm yet. The install command below currently installs stable `0.5.0`.
-
-Install it in one command, then type `/` and pick **canvas-diagram** in any DSH session:
+Already using DSH Web? Install from your terminal:
 
 ```sh
-npx -y @deepseek-ai/dsh@0.1.5-rc.1 plugin --profile web add dsh-diagram@latest
+npx -y @deepseek-ai/dsh@0.1.5-rc.1 plugin --profile web add dsh-diagram@0.5.0
 ```
 
-> pnpm 11 holds back versions published less than 24 hours ago (`minimumReleaseAge`, default 1440 minutes). Right after a release, `dsh-diagram@latest` may still resolve to the previous version; pin the version instead, e.g. `dsh-diagram@0.5.0`.
+![Edit a DSH canvas, save, and export](https://raw.githubusercontent.com/hanzhangzzz/dsh-diagram/0d74a27d902160305099fb8cf2db958a77394b65/stable-0.5.0/readme-workflow.gif)
 
-> Useful for your DSH toolbox? Star the repo so you can find it when the next long article needs a diagram.
+**dsh-diagram 0.5.0 · real DSH recording (Chinese UI).** Cropped close-ups of editing, saving, and an actual export; model-generation waiting is not shown.
 
-Full requirements and verification: [Quick install](#quick-install).
+## Try one complete workflow
 
-## Why dsh-diagram?
+**Restart DSH Web.** Put an article in a session, type `/` and select **canvas-diagram**, then send:
 
-- **Editable, not disposable.** Continue working in a full Excalidraw canvas instead of accepting a static generated image.
-- **Clean or sketchnote.** Keep the default precise diagram, or ask for a warm-paper editorial sketch with handwritten text, marker washes, and editable semantic line icons.
-- **Built into the conversation.** A live preview card lands in the chat flow right after creation, and the **Canvas** tab opens the full editor without leaving the DSH session.
-- **Saved and ready to share.** Revision-safe autosave protects newer work, and export produces `.excalidraw`, SVG, or PNG.
+```text
+Turn the article above into a diagram with just three main steps and short labels.
+Use the Canvas so I can edit and export the result.
+```
 
-<details>
-<summary>See the chat preview and the Edit in canvas entry point</summary>
+Open **Canvas**, change a label, wait for **Saved**, and click **PNG** to export. Missing the entry point? See [Quick install](#quick-install) and [Troubleshooting](#troubleshooting). New to DSH? Set up the host and model using the [DSH instructions](https://github.com/deepseek-ai/deepseek-harness) first, then install this plugin.
 
-After the Agent creates a diagram, its preview appears in the current conversation. The top-right **Edit in canvas** button and the session’s **Canvas** tab both open the editor demonstrated above.
+## Why keep the diagram in DSH?
 
-![Diagram preview and Edit in canvas button in a DSH conversation](https://raw.githubusercontent.com/hanzhangzzz/dsh-diagram/34505294d34c460471b70820e96da03c3f80410a/editorial-preview/dsh-chat-preview.jpg)
+- **Reuse the article context.** Ask the Agent to organize content already in the conversation. The plugin itself does not fetch webpages.
+- **Keep editing after generation.** Change labels, nodes, and layout in Excalidraw, with autosave in the current session.
+- **Take the result with you.** Export PNG/SVG for sharing or `.excalidraw` for further editing. Ask the Agent to read the canvas when you want it to incorporate your manual changes.
 
-</details>
+### An actual exported result
 
-<details>
-<summary>See exported results: the same content in clean and sketchnote styles</summary>
+This report board comes from a real release retrospective. Generated with published **0.5.0**, manually refined in the canvas, then exported; this is not a UI mockup. Click to view at full size.
 
-These PNGs are exports from the plugin’s canvas, not a separate app interface. Both styles were already supported in 0.5.0; these examples show the improved output from 0.6.0-editorial.3.
-
-![Clean editorial style: three checkpoints for a complete release](https://raw.githubusercontent.com/hanzhangzzz/dsh-diagram/6427235eb0148edcb21bee65ea2a3fa7c9bb5c11/editorial-preview/clean-report.png)
-
-![The same release review in sketchnote style](https://raw.githubusercontent.com/hanzhangzzz/dsh-diagram/6427235eb0148edcb21bee65ea2a3fa7c9bb5c11/editorial-preview/sketchnote-report.png)
-
-</details>
+[![Release-checkpoint report exported by 0.5.0](https://raw.githubusercontent.com/hanzhangzzz/dsh-diagram/0d74a27d902160305099fb8cf2db958a77394b65/stable-0.5.0/release-report.png)](https://raw.githubusercontent.com/hanzhangzzz/dsh-diagram/0d74a27d902160305099fb8cf2db958a77394b65/stable-0.5.0/release-report.png)
 
 <details>
-<summary>Published 0.5.0 workflow: create, edit, and save</summary>
+<summary>Upcoming source preview</summary>
 
-![From a DSH article session to an editable, saved Excalidraw canvas](https://raw.githubusercontent.com/hanzhangzzz/dsh-diagram/assets/dsh-diagram-workflow-v1.gif)
-
-This is a real recording of the stable version; its interface and diagram appearance differ from the source preview above.
+The source version `0.6.0-editorial.3` is not on npm and is not installed by the stable command above. [See the upcoming workflow preview](https://raw.githubusercontent.com/hanzhangzzz/dsh-diagram/b0c1bf08a4fc9248be16c22d8c920604a0e6090d/editorial-preview/dsh-editable-workflow.gif). Both the main recording and exported image above use the published version.
 
 </details>
 
@@ -77,7 +60,7 @@ Requirements:
 DeepSeek Harness does not install a global `dsh` command by default; the official way to launch it is through `npx`. The commands below work on any machine that meets the requirements:
 
 ```sh
-npx -y @deepseek-ai/dsh@0.1.5-rc.1 plugin --profile web add dsh-diagram@latest
+npx -y @deepseek-ai/dsh@0.1.5-rc.1 plugin --profile web add dsh-diagram@0.5.0
 npx -y @deepseek-ai/dsh@0.1.5-rc.1 --profile web --dump-config
 npx -y @deepseek-ai/dsh@0.1.5-rc.1 web
 ```
@@ -92,12 +75,15 @@ The config dump should contain this block:
 
 If DSH Web was already running, restart it after adding or updating the plugin. Then open an existing session and look for the **Canvas** tab.
 
+<details>
+<summary>Other launch methods: source checkout or global dsh command</summary>
+
 ### Running DSH from source
 
 Run the same commands from a DeepSeek Harness checkout that matches a supported release, using `pnpm dsh` as the prefix:
 
 ```sh
-pnpm dsh plugin --profile web add dsh-diagram@latest
+pnpm dsh plugin --profile web add dsh-diagram@0.5.0
 pnpm dsh --profile web --dump-config
 pnpm dsh web
 ```
@@ -107,12 +93,14 @@ pnpm dsh web
 If you installed the CLI globally or created a shell alias, the short form works the same way:
 
 ```sh
-dsh plugin --profile web add dsh-diagram@latest
+dsh plugin --profile web add dsh-diagram@0.5.0
 dsh --profile web --dump-config
 dsh web
 ```
 
 Later sections use this short `dsh` form; substitute the `npx -y @deepseek-ai/dsh@0.1.5-rc.1` or `pnpm dsh` prefix that matches how you run DSH.
+
+</details>
 
 ## Create your first diagram
 
@@ -133,7 +121,7 @@ Later sections use this short `dsh` form; substitute the `npx -y @deepseek-ai/ds
 4. Edit the diagram directly. **Saved** means the Host has completed a durable write.
 5. Export the result, or ask the Agent to call `diagram_read` before continuing from your manual changes.
 
-The plugin supports report boards, flowcharts, architecture diagrams, timelines, hierarchies, comparisons, and relationship diagrams. Visual style is independent of diagram type: omitted/`clean` preserves the original rendering, while `sketchnote` uses warm paper, near-black ink, low-saturation marker fills, handwritten text, and a controlled set of native Excalidraw icons. Evidence-heavy reports use deterministic full-width context/outcome bands, aligned main columns, semantic colors, and converter-measured native text placement. Report and grouped-architecture connectors select stable node-boundary ports and orthogonal corridors while avoiding unrelated nodes, group headings, and independent routed edges.
+Supported layouts include reports, flowcharts, architecture diagrams, timelines, hierarchies, comparisons, and relationship diagrams. Ask for `sketchnote` for the optional hand-drawn style, or keep the default `clean` style.
 
 ## What it adds
 
@@ -205,6 +193,10 @@ Removing the bundle does not delete saved diagram sidecar data. Reinstalling the
 - The plugin intentionally refuses to load when DSH Web binds to `0.0.0.0`; this release does not expose the canvas RPC to a LAN.
 
 ## Troubleshooting
+
+### A newly published version was not installed
+
+pnpm 11's default `minimumReleaseAge` excludes versions less than 24 hours old. Pin an exact version on release day rather than relying on `@latest`; the trial command above already pins the demonstrated `0.5.0`.
 
 ### The Canvas tab is missing
 
