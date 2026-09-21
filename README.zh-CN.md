@@ -11,7 +11,9 @@ DSH Session 已经理解文章；dsh-diagram 把这份理解变成一张可以�
 
 Agent 负责初始结构，你在 DSH 内继续修改、自动保存并导出。结果始终可编辑，而不是一次性的 Mermaid 输出。
 
-![从 DSH 文章会话到可编辑、已保存的 Excalidraw 画布](https://raw.githubusercontent.com/hanzhangzzz/dsh-diagram/assets/dsh-diagram-workflow-v1.gif)
+![新版清晰风格：发布完成的三个检查点](https://raw.githubusercontent.com/hanzhangzzz/dsh-diagram/6427235eb0148edcb21bee65ea2a3fa7c9bb5c11/editorial-preview/clean-report.png)
+
+> 当前源码预览：`0.6.0-editorial.3` 的真实 PNG 导出，画布中的文字与图形仍可编辑。该版本尚未发布到 npm；下面的安装命令目前安装稳定版 `0.5.0`。
 
 一行安装，然后在任意 DSH 会话输入 `/` 选择 **canvas-diagram**：
 
@@ -31,6 +33,21 @@ npx -y @deepseek-ai/dsh@0.1.5-rc.1 plugin --profile web add dsh-diagram@latest
 - **清晰图与手绘信息图可选。** 默认保持精确克制；也可以显式要求暖白纸张、手写文字、低饱和马克笔色块和可编辑语义线稿图标。
 - **留在当前会话。** 创建后对话流中立即出现实时预览卡片；“画布”标签打开完整编辑器，全程不离开文章上下文。
 - **自动保存并随时交付。** revision 保护避免旧版本覆盖新工作，支持导出 `.excalidraw`、SVG 和 PNG。
+
+## 同一内容，两种风格
+
+上图使用清晰风格，突出标题、分组和结论；下图使用手绘风格，保留手写文字与马克笔色块。两张图都来自新版真实画布的 PNG 导出。
+
+![同一发布复盘的手绘风格](https://raw.githubusercontent.com/hanzhangzzz/dsh-diagram/6427235eb0148edcb21bee65ea2a3fa7c9bb5c11/editorial-preview/sketchnote-report.png)
+
+<details>
+<summary>已发布 0.5.0 的操作演示：创建、编辑与保存</summary>
+
+![从 DSH 文章会话到可编辑、已保存的 Excalidraw 画布](https://raw.githubusercontent.com/hanzhangzzz/dsh-diagram/assets/dsh-diagram-workflow-v1.gif)
+
+这是稳定版的真实操作录像；界面和图表外观与上方源码预览有所不同。
+
+</details>
 
 ## 快速安装
 
