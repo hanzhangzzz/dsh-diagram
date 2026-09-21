@@ -7,13 +7,13 @@
 [![license](https://img.shields.io/github/license/hanzhangzzz/dsh-diagram?style=flat-square)](./LICENSE)
 [![DeepSeek Harness](https://img.shields.io/badge/DeepSeek_Harness-0.1.5--rc.1-4c6ef5?style=flat-square)](https://github.com/deepseek-ai/deepseek-harness)
 
-DSH Session 已经理解文章；dsh-diagram 把这份理解变成一张可以持续编辑的 Excalidraw 画布。
+**dsh-diagram 是 DeepSeek Harness（DSH）的画布插件。** 在现有对话里生成图表，打开同一会话的“画布”标签继续编辑、保存和导出。
 
-Agent 负责初始结构，你在 DSH 内继续修改、自动保存并导出。结果始终可编辑，而不是一次性的 Mermaid 输出。
+**入口：** 在 DSH 输入 `/` 选择 **canvas-diagram** → 对话内生成预览 → 点击“在画布中编辑”或顶部“画布”标签。
 
-![新版清晰风格：发布完成的三个检查点](https://raw.githubusercontent.com/hanzhangzzz/dsh-diagram/6427235eb0148edcb21bee65ea2a3fa7c9bb5c11/editorial-preview/clean-report.png)
+![DSH 内的 dsh-diagram：画布标签、Excalidraw 编辑器、已保存状态与导出按钮](https://raw.githubusercontent.com/hanzhangzzz/dsh-diagram/34505294d34c460471b70820e96da03c3f80410a/editorial-preview/dsh-canvas-editor.jpg)
 
-> 当前源码预览：`0.6.0-editorial.3` 的真实 PNG 导出，画布中的文字与图形仍可编辑。该版本尚未发布到 npm；下面的安装命令目前安装稳定版 `0.5.0`。
+> 当前源码预览：`0.6.0-editorial.3` 的真实 DSH 界面截图。该版本尚未发布到 npm；下面的安装命令目前安装稳定版 `0.5.0`。
 
 一行安装，然后在任意 DSH 会话输入 `/` 选择 **canvas-diagram**：
 
@@ -34,11 +34,25 @@ npx -y @deepseek-ai/dsh@0.1.5-rc.1 plugin --profile web add dsh-diagram@latest
 - **留在当前会话。** 创建后对话流中立即出现实时预览卡片；“画布”标签打开完整编辑器，全程不离开文章上下文。
 - **自动保存并随时交付。** revision 保护避免旧版本覆盖新工作，支持导出 `.excalidraw`、SVG 和 PNG。
 
-## 同一内容，两种风格
+<details>
+<summary>查看 DSH 对话中的预览与“在画布中编辑”入口</summary>
 
-上图使用清晰风格，突出标题、分组和结论；下图使用手绘风格，保留手写文字与马克笔色块。两张图都来自新版真实画布的 PNG 导出。
+Agent 生成图表后，预览直接出现在当前对话中。右上角“在画布中编辑”和会话顶部“画布”标签都可进入上面的编辑器。
+
+![DSH 对话中的图表预览与编辑入口](https://raw.githubusercontent.com/hanzhangzzz/dsh-diagram/34505294d34c460471b70820e96da03c3f80410a/editorial-preview/dsh-chat-preview.jpg)
+
+</details>
+
+<details>
+<summary>查看导出效果：同一内容，清晰与手绘两种风格</summary>
+
+以下是插件画布导出的 PNG，不是独立应用界面。两种风格在 0.5.0 已支持；这里展示 0.6.0-editorial.3 改进后的效果。
+
+![新版清晰风格：发布完成的三个检查点](https://raw.githubusercontent.com/hanzhangzzz/dsh-diagram/6427235eb0148edcb21bee65ea2a3fa7c9bb5c11/editorial-preview/clean-report.png)
 
 ![同一发布复盘的手绘风格](https://raw.githubusercontent.com/hanzhangzzz/dsh-diagram/6427235eb0148edcb21bee65ea2a3fa7c9bb5c11/editorial-preview/sketchnote-report.png)
+
+</details>
 
 <details>
 <summary>已发布 0.5.0 的操作演示：创建、编辑与保存</summary>
