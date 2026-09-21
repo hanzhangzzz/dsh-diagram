@@ -11,9 +11,11 @@ English | [简体中文](https://github.com/hanzhangzzz/dsh-diagram/blob/master/
 
 **Where to find it:** type `/` in DSH and select **canvas-diagram** → get a preview in the conversation → click **Edit in canvas** or the **Canvas** tab.
 
-![dsh-diagram inside DSH: Canvas tab, Excalidraw editor, saved status, and export controls](https://raw.githubusercontent.com/hanzhangzzz/dsh-diagram/34505294d34c460471b70820e96da03c3f80410a/editorial-preview/dsh-canvas-editor.jpg)
+![Open the DSH canvas, edit text, drag a node, change its color, and autosave](https://raw.githubusercontent.com/hanzhangzzz/dsh-diagram/b0c1bf08a4fc9248be16c22d8c920604a0e6090d/editorial-preview/dsh-editable-workflow.gif)
 
-> Current source preview: a real DSH interface screenshot from `0.6.0-editorial.3` (Chinese UI). This version is not on npm yet. The install command below currently installs stable `0.5.0`.
+Real interaction: chat preview → open canvas → edit the title, drag a node, and change its color → reload with edits preserved → updated preview in the conversation.
+
+> Current source preview: a real DSH interaction recording from `0.6.0-editorial.3` (Chinese UI). This version is not on npm yet. The install command below currently installs stable `0.5.0`.
 
 Install it in one command, then type `/` and pick **canvas-diagram** in any DSH session:
 
@@ -37,7 +39,7 @@ Full requirements and verification: [Quick install](#quick-install).
 <details>
 <summary>See the chat preview and the Edit in canvas entry point</summary>
 
-After the Agent creates a diagram, its preview appears in the current conversation. The top-right **Edit in canvas** button and the session’s **Canvas** tab both open the editor shown above.
+After the Agent creates a diagram, its preview appears in the current conversation. The top-right **Edit in canvas** button and the session’s **Canvas** tab both open the editor demonstrated above.
 
 ![Diagram preview and Edit in canvas button in a DSH conversation](https://raw.githubusercontent.com/hanzhangzzz/dsh-diagram/34505294d34c460471b70820e96da03c3f80410a/editorial-preview/dsh-chat-preview.jpg)
 

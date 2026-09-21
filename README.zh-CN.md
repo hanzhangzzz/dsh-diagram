@@ -11,9 +11,11 @@
 
 **入口：** 在 DSH 输入 `/` 选择 **canvas-diagram** → 对话内生成预览 → 点击“在画布中编辑”或顶部“画布”标签。
 
-![DSH 内的 dsh-diagram：画布标签、Excalidraw 编辑器、已保存状态与导出按钮](https://raw.githubusercontent.com/hanzhangzzz/dsh-diagram/34505294d34c460471b70820e96da03c3f80410a/editorial-preview/dsh-canvas-editor.jpg)
+![在 DSH 中打开画布、修改文字、拖动节点、调整颜色并自动保存](https://raw.githubusercontent.com/hanzhangzzz/dsh-diagram/b0c1bf08a4fc9248be16c22d8c920604a0e6090d/editorial-preview/dsh-editable-workflow.gif)
 
-> 当前源码预览：`0.6.0-editorial.3` 的真实 DSH 界面截图。该版本尚未发布到 npm；下面的安装命令目前安装稳定版 `0.5.0`。
+真实操作：对话预览 → 打开画布 → 手动改标题、拖节点和改颜色 → 刷新后修改仍保留 → 对话预览同步更新。
+
+> 当前源码预览：`0.6.0-editorial.3` 的真实 DSH 操作录制。该版本尚未发布到 npm；下面的安装命令目前安装稳定版 `0.5.0`。
 
 一行安装，然后在任意 DSH 会话输入 `/` 选择 **canvas-diagram**：
 
