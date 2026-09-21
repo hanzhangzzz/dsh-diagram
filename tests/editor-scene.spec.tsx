@@ -171,19 +171,19 @@ describe("diagram scene compiler", () => {
     const skeletons = diagramToElementSkeletons(layoutDiagram(spec));
 
     expect(skeletons.find((element) => element.id === "group:evidence"))
-      .toMatchObject({ strokeColor: "#7e22ce", backgroundColor: "#fcfaff" });
+      .toMatchObject({ strokeColor: "#abb2a8", backgroundColor: "#edeee7" });
     expect(skeletons.find((element) => element.id === "group:gate"))
-      .toMatchObject({ strokeColor: "#dc2626", backgroundColor: "#fffafa" });
+      .toMatchObject({ strokeColor: "#9b4c32", backgroundColor: "#f8eae2" });
     expect(skeletons.find((element) => element.id === "node:proof"))
       .toMatchObject({
-        backgroundColor: "#ffffff",
+        backgroundColor: "#fffefb",
         fillStyle: "solid",
         roughness: 0,
       });
     expect(skeletons.find((element) => element.id === "text:node:proof"))
       .toMatchObject({ fontFamily: 2 });
     expect(skeletons.find((element) => element.id === "node:block"))
-      .toMatchObject({ strokeColor: "#166534", backgroundColor: "#166534" });
+      .toMatchObject({ strokeColor: "#838e7c", backgroundColor: "#292c28" });
     expect(skeletons.find((element) => element.id === "text:node:block"))
       .toMatchObject({ strokeColor: "#ffffff" });
   });
@@ -198,7 +198,7 @@ describe("diagram scene compiler", () => {
     }));
 
     expect(skeletons.find((element) => element.id === "group:risk"))
-      .toMatchObject({ strokeColor: "#dc2626", backgroundColor: "#fffafa" });
+      .toMatchObject({ strokeColor: "#9b4c32", backgroundColor: "#f8eae2" });
   });
 
   it("uses a readable report typography hierarchy instead of legacy node sizes", () => {

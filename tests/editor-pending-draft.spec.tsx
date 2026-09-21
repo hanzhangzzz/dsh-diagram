@@ -41,13 +41,14 @@ vi.mock("@excalidraw/excalidraw", async () => {
       React.useEffect(() => {
         props.excalidrawAPI?.({
           getSceneElements: () => [],
-          getAppState: () => ({}),
+          getAppState: () => ({ width: 900, height: 600 }),
           getFiles: () => ({}),
-          scrollToContent: vi.fn(),
+          updateScene: vi.fn(),
         });
       }, [props.excalidrawAPI]);
       return React.createElement("div", { "data-testid": "excalidraw-loaded" });
     },
+    getCommonBounds: () => [10, 20, 170, 100],
     FONT_FAMILY: { Helvetica: 2 },
     convertToExcalidrawElements: (elements: unknown) => elements,
     exportToBlob: vi.fn(),
@@ -369,6 +370,7 @@ describe("pending diagram draft recovery", () => {
     expect(
       await screen.findByText(/存储容量已满，先导出本地副本/),
     ).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "展开 diagram 列表" }));
     fireEvent.click(screen.getByRole("button", { name: /^Details/ }));
     expect(
       await screen.findByRole("heading", { name: "Details" }),

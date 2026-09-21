@@ -16,6 +16,7 @@ import {
   type PersistedScene,
 } from "../core/contracts.ts";
 import { createDiagramPreviewMeta } from "../core/diagram-kinds.ts";
+import { DIAGRAM_COMPOSITION_GUIDANCE } from "./skill.ts";
 import {
   diagramIdSchema,
   type DiagramBusinessResult,
@@ -92,7 +93,8 @@ export function createDiagramTools(
       + "Create an editable diagram for the current article or discussion. Supply a compact semantic graph;"
       + " the plugin lays it out deterministically. The result appears in the current DSH session's 画布 tab."
       + " Use only facts supported by the current context; prefer a smaller truthful graph over invented completeness."
-      + " Prefer this over writing standalone SVG or Mermaid files when the user wants an editable diagram.",
+      + " Prefer this over writing standalone SVG or Mermaid files when the user wants an editable diagram. "
+      + DIAGRAM_COMPOSITION_GUIDANCE,
     parameters: {
       kind: {
         type: "string",
@@ -113,7 +115,7 @@ export function createDiagramTools(
         type: "string",
         enum: [...DIAGRAM_VISUAL_STYLES],
         description:
-          "Optional visual compiler. Use sketchnote only when the user asks for a hand-drawn, whiteboard, or editorial infographic style; omission preserves clean.",
+          "Optional visual compiler. Use sketchnote only for explicitly hand-drawn or whiteboard styling. Precise editorial diagrams use clean; omission preserves clean.",
       },
       nodes: {
         type: "array",
@@ -142,7 +144,7 @@ export function createDiagramTools(
               type: "string",
               enum: [...DIAGRAM_ICONS],
               description:
-                "Optional semantic line-art motif. Use sparingly when it improves scanning; geometry remains plugin-owned.",
+                "Optional semantic line-art motif. Omit for clean diagrams unless the user requests icons. Use sparingly for sketchnote; geometry remains plugin-owned.",
             },
           },
         },

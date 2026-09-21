@@ -25,7 +25,7 @@ const excalidrawHarness = vi.hoisted(() => ({
     | ((elements: readonly unknown[], appState: unknown, files: unknown) => void)
     | undefined,
   renderCount: 0,
-  scrollToContent: vi.fn(),
+  updateScene: vi.fn(),
 }));
 
 vi.mock("@excalidraw/excalidraw", async () => {
@@ -61,15 +61,16 @@ vi.mock("@excalidraw/excalidraw", async () => {
       React.useEffect(() => {
         props.excalidrawAPI?.({
           getSceneElements: () => props.initialData?.elements ?? [],
-          getAppState: () => ({}),
+          getAppState: () => ({ width: 900, height: 600 }),
           getFiles: () => ({}),
-          scrollToContent: excalidrawHarness.scrollToContent,
+          updateScene: excalidrawHarness.updateScene,
         });
       }, [props.excalidrawAPI]);
       return React.createElement("div", {
         "data-testid": "excalidraw-loaded",
       });
     },
+    getCommonBounds: () => [10, 20, 170, 100],
     FONT_FAMILY: { Helvetica: 2 },
     convertToExcalidrawElements: (elements: unknown) => elements,
     exportToBlob: vi.fn(),
@@ -128,7 +129,7 @@ afterEach(() => {
   excalidrawHarness.echoInitialSceneAfterEveryRender = false;
   excalidrawHarness.onChange = undefined;
   excalidrawHarness.renderCount = 0;
-  excalidrawHarness.scrollToContent.mockReset();
+  excalidrawHarness.updateScene.mockReset();
   cleanup();
 });
 
@@ -230,16 +231,11 @@ describe("DiagramApp", () => {
       );
     });
 
-    expect(excalidrawHarness.scrollToContent).toHaveBeenCalledOnce();
-    expect(excalidrawHarness.scrollToContent).toHaveBeenCalledWith(
-      scene.elements,
-      {
-        animate: false,
-        fitToViewport: true,
-        maxZoom: 1,
-        viewportZoomFactor: 0.9,
-      },
-    );
+    expect(excalidrawHarness.updateScene).toHaveBeenCalledOnce();
+    expect(excalidrawHarness.updateScene).toHaveBeenCalledWith({
+      appState: { scrollX: 360, scrollY: 264, zoom: { value: 1 } },
+    });
+    expect(client.save).not.toHaveBeenCalled();
 
     act(() => {
       excalidrawHarness.onChange?.(
@@ -248,7 +244,7 @@ describe("DiagramApp", () => {
         scene.files,
       );
     });
-    expect(excalidrawHarness.scrollToContent).toHaveBeenCalledOnce();
+    expect(excalidrawHarness.updateScene).toHaveBeenCalledOnce();
   });
 
   it("collapses and restores the diagram list without reloading the canvas", async () => {
@@ -257,13 +253,6 @@ describe("DiagramApp", () => {
     render(<DiagramApp client={client} sessionId="session-1" />);
 
     expect(await screen.findByTestId("excalidraw-loaded")).toBeTruthy();
-    const collapseButton = screen.getByRole("button", {
-      name: "收起 diagram 列表",
-    });
-    expect(collapseButton.getAttribute("aria-expanded")).toBe("true");
-
-    fireEvent.click(collapseButton);
-
     const expandButton = screen.getByRole("button", {
       name: "展开 diagram 列表",
     });
@@ -274,6 +263,9 @@ describe("DiagramApp", () => {
     fireEvent.click(expandButton);
 
     expect(screen.getByRole("button", { name: /^Runtime/ })).toBeTruthy();
+    expect(client.get).toHaveBeenCalledOnce();
+    fireEvent.click(screen.getByRole("button", { name: "收起 diagram 列表" }));
+    expect(screen.queryByRole("button", { name: /^Runtime/ })).toBeNull();
     expect(client.get).toHaveBeenCalledOnce();
   });
 
@@ -358,6 +350,7 @@ describe("DiagramApp", () => {
         changedScene.files,
       );
     });
+    fireEvent.click(screen.getByRole("button", { name: "展开 diagram 列表" }));
     fireEvent.click(screen.getByRole("button", { name: /^Details/ }));
     await waitFor(() => expect(client.save).toHaveBeenCalledOnce());
 

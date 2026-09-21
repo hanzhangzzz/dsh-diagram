@@ -1,6 +1,6 @@
 {
   "name": "dsh-diagram",
-  "version": "0.5.0",
+  "version": "0.6.0-editorial.3",
   "description": "Turn articles in DeepSeek Harness into editable Excalidraw canvases",
   "keywords": [
     "deepseek-harness",

@@ -12,8 +12,9 @@ import {
   type PersistedScene,
 } from "../core/contracts.ts";
 import {
-  EDGE_LABEL_BOX_HEIGHT,
   EDGE_LABEL_FONT_SIZE,
+  edgeLabelBoxHeight,
+  edgeLabelText,
   edgeLabelBoxWidth,
   layoutDiagram,
   NODE_ICON_SLOT_HEIGHT,
@@ -125,29 +126,38 @@ function positionNativeText(
       });
     }
   }
-  if (diagram.kind === "report") {
-    const contentTop = Math.min(...diagram.groups.map((group) => group.y));
+  for (const edge of diagram.edges) {
+    const label = measuredText(byId.get(`text:edge:${edge.id}`));
+    if (label !== undefined && edge.labelAnchor !== undefined) {
+      positions.set(`text:edge:${edge.id}`, {
+        x: edge.labelAnchor.x - label.width / 2,
+        y: edge.labelAnchor.y - label.height / 2,
+      });
+    }
+  }
+  {
+    const contentTop = Math.min(...diagram.groups.map((group) => group.y), ...diagram.nodes.map((node) => node.y));
     const title = measuredText(byId.get("diagram:title"));
     const summary = measuredText(byId.get("diagram:summary"));
     if (summary !== undefined) {
       const summaryY = contentTop - REPORT_HEADER_CONTENT_GAP - summary.height;
       positions.set("diagram:summary", {
-        x: (diagram.width - summary.width) / 2,
+        x: diagram.kind === "report" ? (diagram.width - summary.width) / 2 : 40,
         y: summaryY,
       });
       if (title !== undefined) {
         positions.set("diagram:title", {
-          x: (diagram.width - title.width) / 2,
+          x: diagram.kind === "report" ? (diagram.width - title.width) / 2 : 40,
           y: summaryY - REPORT_TITLE_SUMMARY_GAP - title.height,
         });
       }
     } else if (title !== undefined) {
       positions.set("diagram:title", {
-        x: (diagram.width - title.width) / 2,
+        x: diagram.kind === "report" ? (diagram.width - title.width) / 2 : 40,
         y: contentTop - REPORT_HEADER_CONTENT_GAP - title.height,
       });
     }
-    for (const group of diagram.groups) {
+    for (const group of diagram.kind === "report" ? diagram.groups : []) {
       const id = `text:group:${group.id}`;
       const label = measuredText(byId.get(id));
       if (label === undefined) continue;
@@ -241,7 +251,7 @@ export function diagramToElementSkeletons(
           roughness: tokens.roughness,
           strokeWidth: tokens.strokeWidth,
           ...deterministicSketchSeed(`group:${group.id}`, diagram.visualStyle),
-          roundness: { type: 3 },
+          roundness: { type: 3, value: tokens.handwritten ? 32 : 10 },
         },
         {
           type: "text" as const,
@@ -279,9 +289,10 @@ export function diagramToElementSkeletons(
         strokeWidth: tokens.strokeWidth,
         roughness: tokens.roughness,
         ...deterministicSketchSeed(`edge:${edge.id}`, diagram.visualStyle),
-        // Rounded elbows: orthogonal routes read mechanical with hard 90°
-        // corners; proportional roundness keeps the same path but soft.
-        roundness: { type: 2 },
+        // Excalidraw's roundness smooths the entire polyline into a spline,
+        // leaving the obstacle-safe route and its labels behind. Keep the
+        // router's actual segments in both the canvas and the preview.
+        roundness: null,
         endArrowhead: "arrow",
       },
       ...(label === undefined
@@ -299,9 +310,9 @@ export function diagramToElementSkeletons(
                   }
                 : {
                     x: edge.labelAnchor.x - edgeLabelBoxWidth(label) / 2,
-                    y: edge.labelAnchor.y - EDGE_LABEL_BOX_HEIGHT / 2,
+                    y: edge.labelAnchor.y - edgeLabelBoxHeight(label) / 2,
                   }),
-              text: label,
+              text: edgeLabelText(label),
               fontFamily,
               fontSize: EDGE_LABEL_FONT_SIZE,
               strokeColor: tokens.muted,
@@ -352,7 +363,7 @@ export function diagramToElementSkeletons(
       fillStyle: solid ? "solid" : tokens.fillStyle,
       roughness: tokens.roughness,
       ...deterministicSketchSeed(`node:${node.id}`, diagram.visualStyle),
-      roundness: { type: 3 },
+      roundness: { type: 3, value: tokens.handwritten ? 32 : 8 },
     });
     if (node.icon !== undefined) {
       const iconX = node.x + (node.width - DIAGRAM_ICON_BOX_SIZE) / 2;
@@ -433,7 +444,7 @@ export function diagramToElementSkeletons(
       id: "diagram:title",
       x: 40,
       y: diagram.summary === undefined ? -44 : -76,
-      text: diagram.title,
+      text: wrapPlainText(diagram.title, titleFontSize, Math.max(240, diagram.width - 80)),
       fontFamily,
       fontSize: titleFontSize,
       strokeColor: tokens.text,

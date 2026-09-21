@@ -46,8 +46,14 @@
 
 .exportActions {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 0.25rem;
+}
+
+.exportActions button[aria-pressed='true'] {
+  color: var(--dsw-alias-bg-layer-2, #ffffff);
+  background: var(--dsw-alias-label-primary, #20232a);
 }
 
 .exportActions button,

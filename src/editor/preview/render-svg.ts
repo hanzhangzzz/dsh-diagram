@@ -3,6 +3,9 @@ import type {
   PersistedScene,
 } from "../../core/contracts.ts";
 import {
+  EDGE_LABEL_FONT_SIZE,
+  edgeLabelBoxHeight,
+  edgeLabelText,
   edgeLabelBoxWidth,
   layoutDiagram,
   NODE_ICON_SLOT_HEIGHT,
@@ -99,10 +102,14 @@ export function renderSpecSvg(doc: Document, spec: DiagramSpec): SVGSVGElement {
   const summaryFontSize = report
     ? REPORT_SUMMARY_FONT_SIZE
     : STANDARD_SUMMARY_FONT_SIZE;
-  const headerHeight = titleFontSize * DEFAULT_LINE_HEIGHT
+  const title = wrapPlainText(diagram.title, titleFontSize, Math.max(240, diagram.width - 80));
+  const summary = diagram.summary === undefined ? undefined : wrapPlainText(
+    diagram.summary, summaryFontSize, Math.min(report ? 960 : 720, Math.max(240, diagram.width - 80)),
+  );
+  const headerHeight = title.split("\n").length * titleFontSize * DEFAULT_LINE_HEIGHT
     + (diagram.summary === undefined
       ? 0
-      : summaryFontSize * DEFAULT_LINE_HEIGHT + 8)
+      : (summary?.split("\n").length ?? 1) * summaryFontSize * DEFAULT_LINE_HEIGHT + 12)
     + 24;
   const labelHalfWidths = diagram.edges
     .filter((edge) => edge.label !== undefined && edge.labelAnchor !== undefined)
@@ -132,7 +139,7 @@ export function renderSpecSvg(doc: Document, spec: DiagramSpec): SVGSVGElement {
   svg.setAttribute("data-visual-style", diagram.visualStyle ?? "clean");
   svg.style.background = tokens.background;
 
-  renderSpecHeader(doc, svg, diagram, titleFontSize, summaryFontSize);
+  renderSpecHeader(doc, svg, diagram, titleFontSize, summaryFontSize, title, summary);
   renderSpecGroups(doc, svg, diagram);
   renderSpecEdges(doc, svg, diagram);
   renderSpecNodes(doc, svg, diagram);
@@ -266,6 +273,7 @@ function shapeRect(doc: Document, element: SceneElement): SVGElement {
   if (element.roundness !== null && element.roundness !== undefined) {
     const radius = Math.min(
       32,
+      element.roundness.value ?? 32,
       Math.min(element.width, element.height) * 0.25,
     );
     rect.setAttribute("rx", String(radius));
@@ -307,10 +315,11 @@ function shapeLinear(doc: Document, element: SceneElement): SVGElement {
       [element.x + point[0], element.y + point[1]] as [number, number],
   );
   const polyline = doc.createElementNS(SVG_NS, "path");
-  polyline.setAttribute("d", roundedPathD(points));
+  polyline.setAttribute("d", element.roundness == null ? linearPathD(points) : roundedPathD(points));
   applyPaint(polyline, element);
   polyline.setAttribute("fill", "none");
   polyline.setAttribute("stroke-linecap", "round");
+  polyline.setAttribute("stroke-linejoin", "round");
   group.append(polyline);
 
   const stroke = element.strokeColor ?? TEXT_COLOR;
@@ -343,6 +352,10 @@ function shapeLinear(doc: Document, element: SceneElement): SVGElement {
  * @param points Absolute polyline points.
  * @returns SVG path data with quadratic corner rounding.
  */
+function linearPathD(points: readonly (readonly [number, number])[]): string {
+  return points.map(([x, y], index) => `${index === 0 ? "M" : "L"}${String(x)} ${String(y)}`).join(" ");
+}
+
 function roundedPathD(points: readonly (readonly [number, number])[]): string {
   if (points.length === 0) return "";
   const first = points[0] as readonly [number, number];
@@ -478,28 +491,30 @@ function renderSpecHeader(
   diagram: PositionedDiagram,
   titleFontSize: number,
   summaryFontSize: number,
+  title: string,
+  summary: string | undefined,
 ): void {
   const tokens = visualTokens(diagram.visualStyle);
   const centerX = diagram.width / 2;
   let cursor = -24;
-  if (diagram.summary !== undefined) {
-    cursor -= summaryFontSize * DEFAULT_LINE_HEIGHT;
+  if (summary !== undefined) {
+    cursor -= summary.split("\n").length * summaryFontSize * DEFAULT_LINE_HEIGHT;
     svg.append(specText(doc, {
       x: centerX,
       y: cursor,
-      text: diagram.summary,
+      text: summary,
       fontSize: summaryFontSize,
       color: tokens.muted,
       anchor: "middle",
       handwritten: tokens.handwritten,
     }));
-    cursor -= 8;
+    cursor -= 12;
   }
-  cursor -= titleFontSize * DEFAULT_LINE_HEIGHT;
+  cursor -= title.split("\n").length * titleFontSize * DEFAULT_LINE_HEIGHT;
   svg.append(specText(doc, {
     x: centerX,
     y: cursor,
-    text: diagram.title,
+    text: title,
     fontSize: titleFontSize,
     color: tokens.text,
     anchor: "middle",
@@ -558,11 +573,11 @@ function renderSpecEdges(
     const polyline = doc.createElementNS(SVG_NS, "path");
     polyline.setAttribute(
       "d",
-      roundedPathD(edge.points.map((point) => [point.x, point.y] as const)),
+      linearPathD(edge.points.map((point) => [point.x, point.y] as const)),
     );
     polyline.setAttribute("fill", "none");
-    polyline.setAttribute("stroke", tokens.border);
-    polyline.setAttribute("stroke-width", String(tokens.strokeWidth + 1));
+    polyline.setAttribute("stroke", tokens.muted);
+    polyline.setAttribute("stroke-width", String(tokens.strokeWidth));
     polyline.setAttribute("stroke-linecap", "round");
     group.append(polyline);
 
@@ -573,17 +588,17 @@ function renderSpecEdges(
         doc,
         [previous.x, previous.y],
         [tip.x, tip.y],
-        tokens.border,
-        tokens.strokeWidth + 1,
+        tokens.muted,
+        tokens.strokeWidth,
       ));
     }
     if (edge.label !== undefined) {
       const middle = edge.labelAnchor ?? edgeMidpoint(edge.points);
       group.append(specText(doc, {
         x: middle.x,
-        y: edge.labelAnchor === undefined ? middle.y - 18 : middle.y - 7,
-        text: edge.label,
-        fontSize: 12,
+        y: middle.y - edgeLabelBoxHeight(edge.label) / 2,
+        text: edgeLabelText(edge.label),
+        fontSize: EDGE_LABEL_FONT_SIZE,
         color: tokens.muted,
         anchor: "middle",
         handwritten: tokens.handwritten,
@@ -762,6 +777,12 @@ function specText(doc: Document, options: SpecTextOptions): SVGElement {
     options.handwritten === true ? HANDWRITTEN_FONT_STACK : FONT_STACK,
   );
   if (options.bold === true) text.setAttribute("font-weight", "600");
-  text.textContent = options.text;
+  for (const [index, line] of options.text.split("\n").entries()) {
+    const span = doc.createElementNS(SVG_NS, "tspan");
+    span.setAttribute("x", String(options.x));
+    span.setAttribute("y", String(options.y + options.fontSize * (0.8 + index * DEFAULT_LINE_HEIGHT)));
+    span.textContent = line;
+    text.append(span);
+  }
   return text;
 }

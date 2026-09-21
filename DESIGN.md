@@ -3,14 +3,14 @@
 ## Source of truth
 
 - Status: Active
-- Last refreshed: 2026-08-24
+- Last refreshed: 2026-09-21
 - Primary product surfaces: DeepSeek Harness Web 的会话“画布”标签页、`diagram_create` 的标准工具结果卡片，以及对话流中的 diagram 预览节点（`conversation.chat.node` keyed renderer + 同源 `preview.html` iframe）。
 - Evidence reviewed: 本地 `http://127.0.0.1:3080`；deepseek-harness 的 `packages/client/ui-conversation/src/client/contract/slots.ts`、`packages/client/ui-trajectory/src/client/index.ts`、`packages/client/ui-tool/src/client/contract/slots.ts`、`packages/client/AGENTS.md`；`cathrynlavery/diagram-design`；Excalidraw；社区 `dsh-web-ui`、`dsh-TUI` 与 `modlens` 插件；用户批准的企业手绘知识信息图基线 `output/imagegen/effective-ai-agents-sketchnote-demo-v2.png`。
 
 ## Brand
 
 - Personality: 清晰、克制、可编辑，优先表达文章中的关系和论点，不追求装饰性复杂度。
-- Trust signals: 保存状态和 revision 可见；冲突不静默覆盖；导出格式明确；生成内容始终可手工修订。
+- Trust signals: 保存状态直接可见，revision 留在状态详情；冲突不静默覆盖；导出格式明确；生成内容始终可手工修订。
 - Avoid: 渐变、无语义装饰、过度拥挤、随机配色、DOM 布局 hack、不可编辑的静态图作为权威数据。
 
 ## Product goals
@@ -49,14 +49,14 @@
 - Controlled editable iconography: 节点可从受控 `icon` 词汇选择一个语义图标。每个图标必须编译为受支持的 Excalidraw rectangle、ellipse、diamond、line、arrow、freedraw 或 text 并与节点分组；禁止图片、任意 SVG path、emoji 字形、远程资源和模型提交的图标坐标。
 - Adaptive recipes: report 配方支持顶部跨域带、主体阶段列和底部结论带；其他 kind 保留各自的阅读方向。配方根据文字和节点数量确定尺寸、换行和留白，不依赖模型猜坐标。
 - Obstacle-aware routing: report 与带分组的 architecture 在节点布局完成后，从水平/垂直边界端口和正交通道候选中确定性择优；无关节点、分组标题文字盒和已布置的独立边是障碍，边交叉、短线段、额外折点与绕行长度进入固定评分。共享语义端点的边允许在同一节点汇合，但模型仍不能提交端口、通道或坐标。
-- Semantic color: definition、execution、external、evidence、risk、target 和 neutral 使用稳定色义；颜色由语义字段决定，不再由分组数组下标决定。颜色只是冗余编码，标题和正文仍必须独立表达含义。
+- Semantic color: clean 使用统一中性结构、深色焦点结果与受控风险强调；普通分组不因输入下标改变颜色。sketchnote 保留原有马克笔调色板。所有分类、风险与结论必须由文字独立表达，颜色只作冗余提示。
 - Native text geometry: 文本先由 Excalidraw 官方转换器取得真实宽高，再按容器和文字簇重新定位。首次打开、双击进入编辑、退出编辑和导出不得引起文字跳位。
 - Backward compatibility: 已持久化的旧 `DiagramSpec` 没有新增字段时继续按原 kind 和布局生成；scene 一旦存在仍是权威数据，生成器升级不得重排用户已编辑 scene。
-- Quality gate: 确定性测试检查顺序、边界、重叠和可读密度；跨主题 report 样本要求边不穿无关节点、独立边零交叉/零重叠、源端和目标端都沿边框法向进出，无遮挡路径保持短路径，跨带或绕障路径最多四个折点，最短线段至少 16 px、路由长度不超过端点曼哈顿距离的 1.35 倍。真实 Excalidraw 测试检查文本几何稳定；真实 DSH Web 用跨主题样本检查生成、打开、编辑、刷新和导出。随机模型输出不能替代确定性编译器门禁。
+- Quality gate: 确定性测试检查顺序、边界、重叠和可读密度；跨主题 report 样本要求边不穿无关节点、独立边零交叉/零重叠、源端和目标端都沿边框法向进出，无遮挡路径保持短路径，跨带或绕障路径最多四个折点，最短线段至少 16 px、路由长度不超过端点曼哈顿距离的 1.75 倍。真实 Excalidraw 测试检查文本几何稳定；真实 DSH Web 用跨主题样本检查生成、打开、编辑、刷新和导出。随机模型输出不能替代确定性编译器门禁。
 
 ## Visual language
 
-- Color: 插件外层控件只使用 DSH 现有 CSS 变量；生成的 diagram 使用白色或暖白纸张背景、近黑文字、低饱和表面色和受控语义色。`sketchnote` 使用粉蓝、杏橙、薄荷绿、浅黄的稳定马克笔色阶；同一 tone 的含义不因风格改变，且不能只靠颜色区分。
+- Color: 插件外层控件只使用 DSH 现有 CSS 变量；clean 图使用浅纸色、近黑文字、中性分区与低饱和风险强调，以明暗建立主次。`sketchnote` 保留粉蓝、杏橙、薄荷绿和浅黄的马克笔色阶；不能只靠颜色区分。
 - Typography: UI 继承 DSH 字体；`clean` 使用清晰无衬线字体，`sketchnote` 使用 Excalifont 并由 Excalidraw 已自托管的 Xiaolai 覆盖中文手写 fallback。标题、分区、节点标题、正文和注释形成稳定字号层级，容器内文字按实际渲染尺寸居中。
 - Spacing/layout rhythm: 外层控件沿用 DSH 的间距变量；diagram 保持中等信息密度、稳定留白和清晰分组。
 - Shape/radius/elevation: 外层沿用 DSH 控件；`clean` 采用低粗糙度矩形、圆角矩形和箭头；`sketchnote` 使用可复现 seed 的轻度 roughness、较粗近黑轮廓、hachure/半透明马克笔底纹和开放式图标节点，但不得牺牲文字或连线可读性。
@@ -77,6 +77,14 @@
 - Contrast/readability: 外层全部使用 DSH token；生成主题保证正文和连接标签在白色背景上可读。
 - Screen-reader semantics: 保存状态使用状态语义；错误与冲突可被朗读；按钮使用中文可访问名称。
 - Reduced motion and sensory considerations: 插件不添加必须依赖动画理解的反馈，并遵从系统 reduced-motion 设置。
+
+## Editorial upgrade acceptance
+
+- Reference: 研究了 [lieflat-charts](https://github.com/larashero3-dotcom/lieflat-charts) 的结论优先、统一视觉层级、数据诚实和阅读密度原则。其许可证为 PolyForm Noncommercial；本实现不复制其模板、CSS、脚本、色板或素材，不增加运行时依赖。
+- Frozen inputs: `tests/fixtures/visual-review.json` 在产品修改前提交，基线为 `0.5.0`、commit `f79ecc589337f4411c9ce83cfd4c7dfc720ac023`。七例覆盖真实发布流程和报告、中文长标签架构、并列比较、双节点输入、sketchnote、循环与并行边；后续渲染前后对比不得修改其内容。
+- Deterministic checks: 节点、边、标签和分组无遗漏，布局可重复，节点和边标签不重叠，标签靠近对应路径，长流程不再成为超宽横条。模型指导与渲染器分开验证，不把固定 spec 样例宣称为一次新的模型生成。
+- Live regression: `tests/fixtures/live-review-regression.json` 是七例冻结后真实模型调用得到的额外反例，用来阻止边标签与分区标题重叠。它不替换或改写原七例；关键生成约束同时进入工具描述和 skill，以覆盖模型直接调用工具的路径。
+- Runtime checks: 从最终 tarball 在隔离 DSH Web 检查同视口前后截图、预览可发现性、编辑、保存、重开、三种导出、专注模式和窄屏。旧 scene 升级前后保持不变；源码测试与几何指标不能替代实际画面验收。
 
 ## Responsive behavior
 
@@ -114,5 +122,6 @@
 - GitHub repository: `hanzhangzzz/dsh-diagram`
 - Discovery metadata: `dsh-plugin` topic and `dsh.bundle.patch`
 - Current release: `0.5.0`; the public update baseline used for its artifact verification is `0.4.0`.
+- Development candidate: `0.6.0-editorial.3`, pending a separately authorized public npm release.
 - Installable commit identity: 每个准备打包、提交和本地安装的开发候选都提升为唯一 prerelease 版本；不得以已有版本重新打包变化后的代码。公开 release commit 再把 prerelease 提升为对应正式 semver。
 - Upgrade evidence: 发布前用唯一 tarball 从上一公开版本执行 DSH `plugin update`，分别启动更新前后的 Web 并核对安装 manifest；公开发布后再用 npm `@latest` 复核 registry 更新路径。

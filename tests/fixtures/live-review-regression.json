@@ -1,0 +1,159 @@
+{
+  "origin": "Real DeepSeek generation during 2026-09-21 acceptance, after the original seven fixtures were frozen.",
+  "spec": {
+    "kind": "report",
+    "title": "公开可安装，才算发布完成",
+    "summary": "0.5.1 的发布结论：npm 上传成功只是起点，版本不可用就等待扫描后重试；只有在公开入口能安装、公开包与已验证包一致并完成 tag 与 CI 之后，才宣布发布完成。",
+    "nodes": [
+      {
+        "id": "scan",
+        "label": "上传成功不等于可安装",
+        "detail": "npm 在可安装前进行发布时扫描",
+        "group": "ctx",
+        "tone": "definition",
+        "variant": "card",
+        "icon": "warning"
+      },
+      {
+        "id": "fix",
+        "label": "接受贡献并测试",
+        "detail": "PR #6 修复配额解析；139 项测试通过",
+        "group": "local",
+        "tone": "execution",
+        "variant": "card"
+      },
+      {
+        "id": "build",
+        "label": "构建同一个包",
+        "detail": "记录 SHA-256，隔离环境与实装核对",
+        "group": "local",
+        "tone": "execution",
+        "variant": "card"
+      },
+      {
+        "id": "gate",
+        "label": "检查版本可用",
+        "detail": "指定安装 0.5.1 返回版本不存在",
+        "group": "waiting",
+        "tone": "risk",
+        "variant": "card",
+        "icon": "search"
+      },
+      {
+        "id": "wait",
+        "label": "等待后重试",
+        "detail": "保留已验证包，等待后再检查",
+        "group": "waiting",
+        "tone": "risk",
+        "variant": "card",
+        "icon": "loop"
+      },
+      {
+        "id": "hash",
+        "label": "下载核对哈希",
+        "detail": "公开 tarball 哈希与构建包一致",
+        "group": "public",
+        "tone": "evidence",
+        "variant": "card",
+        "icon": "shield"
+      },
+      {
+        "id": "install",
+        "label": "公开入口重装",
+        "detail": "GLM 样例预期：五小时 33%、一周 6%",
+        "group": "public",
+        "tone": "evidence",
+        "variant": "card",
+        "icon": "person"
+      },
+      {
+        "id": "done",
+        "label": "公开可安装，才算发布完成",
+        "detail": "tag、Release 与 CI 通过才宣布",
+        "group": "concl",
+        "tone": "target",
+        "variant": "solid",
+        "icon": "target"
+      }
+    ],
+    "edges": [
+      {
+        "from": "scan",
+        "to": "gate",
+        "label": "发布时扫描"
+      },
+      {
+        "from": "fix",
+        "to": "build",
+        "label": "通过"
+      },
+      {
+        "from": "build",
+        "to": "gate",
+        "label": "同一个包"
+      },
+      {
+        "from": "gate",
+        "to": "wait",
+        "label": "版本不可用"
+      },
+      {
+        "from": "wait",
+        "to": "gate",
+        "label": "再检查"
+      },
+      {
+        "from": "gate",
+        "to": "hash",
+        "label": "可读取"
+      },
+      {
+        "from": "hash",
+        "to": "install",
+        "label": "哈希一致"
+      },
+      {
+        "from": "install",
+        "to": "done",
+        "label": "复核通过"
+      }
+    ],
+    "groups": [
+      {
+        "id": "ctx",
+        "label": "前提",
+        "tone": "definition",
+        "placement": "top",
+        "direction": "row"
+      },
+      {
+        "id": "local",
+        "label": "准备本地包",
+        "tone": "execution",
+        "placement": "main",
+        "direction": "column"
+      },
+      {
+        "id": "waiting",
+        "label": "等待公开可用",
+        "tone": "risk",
+        "placement": "main",
+        "direction": "column"
+      },
+      {
+        "id": "public",
+        "label": "公开入口复验",
+        "tone": "evidence",
+        "placement": "main",
+        "direction": "column"
+      },
+      {
+        "id": "concl",
+        "label": "结论",
+        "tone": "target",
+        "placement": "bottom",
+        "direction": "row"
+      }
+    ]
+  }
+}

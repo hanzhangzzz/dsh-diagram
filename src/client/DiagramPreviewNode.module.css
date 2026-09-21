@@ -13,9 +13,9 @@
 .header {
   display: flex;
   gap: 8px;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
-  padding: 6px 10px;
+  padding: 10px 14px;
   border-bottom: 1px solid var(--dsw-alias-separator, rgb(0 0 0 / 12%));
 }
 
@@ -23,16 +23,18 @@
   overflow: hidden;
   color: var(--dsw-alias-label-primary, CanvasText);
   font: var(--dsw-font-xs-13, 400 0.8125rem/1.5 sans-serif);
+  font-weight: 600;
   white-space: nowrap;
   text-overflow: ellipsis;
 }
 
 .edit {
   flex: none;
-  padding: 2px 8px;
+  min-height: 32px;
+  padding: 4px 10px;
   border: 1px solid var(--dsw-alias-separator, rgb(0 0 0 / 12%));
   border-radius: 6px;
-  color: var(--dsw-alias-label-secondary, CanvasText);
+  color: var(--dsw-alias-label-primary, CanvasText);
   font: var(--dsw-font-xs-12, 400 0.75rem/1.5 sans-serif);
   background: transparent;
   cursor: pointer;
@@ -45,7 +47,7 @@
 
 .body {
   position: relative;
-  height: 300px;
+  height: clamp(320px, 50vh, 520px);
 }
 
 .loading {
