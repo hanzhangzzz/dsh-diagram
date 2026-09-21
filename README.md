@@ -16,7 +16,7 @@ npx -y @deepseek-ai/dsh@0.1.5-rc.1 plugin --profile web add dsh-diagram@0.5.0
 
 ![Edit a DSH canvas, save, and export](https://raw.githubusercontent.com/hanzhangzzz/dsh-diagram/0d74a27d902160305099fb8cf2db958a77394b65/stable-0.5.0/readme-workflow.gif)
 
-**Real interaction with stable 0.5.0 (Chinese UI).** The recording shows the canvas and manual edits in an existing article session; clips are cropped and enlarged, and model-generation waiting is not shown. Type `/` in DSH and choose **canvas-diagram**, then open the session's **Canvas** tab after generation.
+**dsh-diagram 0.5.0 · real DSH recording (Chinese UI).** Cropped close-ups of editing, saving, and an actual export; model-generation waiting is not shown.
 
 ## Try one complete workflow
 

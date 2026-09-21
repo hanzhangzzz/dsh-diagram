@@ -16,7 +16,7 @@ npx -y @deepseek-ai/dsh@0.1.5-rc.1 plugin --profile web add dsh-diagram@0.5.0
 
 ![在 DSH 画布中修改文字、保存并导出](https://raw.githubusercontent.com/hanzhangzzz/dsh-diagram/0d74a27d902160305099fb8cf2db958a77394b65/stable-0.5.0/readme-workflow.gif)
 
-**稳定版 0.5.0 的真实操作演示。** 展示同一文章会话中的画布与手动编辑；片段经过裁切与近景放大，未展示模型生成等待。先在 DSH 输入 `/` 选择 **canvas-diagram**，生成后打开顶部“画布”标签。
+**dsh-diagram 0.5.0 的真实操作。** 展示文字修改、保存及实际导出；片段经过裁切，不含模型生成等待。
 
 ## 先完成一次试用
 
