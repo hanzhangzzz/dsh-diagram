@@ -7,13 +7,13 @@ English | [简体中文](https://github.com/hanzhangzzz/dsh-diagram/blob/master/
 [![license](https://img.shields.io/github/license/hanzhangzzz/dsh-diagram?style=flat-square)](./LICENSE)
 [![DeepSeek Harness](https://img.shields.io/badge/DeepSeek_Harness-0.1.5--rc.1-4c6ef5?style=flat-square)](https://github.com/deepseek-ai/deepseek-harness)
 
-Your DSH session already understands the article. Turn that understanding into an Excalidraw canvas you can keep editing.
+**dsh-diagram is a canvas plugin for DeepSeek Harness (DSH).** Generate a diagram in your existing conversation, then open the same session’s **Canvas** tab to edit, save, and export it.
 
-The Agent creates the first structure; you refine it in DSH, autosave it, and export it. The result stays editable instead of becoming disposable Mermaid output.
+**Where to find it:** type `/` in DSH and select **canvas-diagram** → get a preview in the conversation → click **Edit in canvas** or the **Canvas** tab.
 
-![Clean editorial style: three checkpoints for a complete release](https://raw.githubusercontent.com/hanzhangzzz/dsh-diagram/6427235eb0148edcb21bee65ea2a3fa7c9bb5c11/editorial-preview/clean-report.png)
+![dsh-diagram inside DSH: Canvas tab, Excalidraw editor, saved status, and export controls](https://raw.githubusercontent.com/hanzhangzzz/dsh-diagram/34505294d34c460471b70820e96da03c3f80410a/editorial-preview/dsh-canvas-editor.jpg)
 
-> Current source preview: a real PNG export from `0.6.0-editorial.3`; text and shapes remain editable in the canvas. This version is not on npm yet. The install command below currently installs stable `0.5.0`.
+> Current source preview: a real DSH interface screenshot from `0.6.0-editorial.3` (Chinese UI). This version is not on npm yet. The install command below currently installs stable `0.5.0`.
 
 Install it in one command, then type `/` and pick **canvas-diagram** in any DSH session:
 
@@ -34,11 +34,25 @@ Full requirements and verification: [Quick install](#quick-install).
 - **Built into the conversation.** A live preview card lands in the chat flow right after creation, and the **Canvas** tab opens the full editor without leaving the DSH session.
 - **Saved and ready to share.** Revision-safe autosave protects newer work, and export produces `.excalidraw`, SVG, or PNG.
 
-## Same content, two styles
+<details>
+<summary>See the chat preview and the Edit in canvas entry point</summary>
 
-The clean style above emphasizes headings, groups, and the conclusion. The sketchnote style below keeps handwritten text and marker washes. Both are actual PNG exports from the updated canvas.
+After the Agent creates a diagram, its preview appears in the current conversation. The top-right **Edit in canvas** button and the session’s **Canvas** tab both open the editor shown above.
+
+![Diagram preview and Edit in canvas button in a DSH conversation](https://raw.githubusercontent.com/hanzhangzzz/dsh-diagram/34505294d34c460471b70820e96da03c3f80410a/editorial-preview/dsh-chat-preview.jpg)
+
+</details>
+
+<details>
+<summary>See exported results: the same content in clean and sketchnote styles</summary>
+
+These PNGs are exports from the plugin’s canvas, not a separate app interface. Both styles were already supported in 0.5.0; these examples show the improved output from 0.6.0-editorial.3.
+
+![Clean editorial style: three checkpoints for a complete release](https://raw.githubusercontent.com/hanzhangzzz/dsh-diagram/6427235eb0148edcb21bee65ea2a3fa7c9bb5c11/editorial-preview/clean-report.png)
 
 ![The same release review in sketchnote style](https://raw.githubusercontent.com/hanzhangzzz/dsh-diagram/6427235eb0148edcb21bee65ea2a3fa7c9bb5c11/editorial-preview/sketchnote-report.png)
+
+</details>
 
 <details>
 <summary>Published 0.5.0 workflow: create, edit, and save</summary>
