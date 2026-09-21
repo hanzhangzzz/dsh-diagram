@@ -252,7 +252,7 @@ test ! -e lib/index.js.map
 - curated 目录入口是 `awesome-dsh-plugin/awesome-dsh-plugin`；新增大版本后检查现有条目仍准确，不要重复提交。
 - GitHub topic 查询和 curated 目录条目是已验证的发现入口。npm registry 可安装不等于 npm 搜索已收录；`npm search` 可能延迟或不返回新包，报告商店覆盖时分别核验，不要合并成一个“已收录”结论。
 - README 默认英文并提供完整中文镜像。功能、版本、限制、安装、更新、卸载、安全与 FAQ 的语义必须同步。
-- README 第一屏保留一句具体价值、npm/Release/License/DSH 徽章、体现 DSH 入口与可编辑画布的真实界面展示（PNG/GIF）和最短安装入口。导出图仅作次级示例，不能代替插件形态展示。不要用“AI-powered”等不可验证描述替代行为。
+- README 第一屏保留一句具体价值、npm/Release/License/DSH 徽章、体现 DSH 入口、手动编辑与保存过程的真实操作 GIF和最短安装入口。静态界面与导出图仅作次级示例，不能代替可编辑性的操作展示。不要用“AI-powered”等不可验证描述替代行为。
 - 插件不会抓取文章，也不会向任意网站注入 UI；文章必须先进入 DSH Session。不要在文案中扩大能力范围。
 - demo 图片和 GIF 存放在 GitHub `assets` 分支，不把生成媒体塞进 master 历史。更新展示时继续使用去隐私的真实运行画面或真实导出。可见效果升级后同步中英文 README；源码预览与 npm 已发布版本不同时，在展示旁明确标注。
 
