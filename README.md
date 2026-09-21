@@ -11,7 +11,9 @@ Your DSH session already understands the article. Turn that understanding into a
 
 The Agent creates the first structure; you refine it in DSH, autosave it, and export it. The result stays editable instead of becoming disposable Mermaid output.
 
-![From a DSH article session to an editable, saved Excalidraw canvas](https://raw.githubusercontent.com/hanzhangzzz/dsh-diagram/assets/dsh-diagram-workflow-v1.gif)
+![Clean editorial style: three checkpoints for a complete release](https://raw.githubusercontent.com/hanzhangzzz/dsh-diagram/6427235eb0148edcb21bee65ea2a3fa7c9bb5c11/editorial-preview/clean-report.png)
+
+> Current source preview: a real PNG export from `0.6.0-editorial.3`; text and shapes remain editable in the canvas. This version is not on npm yet. The install command below currently installs stable `0.5.0`.
 
 Install it in one command, then type `/` and pick **canvas-diagram** in any DSH session:
 
@@ -31,6 +33,21 @@ Full requirements and verification: [Quick install](#quick-install).
 - **Clean or sketchnote.** Keep the default precise diagram, or ask for a warm-paper editorial sketch with handwritten text, marker washes, and editable semantic line icons.
 - **Built into the conversation.** A live preview card lands in the chat flow right after creation, and the **Canvas** tab opens the full editor without leaving the DSH session.
 - **Saved and ready to share.** Revision-safe autosave protects newer work, and export produces `.excalidraw`, SVG, or PNG.
+
+## Same content, two styles
+
+The clean style above emphasizes headings, groups, and the conclusion. The sketchnote style below keeps handwritten text and marker washes. Both are actual PNG exports from the updated canvas.
+
+![The same release review in sketchnote style](https://raw.githubusercontent.com/hanzhangzzz/dsh-diagram/6427235eb0148edcb21bee65ea2a3fa7c9bb5c11/editorial-preview/sketchnote-report.png)
+
+<details>
+<summary>Published 0.5.0 workflow: create, edit, and save</summary>
+
+![From a DSH article session to an editable, saved Excalidraw canvas](https://raw.githubusercontent.com/hanzhangzzz/dsh-diagram/assets/dsh-diagram-workflow-v1.gif)
+
+This is a real recording of the stable version; its interface and diagram appearance differ from the source preview above.
+
+</details>
 
 ## Quick install
 
