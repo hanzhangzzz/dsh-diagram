@@ -26,6 +26,7 @@ export function DiagramView({ sessionId }: ConvViewProps) {
         </p>
       )}
       <iframe
+        allowFullScreen
         className={css.frame}
         onLoad={() => setLoaded(true)}
         src={editorUrl}

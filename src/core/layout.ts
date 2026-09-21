@@ -202,7 +202,7 @@ export function layoutDiagram(spec: DiagramSpec): PositionedDiagram {
   let raw: RawLayout;
   switch (spec.kind) {
     case "flow":
-      raw = layoutDirected(spec, "LR");
+      raw = layoutFlow(spec);
       break;
     case "architecture":
       raw = (spec.groups?.length ?? 0) > 0
@@ -229,6 +229,46 @@ export function layoutDiagram(spec: DiagramSpec): PositionedDiagram {
   }
 
   return normalizeLayout(spec, raw);
+}
+
+/** Long flows wrap in reading order; short flows retain their rank layout. */
+function layoutFlow(spec: DiagramSpec): RawLayout {
+  if ((spec.groups?.length ?? 0) > 0) return layoutBands(spec);
+  const directed = layoutDirected(spec, "LR");
+  const width = Math.max(...directed.nodes.map((node) => node.x + node.width))
+    - Math.min(...directed.nodes.map((node) => node.x));
+  if (width <= 1_240) return directed;
+
+  // Pick a compact desktop composition from two small, deterministic choices.
+  // Positions never drop branches, reverse edges, or add invented stages.
+  const sizes = spec.nodes.map(measureNode);
+  const candidates = [2, 3].map((columns) => {
+    const cellWidth = Math.max(...sizes.map((size) => size.width));
+    const rows = Math.ceil(spec.nodes.length / columns);
+    const rowHeights = Array.from({ length: rows }, (_, row) =>
+      Math.max(...sizes.slice(row * columns, (row + 1) * columns).map((size) => size.height)),
+    );
+    const rowTops = rowHeights.map((_, row) =>
+      rowHeights.slice(0, row).reduce((sum, height) => sum + height + 96, 0),
+    );
+    const nodes = spec.nodes.map((node, index) => {
+      const row = Math.floor(index / columns);
+      const column = row % 2 === 0 ? index % columns : columns - 1 - index % columns;
+      const size = sizes[index] as NodeSize;
+      return {
+        ...node,
+        ...size,
+        x: column * (cellWidth + DIRECTED_RANK_GAP) + (cellWidth - size.width) / 2,
+        y: (rowTops[row] ?? 0) + ((rowHeights[row] ?? 0) - size.height) / 2,
+      };
+    });
+    const width = columns * cellWidth + (columns - 1) * DIRECTED_RANK_GAP;
+    const height = rowHeights.reduce((sum, value) => sum + value, 0) + (rows - 1) * 96;
+    return { nodes, scale: Math.min(1_100 / width, 650 / height) };
+  });
+  candidates.sort((a, b) => b.scale - a.scale);
+  const nodes = candidates[0]!.nodes;
+  return { nodes, edges: positionOrthogonalEdges(spec, nodes, []) };
 }
 
 function layoutDirected(spec: DiagramSpec, rankdir: "LR" | "TB"): RawLayout {
@@ -293,6 +333,7 @@ interface Band {
   groupId: string | undefined;
   rows: BandRow[];
   height: number;
+  nodeGap: number;
 }
 
 /**
@@ -305,9 +346,18 @@ interface Band {
  */
 function layoutBands(spec: DiagramSpec): RawLayout {
   const bands: Band[] = [];
+  const groupByNode = new Map(spec.nodes.map((node) => [node.id, node.group]));
+  const gapFor = (groupId: string | undefined) => Math.max(
+    BAND_NODE_GAP,
+    ...spec.edges
+      .filter((edge) => edge.label !== undefined
+        && groupByNode.get(edge.from) === groupId
+        && groupByNode.get(edge.to) === groupId)
+      .map((edge) => edgeLabelBoxWidth(edge.label!) + 24),
+  );
   const ungrouped = spec.nodes.filter((node) => node.group === undefined);
   if (ungrouped.length > 0) {
-    bands.push(measureBand(undefined, ungrouped));
+    bands.push(measureBand(undefined, ungrouped, gapFor(undefined)));
   }
   const groupById = new Map<string, DiagramGroup>();
   for (const group of spec.groups ?? []) {
@@ -316,7 +366,7 @@ function layoutBands(spec: DiagramSpec): RawLayout {
       throw new Error(`Cannot position empty group: ${group.id}`);
     }
     groupById.set(group.id, group);
-    bands.push(measureBand(group.id, members));
+    bands.push(measureBand(group.id, members, gapFor(group.id)));
   }
 
   const contentWidth = Math.max(
@@ -340,7 +390,7 @@ function layoutBands(spec: DiagramSpec): RawLayout {
           width: size.width,
           height: size.height,
         });
-        rowX += size.width + BAND_NODE_GAP;
+        rowX += size.width + band.nodeGap;
       }
       rowY += row.height + BAND_ROW_GAP;
     }
@@ -380,6 +430,7 @@ function layoutBands(spec: DiagramSpec): RawLayout {
 function measureBand(
   groupId: string | undefined,
   members: DiagramNode[],
+  nodeGap: number,
 ): Band {
   const rows: BandRow[] = [];
   let current: BandRow = { nodes: [], width: 0, height: 0 };
@@ -387,7 +438,7 @@ function measureBand(
     const size = measureNode(node);
     const appended = current.nodes.length === 0
       ? size.width
-      : current.width + BAND_NODE_GAP + size.width;
+      : current.width + nodeGap + size.width;
     if (current.nodes.length > 0 && appended > BAND_MAX_CONTENT_WIDTH) {
       rows.push(current);
       current = { nodes: [], width: 0, height: 0 };
@@ -395,13 +446,13 @@ function measureBand(
     current.nodes.push({ node, size });
     current.width = current.nodes.length === 1
       ? size.width
-      : current.width + BAND_NODE_GAP + size.width;
+      : current.width + nodeGap + size.width;
     current.height = Math.max(current.height, size.height);
   }
   rows.push(current);
   const height = rows.reduce((sum, row) => sum + row.height, 0)
     + (rows.length - 1) * BAND_ROW_GAP;
-  return { groupId, rows, height };
+  return { groupId, rows, height, nodeGap };
 }
 
 /**
@@ -446,6 +497,14 @@ function layoutReport(spec: DiagramSpec): RawLayout {
     (group) => group.placement === undefined || group.placement === "main",
   );
   const bottomGroups = groups.filter((group) => group.placement === "bottom");
+  const mainIds = new Set(mainGroups.map((group) => group.id));
+  const groupByNode = new Map(spec.nodes.map((node) => [node.id, node.group]));
+  const columnGap = Math.max(REPORT_COLUMN_GAP, ...spec.edges
+    .filter((edge) => edge.label !== undefined
+      && groupByNode.get(edge.from) !== groupByNode.get(edge.to)
+      && mainIds.has(groupByNode.get(edge.from) ?? "")
+      && mainIds.has(groupByNode.get(edge.to) ?? ""))
+    .map((edge) => edgeLabelBoxWidth(edge.label!) * 2 + 24));
   if (mainGroups.length === 0) {
     throw new Error("A report diagram requires at least one main group");
   }
@@ -467,7 +526,7 @@ function layoutReport(spec: DiagramSpec): RawLayout {
   const initialBoardWidth = mainInnerWidths.reduce(
     (sum, width) => sum + width + REPORT_GROUP_SIDE_PADDING * 2,
     0,
-  ) + REPORT_COLUMN_GAP * (mainGroups.length - 1);
+  ) + columnGap * (mainGroups.length - 1);
   const boardWidth = Math.max(REPORT_MIN_WIDTH, initialBoardWidth);
   const distributedExtra = (boardWidth - initialBoardWidth) / mainGroups.length;
   const resolvedMainInnerWidths = mainInnerWidths.map(
@@ -530,7 +589,7 @@ function layoutReport(spec: DiagramSpec): RawLayout {
       positioned,
       frameById,
     );
-    cursorX += groupWidth + REPORT_COLUMN_GAP;
+    cursorX += groupWidth + columnGap;
   }
   cursorY += mainHeight + REPORT_REGION_GAP;
 
@@ -797,6 +856,7 @@ function normalizeLayout(spec: DiagramSpec, raw: RawLayout): PositionedDiagram {
     y: round(group.y + offsetY),
   }));
   const edges = placeEdgeLabels(
+    spec.kind,
     nodes,
     groups,
     raw.edges.map((edge) => ({
@@ -906,7 +966,7 @@ export const EDGE_LABEL_FONT_SIZE = 14;
 /** Estimated single-line edge label box height shared with placement tests. */
 export const EDGE_LABEL_BOX_HEIGHT = 18;
 const EDGE_LABEL_MAX_WIDTH = 220;
-const EDGE_LABEL_OFFSET = 14;
+const EDGE_LABEL_OFFSET = 8;
 const EDGE_LABEL_NODE_PENALTY = 10_000;
 const EDGE_LABEL_LABEL_PENALTY = 5_000;
 const EDGE_LABEL_BORDER_PENALTY = 800;
@@ -920,9 +980,18 @@ const EDGE_LABEL_OWN_PENALTY = 40;
  */
 export function edgeLabelBoxWidth(label: string): number {
   return Math.min(
-    textWidth(label, EDGE_LABEL_FONT_SIZE) + 8,
+    Math.max(...label.split("\n").map((line) => textWidth(line, EDGE_LABEL_FONT_SIZE))) + 8,
     EDGE_LABEL_MAX_WIDTH,
   );
+}
+
+/** Every renderer wraps the same label before measuring or positioning it. */
+export function edgeLabelText(label: string): string {
+  return wrapPlainText(label, EDGE_LABEL_FONT_SIZE, EDGE_LABEL_MAX_WIDTH - 8);
+}
+
+export function edgeLabelBoxHeight(label: string): number {
+  return edgeLabelText(label).split("\n").length * EDGE_LABEL_BOX_HEIGHT;
 }
 
 interface LabelRect {
@@ -985,16 +1054,17 @@ function rectOverlapArea(a: LabelRect, b: LabelRect): number {
  * @returns Edges with `labelAnchor` populated for every labeled edge.
  */
 function placeEdgeLabels(
+  kind: DiagramKind,
   nodes: readonly PositionedNode[],
   groups: readonly PositionedGroup[],
   edges: readonly PositionedEdge[],
 ): PositionedEdge[] {
-  const boxes: LabelRect[] = nodes.map((node) => ({
+  const boxes: LabelRect[] = [...nodes.map((node) => ({
     x: node.x,
     y: node.y,
     width: node.width,
     height: node.height,
-  }));
+  })), ...groups.map((group) => groupLabelObstacle(kind, group))];
   // Group frame outlines as thin strips: labels may sit inside a band, but
   // must not straddle its border line.
   const borderStrips: LabelRect[] = groups.flatMap((group) => {
@@ -1010,7 +1080,7 @@ function placeEdgeLabels(
   return edges.map((edge) => {
     if (edge.label === undefined) return edge;
     const width = edgeLabelBoxWidth(edge.label);
-    const height = EDGE_LABEL_BOX_HEIGHT;
+    const height = edgeLabelBoxHeight(edge.label);
 
     const segments = edge.points
       .slice(0, -1)
@@ -1031,15 +1101,15 @@ function placeEdgeLabels(
         + (horizontalish ? height / 2 : width / 2);
       // Long corridor segments offer along-segment alternatives so two labels
       // sharing one corridor can spread out instead of stacking.
-      const fractions = segment.length > 160 ? [0.5, 0.3, 0.7] : [0.5];
-      for (const [tier, side, fraction] of [1, -1].flatMap((s) =>
-        [1, 2.6, 4.2].flatMap((t) =>
-          fractions.map((f) => [t, s, f] as const),
-        ),
+      const fractions = segment.length > 80
+        ? [0.5, 0.25, 0.75, 0.1, 0.9, 0, 1]
+        : [0.5, 0, 1];
+      for (const [side, fraction] of [1, -1].flatMap((s) =>
+        fractions.map((f) => [s, f] as const),
       )) {
         const midX = segment.start.x + (segment.end.x - segment.start.x) * fraction;
         const midY = segment.start.y + (segment.end.y - segment.start.y) * fraction;
-        const offset = baseOffset * tier;
+        const offset = baseOffset;
         const candidate = {
           x: midX - uy * offset * side,
           y: midY + ux * offset * side,
@@ -1051,7 +1121,7 @@ function placeEdgeLabels(
           height,
         };
         // Prefer longer segments and closer tiers; keep ordering strict.
-        let score = order + (tier - 1) * 2;
+        let score = order;
         for (const box of boxes) {
           const area = rectOverlapArea(rect, box);
           if (area > 0) score += EDGE_LABEL_NODE_PENALTY + area;

@@ -109,10 +109,11 @@ pnpm run test
 - sourcemap 保持关闭，npm `files` 继续排除 `lib/**/*.map`。构建后检查 bundle 不包含本机绝对路径；曾经的 virtual module region 注释会泄漏 `/Users/...` checkout 路径，minify 是当前消除路径的组成部分。
 - editor 较大是已知成本；聊天首屏只下载小型 Client entry。优化体积时必须以网络资源和真实启动为证据，不能删除字体许可或把 Excalidraw重新塞回 Client entry。
 - core layout 的边点是绝对坐标，Excalidraw `points` 是相对元素起点。转换时令 arrow `x/y` 等于首个绝对点，再让每个 point 减去起点，并保持稳定 `edge-N` id 和 `node:*` binding；禁止直接混用两种坐标。
-- 布局必须确定且保持输入顺序：flow 与无分组 architecture 为 Dagre LR，带分组的 architecture 使用等宽分区带状布局（组按输入顺序纵向堆叠、未分组节点为首个无容器带、行在共享内容宽度内居中换行、容器框由布局显式给出），hierarchy 为 TB，Dagre 使用 named multigraph 保留并行边；所有节点、边和分组统一经过 normalize、边界偏移和舍入。不能依赖 Dagre 返回顺序重排持久 id。
-- 边标签锚点由 `placeEdgeLabels` 在 normalize 后统一计算（`PositionedEdge.labelAnchor`，中心点语义）：候选=各路段中点的双侧多档垂直偏移，按段长与档位确定性评分，节点框重叠是主导罚分，已放置标签与其他边路径次之；scene 与 preview 渲染器只消费锚点，不得各自再发明中点式摆放。标签宽高估算用 `edgeLabelBoxWidth`/`EDGE_LABEL_BOX_HEIGHT`，测试与渲染共享同一契约。
-- 跨区构图纪律：分组框对"两端都不属于它"的边是**硬障碍**（在 `positionOrthogonalEdges` 注入），跨区边只走区域间走廊和两侧空白，绝不横穿无关区域；为此 generation-quality 的路程预算是 1.75×直线距离，不要为省路程收紧回去。连线拐角一律圆角：scene 箭头带 `roundness: {type: 2}`，preview 用 `roundedPathD` 的二次曲线拐角。
+- 布局必须确定且保持持久 id 与输入顺序：短 flow 与无分组 architecture 使用 Dagre LR；长 flow 在两列与三列折行中选择适合桌面阅读的布局，保留全部分支和有向边。带分组 flow/architecture 使用等宽分区带状布局；hierarchy 为 TB，Dagre 使用 named multigraph 保留并行边。所有几何统一经过 normalize，不依赖 Dagre 返回顺序重排持久 id。
+- 边标签锚点由 `placeEdgeLabels` 在 normalize 后统一计算（中心点语义）：候选包含路段内部与接点附近，标签必须靠近自己的路径，并优先避开节点、其他标签与分组边框。同带和跨列间距须为标签留出空间，不能靠把标签推远解决拥挤。`edgeLabelText`、`edgeLabelBoxWidth`、`edgeLabelBoxHeight` 是布局、scene 和 preview 的共同换行与尺寸契约。
+- 跨区构图纪律：分组框对两端均不属于它的边是硬障碍；跨区边只走走廊和两侧空白，路程预算为 1.75×直线距离。生成箭头保留路由折线，使用 `roundness: null`：Excalidraw 的 `roundness: {type: 2}` 会平滑整条路径而非仅处理局部拐角，实测会偏离避障几何和标签位置。preview 同样保留折线；旧 scene 不重写。
 - Host 在 init 时通过 `ctx.skills.register()` 注册 `canvas-diagram` 运行时 skill（模型与用户双向可调用），这是中文泛化提示路由到 `diagram_create` 的机制，也是输入框 `/` 命令的入口；disposer 由 `ctx.effect` 持有，`skills` 在 `static inject` 中为必需服务。删除该注册会让泛化图表请求重新流向工作区 skill。
+- 关键构图约束由 `DIAGRAM_COMPOSITION_GUIDANCE` 同时提供给 skill 和 `diagram_create` 的工具描述；不得假定模型在直接调用工具前一定读过 skill。默认 clean 优先文字，图标与独立前提区只在承担新增信息时使用。
 
 ## 对话流内嵌预览（chat preview）
 
@@ -140,6 +141,8 @@ pnpm run test
 ## UI 与浏览器验收
 
 - 画布空间优先于插件 chrome。标题、导出按钮和 diagram 列表的字号不得超过 DSH 同级控件；桌面 diagram 侧栏必须可折叠，窄屏使用 selector。
+- 新打开的画布默认收起列表；完整查看须为编辑器顶部工具栏和底部控件预留空间。专注画布通过标准 Fullscreen API 实现，入口 iframe 必须允许 fullscreen；不得隐藏或修改 DSH 外部 DOM 来伪造全屏。
+- 完成轮次的图表预览锚定在该轮 `turn/end` 后，避免落入 DSH 自动折叠的工具过程区间；生成中的预览仍锚定原始工具结果。元数据与原始事件 seq 不变，不新增持久化事件。
 - editor shell 是三行 grid；`.body` 必须显式位于第三行。依赖自动 placement 会让空状态行占据剩余高度，导致画布只得到约一百像素。
 - 从 iframe root 到 Excalidraw 容器的 `min-height: 0` 链必须完整；折叠 diagram 侧栏只改变外层布局，不能重挂载或重载画布。
 - DSH 外层使用已有 CSS variables；iframe 内先读取同名变量并提供中性 fallback。不要增加第二套设计系统。

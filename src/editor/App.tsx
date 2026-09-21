@@ -1,4 +1,4 @@
-import { Excalidraw } from "@excalidraw/excalidraw";
+import { Excalidraw, getCommonBounds } from "@excalidraw/excalidraw";
 import type {
   AppState,
   BinaryFiles,
@@ -57,6 +57,7 @@ import {
   type PendingDiagramDraft,
 } from "./pendingDraft.ts";
 import css from "./App.module.css";
+import { fitContentViewport } from "./viewport.ts";
 
 const DEFAULT_LIMITS: DiagramClientLimits = {
   autosaveDebounceMs: 800,
@@ -106,7 +107,8 @@ export function DiagramApp({
   const [canvasError, setCanvasError] = useState<string | null>(null);
   const [exporting, setExporting] = useState<DiagramExportFormat | null>(null);
   const [editorReady, setEditorReady] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
+  const [fullscreen, setFullscreen] = useState(false);
   const apiRef = useRef<ExcalidrawImperativeAPI | null>(null);
   const autosaveRef = useRef<SceneAutosaveController | null>(null);
   const selectionEpochRef = useRef(0);
@@ -325,27 +327,28 @@ export function DiagramApp({
       appState:
         scene.appState as unknown as ExcalidrawInitialDataState["appState"],
       files: scene.files as BinaryFiles,
-      scrollToContent: true,
+      scrollToContent: false,
     } as unknown as ExcalidrawInitialDataState;
   }, [scene, sceneEpoch]);
 
-  const fitPendingViewport = useCallback(
-    (elements: readonly OrderedExcalidrawElement[]) => {
+  const fitViewport = useCallback(
+    (elements: readonly OrderedExcalidrawElement[], pendingOnly = true) => {
       const api = apiRef.current;
       if (
-        !pendingViewportFitRef.current ||
+        (pendingOnly && !pendingViewportFitRef.current) ||
         api === null ||
         elements.length === 0
       ) {
         return;
       }
+      const view = fitContentViewport(getCommonBounds(elements), api.getAppState());
+      if (view === null) return;
       pendingViewportFitRef.current = false;
-      api.scrollToContent(elements, {
-        animate: false,
-        fitToViewport: true,
-        maxZoom: 1,
-        viewportZoomFactor: 0.9,
-      });
+      api.updateScene({ appState: {
+        scrollX: view.scrollX,
+        scrollY: view.scrollY,
+        zoom: { value: view.zoom as AppState["zoom"]["value"] },
+      } });
     },
     [],
   );
@@ -368,17 +371,36 @@ export function DiagramApp({
         return;
       }
       setCanvasError(null);
-      fitPendingViewport(elements);
+      fitViewport(elements);
       autosaveRef.current?.accept(normalized.scene);
     },
-    [fitPendingViewport, limits.validationPolicy],
+    [fitViewport, limits.validationPolicy],
   );
 
   const onEditorReady = useCallback((api: ExcalidrawImperativeAPI) => {
     apiRef.current = api;
-    fitPendingViewport(api.getSceneElements());
+    fitViewport(api.getSceneElements());
     setEditorReady(true);
-  }, [fitPendingViewport]);
+  }, [fitViewport]);
+
+  useEffect(() => {
+    const onFullscreen = () => {
+      setFullscreen(document.fullscreenElement !== null);
+      // The next editor size notification fits the new available space.
+      pendingViewportFitRef.current = true;
+    };
+    document.addEventListener("fullscreenchange", onFullscreen);
+    return () => document.removeEventListener("fullscreenchange", onFullscreen);
+  }, []);
+
+  const toggleFullscreen = async () => {
+    try {
+      if (document.fullscreenElement !== null) await document.exitFullscreen();
+      else await document.documentElement.requestFullscreen();
+    } catch {
+      setCanvasError("浏览器未允许专注画布。仍可使用完整查看、缩放和侧栏收起。");
+    }
+  };
 
   const exportCurrent = useCallback(
     async (format: DiagramExportFormat, titleSuffix = "") => {
@@ -486,7 +508,8 @@ export function DiagramApp({
       <header className={css.toolbar}>
         <div className={css.titleBlock}>
           <h1>{record.title}</h1>
-          <p aria-live="polite" className={css.saveStatus} role="status">
+          <p aria-live="polite" className={css.saveStatus} role="status"
+            title={saveStatus?.kind === "saved" ? `版本 ${saveStatus.revision}` : undefined}>
             {statusText}
           </p>
         </div>
@@ -505,6 +528,13 @@ export function DiagramApp({
           </select>
         </label>
         <div aria-label="导出当前 diagram" className={css.exportActions} role="group">
+          <button disabled={!editorReady} onClick={() => {
+            const api = apiRef.current;
+            if (api !== null) fitViewport(api.getSceneElements(), false);
+          }} type="button">完整查看</button>
+          <button aria-pressed={fullscreen} onClick={() => void toggleFullscreen()} type="button">
+            {fullscreen ? "退出专注" : "专注画布"}
+          </button>
           {(["excalidraw", "svg", "png"] as const).map((format) => (
             <button
               disabled={exportDisabled}
@@ -751,7 +781,7 @@ function autosaveStatusText(status: AutosaveStatus | null): string {
   if (status === null) return "准备保存";
   switch (status.kind) {
     case "saved":
-      return `已保存 · ${status.revision}`;
+      return "已保存";
     case "dirty":
       return "有未保存修改";
     case "saving":

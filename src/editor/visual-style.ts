@@ -14,18 +14,18 @@ export {
  * pull the Excalidraw editor bundle.
  */
 
-export const TEXT_COLOR = "#1f2328";
-export const MUTED_COLOR = "#667085";
-export const BORDER_COLOR = "#98a2b3";
-export const SURFACE_COLOR = "#ffffff";
-export const EMPHASIS_COLOR = "#fef3c7";
-export const EMPHASIS_BORDER_COLOR = "#d97706";
+export const TEXT_COLOR = "#292c28";
+export const MUTED_COLOR = "#60665e";
+export const BORDER_COLOR = "#abb2a8";
+export const SURFACE_COLOR = "#fffefb";
+export const EMPHASIS_COLOR = "#f2e4cd";
+export const EMPHASIS_BORDER_COLOR = "#92632f";
 export const SOLID_TEXT_COLOR = "#ffffff";
 
 export const REPORT_TITLE_FONT_SIZE = 36;
 export const REPORT_SUMMARY_FONT_SIZE = 18;
-export const STANDARD_TITLE_FONT_SIZE = 24;
-export const STANDARD_SUMMARY_FONT_SIZE = 14;
+export const STANDARD_TITLE_FONT_SIZE = 30;
+export const STANDARD_SUMMARY_FONT_SIZE = 16;
 
 /** Renderer-level tokens selected without changing diagram semantics. */
 export interface DiagramVisualTokens {
@@ -44,7 +44,7 @@ export interface DiagramVisualTokens {
 }
 
 const CLEAN_TOKENS: Readonly<DiagramVisualTokens> = {
-  background: "#ffffff",
+  background: "#f5f5f0",
   text: TEXT_COLOR,
   muted: MUTED_COLOR,
   border: BORDER_COLOR,
@@ -88,49 +88,31 @@ export interface VisualPalette {
   strong: string;
 }
 
-/** Stable color meanings shared by report regions and semantic nodes. */
+const NEUTRAL_PALETTE: Readonly<VisualPalette> = {
+  fill: "#edeee7",
+  stroke: "#abb2a8",
+  ink: TEXT_COLOR,
+  strong: TEXT_COLOR,
+};
+
+/** Neutral structure, dark outcomes, and a reserved risk accent. */
 export const TONE_PALETTE: Readonly<Record<DiagramTone, VisualPalette>> = {
-  neutral: {
-    fill: "#f8fafc",
-    stroke: "#64748b",
-    ink: "#334155",
-    strong: "#334155",
-  },
-  definition: {
-    fill: "#f8fbff",
-    stroke: "#2563eb",
-    ink: "#1d4ed8",
-    strong: "#2563eb",
-  },
-  execution: {
-    fill: "#f7fdf8",
-    stroke: "#15803d",
-    ink: "#166534",
-    strong: "#15803d",
-  },
-  external: {
-    fill: "#fffbeb",
-    stroke: "#d97706",
-    ink: "#b45309",
-    strong: "#d97706",
-  },
-  evidence: {
-    fill: "#fcfaff",
-    stroke: "#7e22ce",
-    ink: "#6b21a8",
-    strong: "#7e22ce",
-  },
+  neutral: NEUTRAL_PALETTE,
+  definition: NEUTRAL_PALETTE,
+  execution: NEUTRAL_PALETTE,
+  external: NEUTRAL_PALETTE,
+  evidence: NEUTRAL_PALETTE,
   risk: {
-    fill: "#fffafa",
-    stroke: "#dc2626",
-    ink: "#b91c1c",
-    strong: "#dc2626",
+    fill: "#f8eae2",
+    stroke: "#9b4c32",
+    ink: "#8a402b",
+    strong: "#9b4c32",
   },
   target: {
-    fill: "#f6fff8",
-    stroke: "#166534",
-    ink: "#14532d",
-    strong: "#166534",
+    fill: "#e4e8de",
+    stroke: "#838e7c",
+    ink: TEXT_COLOR,
+    strong: TEXT_COLOR,
   },
 };
 
@@ -147,15 +129,8 @@ export const SKETCHNOTE_TONE_PALETTE: Readonly<
   target: { fill: "#eee5aa", stroke: "#292621", ink: "#292621", strong: "#b9a94f" },
 };
 
-/** Deterministic per-group tint cycle: band fill, band border, label ink. */
-export const GROUP_PALETTE = [
-  { fill: "#eff6ff", stroke: "#3b82f6", ink: "#1d4ed8" },
-  { fill: "#fffbeb", stroke: "#f59e0b", ink: "#b45309" },
-  { fill: "#ecfdf5", stroke: "#10b981", ink: "#047857" },
-  { fill: "#f5f3ff", stroke: "#8b5cf6", ink: "#6d28d9" },
-  { fill: "#fff1f2", stroke: "#f43f5e", ink: "#be123c" },
-  { fill: "#ecfeff", stroke: "#06b6d4", ink: "#0e7490" },
-] as const;
+/** Group order alone carries no color meaning in the clean renderer. */
+export const GROUP_PALETTE = [NEUTRAL_PALETTE] as const;
 
 const SKETCHNOTE_GROUP_PALETTE = [
   { fill: "#dcecf3", stroke: "#292621", ink: "#292621" },
@@ -175,6 +150,7 @@ export function groupPalette(
   index: number,
   style?: DiagramVisualStyle,
 ): VisualPalette {
+  if (style !== "sketchnote") return NEUTRAL_PALETTE;
   const palette = style === "sketchnote"
     ? SKETCHNOTE_GROUP_PALETTE
     : GROUP_PALETTE;

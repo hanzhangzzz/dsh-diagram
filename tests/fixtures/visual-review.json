@@ -1,0 +1,739 @@
+{
+  "version": 1,
+  "baselinePackage": "dsh-diagram@0.5.0",
+  "baselineCommit": "f79ecc589337f4411c9ce83cfd4c7dfc720ac023",
+  "cases": [
+    {
+      "id": "01-release-flow",
+      "origin": "Frozen from the publicly documented 0.5.0 first-use case; facts and wording unchanged.",
+      "checks": [
+        "long-flow-readability",
+        "all-labels-preserved",
+        "branches"
+      ],
+      "spec": {
+        "kind": "flow",
+        "title": "从修复到可安装",
+        "summary": "Coding Usage Bar 0.5.1 的发布链：只有确认公开版本可安装、且公开包与已验证包一致之后，才宣布发布完成。",
+        "nodes": [
+          {
+            "id": "accept",
+            "label": "接受原贡献并跑通测试",
+            "detail": "外部贡献者提交 PR #6，修复 GLM Coding Plan 配额解析（部分账号返回 CREDIT_LIMIT，旧版只识别 TOKENS_LIMIT）；维护者接受原贡献、合入后 139 项测试通过",
+            "tone": "execution",
+            "variant": "card"
+          },
+          {
+            "id": "build",
+            "label": "构建并验证同一个包",
+            "detail": "只构建一次安装包并记录 SHA-256；先在隔离环境验证命令与配额解析，再在实际 macOS 环境安装，核对运行文件、菜单栏插件与定时任务，已有配置保留",
+            "tone": "definition",
+            "variant": "card"
+          },
+          {
+            "id": "publish",
+            "label": "npm 接收上传",
+            "detail": "npm publish 返回成功；此时 registry 仍显示旧版本",
+            "tone": "external",
+            "variant": "card"
+          },
+          {
+            "id": "gate",
+            "label": "检查公开版本是否可用",
+            "detail": "指定安装 0.5.1 返回版本不存在；npm 在新包可安装前进行发布时扫描，所以“上传被接收”与“公开可安装”是两个不同状态",
+            "tone": "risk",
+            "variant": "card",
+            "icon": "search"
+          },
+          {
+            "id": "wait",
+            "label": "等待后重试",
+            "detail": "不反复上传新版本，保留已经验证过的同一个包，继续等待 registry 能读到 0.5.1",
+            "tone": "neutral",
+            "variant": "card",
+            "icon": "loop"
+          },
+          {
+            "id": "hash",
+            "label": "下载并核对哈希",
+            "detail": "版本可读取后，下载公开 tarball 并核对 SHA-256；哈希一致才继续",
+            "tone": "evidence",
+            "variant": "card",
+            "icon": "shield"
+          },
+          {
+            "id": "install",
+            "label": "从公开入口重新安装",
+            "detail": "用全新 npm 缓存从公开 registry 安装 0.5.1；公开包中的 GLM credit 样例得到五小时 33%、一周 6% 的预期结果（测试样例值），运行文件与批准的包一致，菜单栏与定时任务通过检查",
+            "tone": "evidence",
+            "variant": "card",
+            "icon": "person"
+          },
+          {
+            "id": "release",
+            "label": "tag、Release 与 CI 完成",
+            "detail": "合入版本 PR #9，创建 v0.5.1 tag 与 GitHub Release，附同一安装包和校验文件；GitHub 下载包、npm 下载包与最初验证的包一致，合入与 tag 的 CI 均通过，才宣布发布完成",
+            "tone": "target",
+            "variant": "solid",
+            "icon": "target"
+          }
+        ],
+        "edges": [
+          {
+            "from": "accept",
+            "to": "build",
+            "label": "修复合入后"
+          },
+          {
+            "from": "build",
+            "to": "publish",
+            "label": "同一个包"
+          },
+          {
+            "from": "publish",
+            "to": "gate"
+          },
+          {
+            "from": "gate",
+            "to": "wait",
+            "label": "版本不可用"
+          },
+          {
+            "from": "wait",
+            "to": "gate",
+            "label": "重试"
+          },
+          {
+            "from": "gate",
+            "to": "hash",
+            "label": "可读取"
+          },
+          {
+            "from": "hash",
+            "to": "install",
+            "label": "哈希一致"
+          },
+          {
+            "from": "install",
+            "to": "release",
+            "label": "复核通过"
+          }
+        ]
+      }
+    },
+    {
+      "id": "02-release-report",
+      "origin": "Frozen from the publicly documented 0.5.0 first-use case; facts and wording unchanged.",
+      "checks": [
+        "cross-column-labels",
+        "semantic-emphasis",
+        "report-fit"
+      ],
+      "spec": {
+        "kind": "report",
+        "title": "发布完成的三个检查点",
+        "summary": "0.5.1 的发布分三段推进：准备、分发、验证；只有公开版本可安装、公开包与已验证包一致、并完成 tag 与 CI 之后才宣布完成。",
+        "nodes": [
+          {
+            "id": "fix",
+            "label": "接受贡献并合入",
+            "detail": "PR #6 修复 GLM 配额解析",
+            "group": "prep",
+            "tone": "execution",
+            "variant": "card"
+          },
+          {
+            "id": "test",
+            "label": "测试全部通过",
+            "detail": "合入后 139 项测试通过",
+            "group": "prep",
+            "tone": "execution",
+            "variant": "card"
+          },
+          {
+            "id": "build",
+            "label": "构建并验证包",
+            "detail": "记录 SHA-256 并实装核对",
+            "group": "prep",
+            "tone": "execution",
+            "variant": "card"
+          },
+          {
+            "id": "publish",
+            "label": "npm 接收上传",
+            "detail": "publish 返回成功",
+            "group": "dist",
+            "tone": "execution",
+            "variant": "card"
+          },
+          {
+            "id": "gate",
+            "label": "检查公开版本",
+            "detail": "指定安装返回版本不存在",
+            "group": "dist",
+            "tone": "risk",
+            "variant": "card"
+          },
+          {
+            "id": "wait",
+            "label": "等待发布时扫描",
+            "detail": "保留已验证包，等待可读",
+            "group": "dist",
+            "tone": "risk",
+            "variant": "card"
+          },
+          {
+            "id": "recheck",
+            "label": "再检查版本可用",
+            "detail": "registry 能读到 0.5.1",
+            "group": "verify",
+            "tone": "execution",
+            "variant": "card"
+          },
+          {
+            "id": "hash",
+            "label": "下载核对哈希",
+            "detail": "公开 tarball 哈希一致",
+            "group": "verify",
+            "tone": "execution",
+            "variant": "card"
+          },
+          {
+            "id": "install",
+            "label": "公开入口重装",
+            "detail": "全新缓存，样例 33% / 6%",
+            "group": "verify",
+            "tone": "execution",
+            "variant": "card"
+          },
+          {
+            "id": "done",
+            "label": "公开可安装才算完成",
+            "detail": "tag、Release 与 CI 通过才宣布",
+            "group": "concl",
+            "tone": "target",
+            "variant": "solid",
+            "icon": "target"
+          }
+        ],
+        "edges": [
+          {
+            "from": "fix",
+            "to": "test",
+            "label": "合入后"
+          },
+          {
+            "from": "test",
+            "to": "build",
+            "label": "通过"
+          },
+          {
+            "from": "build",
+            "to": "publish",
+            "label": "同一个包"
+          },
+          {
+            "from": "publish",
+            "to": "gate"
+          },
+          {
+            "from": "gate",
+            "to": "wait",
+            "label": "版本不可用"
+          },
+          {
+            "from": "wait",
+            "to": "recheck",
+            "label": "再检查"
+          },
+          {
+            "from": "recheck",
+            "to": "hash",
+            "label": "可读取"
+          },
+          {
+            "from": "hash",
+            "to": "install",
+            "label": "哈希一致"
+          },
+          {
+            "from": "install",
+            "to": "done",
+            "label": "复核通过"
+          }
+        ],
+        "groups": [
+          {
+            "id": "prep",
+            "label": "准备",
+            "tone": "execution",
+            "placement": "main",
+            "direction": "column"
+          },
+          {
+            "id": "dist",
+            "label": "分发",
+            "placement": "main",
+            "direction": "column"
+          },
+          {
+            "id": "verify",
+            "label": "验证",
+            "tone": "execution",
+            "placement": "main",
+            "direction": "column"
+          },
+          {
+            "id": "concl",
+            "label": "结论",
+            "tone": "target",
+            "placement": "bottom",
+            "direction": "row"
+          }
+        ]
+      }
+    },
+    {
+      "id": "03-long-label-architecture",
+      "origin": "Synthetic acceptance fixture, not claims about a production system.",
+      "checks": [
+        "long-chinese-labels",
+        "group-titles",
+        "cross-group-edges"
+      ],
+      "spec": {
+        "kind": "architecture",
+        "title": "只有完成核验的请求才能进入执行服务",
+        "summary": "验收用合成架构：输入校验、任务执行与结果审计分属不同边界。",
+        "groups": [
+          {
+            "id": "input",
+            "label": "输入与身份核验",
+            "tone": "definition"
+          },
+          {
+            "id": "execution",
+            "label": "任务执行与失败恢复",
+            "tone": "execution"
+          },
+          {
+            "id": "audit",
+            "label": "结果保存与审计追踪",
+            "tone": "evidence"
+          }
+        ],
+        "nodes": [
+          {
+            "id": "request",
+            "label": "来自中文文档的结构化处理请求",
+            "detail": "保留原始限定条件与版本标识",
+            "group": "input"
+          },
+          {
+            "id": "check",
+            "label": "检查身份、权限和输入完整性",
+            "group": "input"
+          },
+          {
+            "id": "run",
+            "label": "执行已获授权的处理步骤",
+            "detail": "只处理当前请求对应的对象",
+            "group": "execution"
+          },
+          {
+            "id": "retry",
+            "label": "失败后重试当前步骤",
+            "detail": "已完成步骤保持不变",
+            "group": "execution",
+            "tone": "risk"
+          },
+          {
+            "id": "save",
+            "label": "写入经过核验的处理结果",
+            "group": "audit"
+          },
+          {
+            "id": "trace",
+            "label": "记录来源、时间与处理版本",
+            "group": "audit"
+          }
+        ],
+        "edges": [
+          {
+            "from": "request",
+            "to": "check",
+            "label": "提交核验"
+          },
+          {
+            "from": "check",
+            "to": "run",
+            "label": "核验通过"
+          },
+          {
+            "from": "run",
+            "to": "retry",
+            "label": "暂时失败"
+          },
+          {
+            "from": "retry",
+            "to": "run",
+            "label": "再次执行"
+          },
+          {
+            "from": "run",
+            "to": "save",
+            "label": "结果有效"
+          },
+          {
+            "from": "check",
+            "to": "trace",
+            "label": "保留核验依据"
+          },
+          {
+            "from": "save",
+            "to": "trace",
+            "label": "关联版本"
+          }
+        ]
+      }
+    },
+    {
+      "id": "04-comparison",
+      "origin": "Synthetic acceptance fixture, not benchmark measurements.",
+      "checks": [
+        "neutral-default-groups",
+        "parallel-reading",
+        "long-details"
+      ],
+      "spec": {
+        "kind": "comparison",
+        "title": "选择取决于是否需要继续编辑",
+        "summary": "比较三种交付方式；这是能力维度示例，不包含速度或质量排名。",
+        "groups": [
+          {
+            "id": "image",
+            "label": "静态图片"
+          },
+          {
+            "id": "code",
+            "label": "文本描述"
+          },
+          {
+            "id": "canvas",
+            "label": "可编辑画布"
+          }
+        ],
+        "nodes": [
+          {
+            "id": "image1",
+            "label": "直接嵌入文档",
+            "detail": "接收方不需要编辑器",
+            "group": "image"
+          },
+          {
+            "id": "image2",
+            "label": "结构修改需重新制作",
+            "group": "image"
+          },
+          {
+            "id": "code1",
+            "label": "便于版本比较",
+            "detail": "文本差异可以追踪",
+            "group": "code"
+          },
+          {
+            "id": "code2",
+            "label": "呈现依赖渲染工具",
+            "group": "code"
+          },
+          {
+            "id": "canvas1",
+            "label": "继续修改文字与位置",
+            "group": "canvas"
+          },
+          {
+            "id": "canvas2",
+            "label": "导出后可直接交付",
+            "group": "canvas",
+            "variant": "solid"
+          }
+        ],
+        "edges": []
+      }
+    },
+    {
+      "id": "05-sparse",
+      "origin": "Synthetic minimal-input fixture.",
+      "checks": [
+        "no-invented-density",
+        "readable-short-graph"
+      ],
+      "spec": {
+        "kind": "flow",
+        "title": "先验证，再交付",
+        "summary": "仅有两个明确步骤，不补造第三步。",
+        "nodes": [
+          {
+            "id": "verify",
+            "label": "验证结果"
+          },
+          {
+            "id": "deliver",
+            "label": "交付产物",
+            "emphasis": true
+          }
+        ],
+        "edges": [
+          {
+            "from": "verify",
+            "to": "deliver",
+            "label": "通过"
+          }
+        ]
+      }
+    },
+    {
+      "id": "06-sketchnote",
+      "origin": "Same frozen report semantics, explicit existing sketchnote style.",
+      "checks": [
+        "handwritten-style-preserved",
+        "editable-icons",
+        "same-semantics"
+      ],
+      "spec": {
+        "kind": "report",
+        "title": "发布完成的三个检查点",
+        "summary": "0.5.1 的发布分三段推进：准备、分发、验证；只有公开版本可安装、公开包与已验证包一致、并完成 tag 与 CI 之后才宣布完成。",
+        "nodes": [
+          {
+            "id": "fix",
+            "label": "接受贡献并合入",
+            "detail": "PR #6 修复 GLM 配额解析",
+            "group": "prep",
+            "tone": "execution",
+            "variant": "card"
+          },
+          {
+            "id": "test",
+            "label": "测试全部通过",
+            "detail": "合入后 139 项测试通过",
+            "group": "prep",
+            "tone": "execution",
+            "variant": "card"
+          },
+          {
+            "id": "build",
+            "label": "构建并验证包",
+            "detail": "记录 SHA-256 并实装核对",
+            "group": "prep",
+            "tone": "execution",
+            "variant": "card"
+          },
+          {
+            "id": "publish",
+            "label": "npm 接收上传",
+            "detail": "publish 返回成功",
+            "group": "dist",
+            "tone": "execution",
+            "variant": "card"
+          },
+          {
+            "id": "gate",
+            "label": "检查公开版本",
+            "detail": "指定安装返回版本不存在",
+            "group": "dist",
+            "tone": "risk",
+            "variant": "card"
+          },
+          {
+            "id": "wait",
+            "label": "等待发布时扫描",
+            "detail": "保留已验证包，等待可读",
+            "group": "dist",
+            "tone": "risk",
+            "variant": "card"
+          },
+          {
+            "id": "recheck",
+            "label": "再检查版本可用",
+            "detail": "registry 能读到 0.5.1",
+            "group": "verify",
+            "tone": "execution",
+            "variant": "card"
+          },
+          {
+            "id": "hash",
+            "label": "下载核对哈希",
+            "detail": "公开 tarball 哈希一致",
+            "group": "verify",
+            "tone": "execution",
+            "variant": "card"
+          },
+          {
+            "id": "install",
+            "label": "公开入口重装",
+            "detail": "全新缓存，样例 33% / 6%",
+            "group": "verify",
+            "tone": "execution",
+            "variant": "card"
+          },
+          {
+            "id": "done",
+            "label": "公开可安装才算完成",
+            "detail": "tag、Release 与 CI 通过才宣布",
+            "group": "concl",
+            "tone": "target",
+            "variant": "solid",
+            "icon": "target"
+          }
+        ],
+        "edges": [
+          {
+            "from": "fix",
+            "to": "test",
+            "label": "合入后"
+          },
+          {
+            "from": "test",
+            "to": "build",
+            "label": "通过"
+          },
+          {
+            "from": "build",
+            "to": "publish",
+            "label": "同一个包"
+          },
+          {
+            "from": "publish",
+            "to": "gate"
+          },
+          {
+            "from": "gate",
+            "to": "wait",
+            "label": "版本不可用"
+          },
+          {
+            "from": "wait",
+            "to": "recheck",
+            "label": "再检查"
+          },
+          {
+            "from": "recheck",
+            "to": "hash",
+            "label": "可读取"
+          },
+          {
+            "from": "hash",
+            "to": "install",
+            "label": "哈希一致"
+          },
+          {
+            "from": "install",
+            "to": "done",
+            "label": "复核通过"
+          }
+        ],
+        "groups": [
+          {
+            "id": "prep",
+            "label": "准备",
+            "tone": "execution",
+            "placement": "main",
+            "direction": "column"
+          },
+          {
+            "id": "dist",
+            "label": "分发",
+            "placement": "main",
+            "direction": "column"
+          },
+          {
+            "id": "verify",
+            "label": "验证",
+            "tone": "execution",
+            "placement": "main",
+            "direction": "column"
+          },
+          {
+            "id": "concl",
+            "label": "结论",
+            "tone": "target",
+            "placement": "bottom",
+            "direction": "row"
+          }
+        ],
+        "visualStyle": "sketchnote"
+      }
+    },
+    {
+      "id": "07-parallel-cycle",
+      "origin": "Synthetic graph for parallel edges, cycles, and non-ASCII labels.",
+      "checks": [
+        "parallel-edge-identity",
+        "cycle-routing",
+        "all-edge-labels"
+      ],
+      "spec": {
+        "kind": "flow",
+        "title": "重试不应重复已经完成的步骤",
+        "summary": "合成验收图；两条并行边分别代表不同的接收条件。",
+        "nodes": [
+          {
+            "id": "start",
+            "label": "接收请求"
+          },
+          {
+            "id": "validate",
+            "label": "检查请求"
+          },
+          {
+            "id": "execute",
+            "label": "执行一次"
+          },
+          {
+            "id": "retry",
+            "label": "等待重试",
+            "tone": "risk"
+          },
+          {
+            "id": "done",
+            "label": "保存结果",
+            "variant": "solid"
+          }
+        ],
+        "edges": [
+          {
+            "from": "start",
+            "to": "validate",
+            "label": "首次请求"
+          },
+          {
+            "from": "start",
+            "to": "validate",
+            "label": "已有任务"
+          },
+          {
+            "from": "validate",
+            "to": "execute",
+            "label": "待执行"
+          },
+          {
+            "from": "execute",
+            "to": "retry",
+            "label": "暂时失败"
+          },
+          {
+            "from": "retry",
+            "to": "execute",
+            "label": "重试"
+          },
+          {
+            "from": "execute",
+            "to": "done",
+            "label": "成功"
+          }
+        ]
+      }
+    }
+  ]
+}

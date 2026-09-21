@@ -57,15 +57,22 @@ export const diagramPreviewDefinition: ConversationNodeDefinition<
   buildViewNode: (context): ChatConversationViewNode | null => {
     if (context.state === undefined) return null;
     const { seq, ...meta } = context.state;
+    const location = context.start?.location
+      ?? context.matches[0]?.location
+      ?? { kind: "unresolved" as const };
+    // A diagram is the deliverable, not hidden tool-process detail. Once the
+    // host resolves turn/end, place its result after the completed answer.
+    // During streaming retain the original tool-result position.
+    const completedAt = location.kind === "turn" || location.kind === "step"
+      ? location.turn.end?.seq
+      : undefined;
     return {
       key: context.key,
       kind: DIAGRAM_PREVIEW_NODE_KIND,
       id: context.id,
       target: "chat",
-      anchorSeq: seq,
-      location: context.start?.location
-        ?? context.matches[0]?.location
-        ?? { kind: "unresolved" },
+      anchorSeq: completedAt ?? seq,
+      location,
       visibility: "visible",
       data: meta,
     };

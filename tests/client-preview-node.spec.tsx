@@ -70,6 +70,16 @@ function contextOf(
 }
 
 describe("diagramPreviewDefinition", () => {
+  it("keeps a completed result outside the host's collapsed tool interval", () => {
+    const match = matchOf(resultEvent());
+    const closed = { ...match, location: {
+      kind: "turn", turn: { end: { seq: 50 }, status: "closed" },
+    } as unknown as ConversationStartMatch["location"] };
+    const state: DiagramPreviewState = { ...META, seq: 41 };
+    expect(diagramPreviewDefinition.buildViewNode?.(contextOf(state, closed)))
+      .toMatchObject({ anchorSeq: 50, data: META, visibility: "visible" });
+    expect(state.seq).toBe(41);
+  });
   it("matches only appended tool results carrying this plugin's meta", () => {
     expect(diagramPreviewDefinition.match(resultEvent())).toEqual({
       id: META.diagramId,
