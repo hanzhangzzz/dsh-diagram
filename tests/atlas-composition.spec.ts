@@ -85,6 +85,11 @@ describe("editable overview and detail atlas", () => {
     expect(schema.safeParse(base).success).toBe(true);
     for (const spec of [
       { ...base, kind: "flow" },
+      {
+        ...base,
+        nodes: base.nodes.filter((n) => n.id !== "y"),
+        edges: base.edges.filter((e) => e.to !== "y"),
+      },
       { ...base, edges: [...base.edges, { from: "x", to: "y" }] },
       { ...base, nodes: [...base.nodes, { id: "orphan", label: "孤立" }] },
       {

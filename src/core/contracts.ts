@@ -958,6 +958,7 @@ export function atlasInputError(spec: DiagramSpec, maxElements = Infinity): stri
   for (const id of children.get(root.id) ?? []) {
     const branch = byId.get(id)!;
     const leaves = children.get(id) ?? [];
+    if (leaves.length === 0) return "Atlas requires entries under every category; use hierarchy for a shallower tree";
     count += 6 + (leaves.length ? 2 : 0) + Number(branch.detail !== undefined) + Number(labeledEdges.has(id));
     for (const leaf of leaves) count += 4 + Number(byId.get(leaf)!.detail !== undefined) + Number(labeledEdges.has(leaf));
   }
