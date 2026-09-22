@@ -11,7 +11,7 @@ A canvas plugin for DeepSeek Harness (DSH) Web. The Agent drafts the structure; 
 Already using DSH Web? Install from your terminal:
 
 ```sh
-npx -y @deepseek-ai/dsh@0.1.5-rc.1 plugin --profile web add dsh-diagram@0.5.0
+npx -y @deepseek-ai/dsh@0.1.5-rc.1 plugin --profile web add dsh-diagram@0.6.0
 ```
 
 ![Edit a DSH canvas, save, and export](https://raw.githubusercontent.com/hanzhangzzz/dsh-diagram/0d74a27d902160305099fb8cf2db958a77394b65/stable-0.5.0/readme-workflow.gif)
@@ -29,6 +29,25 @@ Use the Canvas so I can edit and export the result.
 
 Open **Canvas**, change a label, wait for **Saved**, and click **PNG** to export. Missing the entry point? See [Quick install](#quick-install) and [Troubleshooting](#troubleshooting). New to DSH? Set up the host and model using the [DSH instructions](https://github.com/deepseek-ai/deepseek-harness) first, then install this plugin.
 
+## New in 0.6.0: see the whole classification, then read every entry
+
+Large classification trees can use an editable **overview + complete detail index**. The overview shows one mark per terminal entry; the detail panel preserves every label and description. Use **Classification overview** or **Read details** in the canvas to navigate without shrinking all text into one screen (Chinese UI: 分类总览 / 阅读明细).
+
+[![Native editable overview and detail: 9 categories, 40 terminal entries](https://raw.githubusercontent.com/hanzhangzzz/dsh-diagram/f0fa166c854dff02ea3a43864440232a58ecaf22/stable-0.6.0/atlas-example.png)](https://raw.githubusercontent.com/hanzhangzzz/dsh-diagram/f0fa166c854dff02ea3a43864440232a58ecaf22/stable-0.6.0/atlas-example.png)
+
+This is a native canvas export from a frozen ISO/IEC 25010:2023 Figure 2 classification: 50 nodes and 49 relations. It demonstrates deterministic rendering, not a claim that the whole PDF was automatically converted. Chinese labels are working translations.
+
+After selecting `/canvas-diagram`, try:
+
+```text
+Create an editable classification overview and complete detail index from the content above.
+Use diagram_create with kind: hierarchy and composition: atlas only if the source has
+one root, categories and terminal entries. Preserve all labels, descriptions and relations.
+If the structure has cross-links or more levels, choose another diagram type without dropping them.
+```
+
+**Scope:** clean, ungrouped, three-level classification trees. Cycles, multiple parents, deeper paths and categories without entries are rejected. Manual edits to duplicated labels/counts do not synchronize automatically; connectors are editable but do not automatically re-layout. Existing saved canvases retain their content.
+
 ## Why keep the diagram in DSH?
 
 - **Reuse the article context.** Ask the Agent to organize content already in the conversation. The plugin itself does not fetch webpages.
@@ -41,12 +60,6 @@ This report board comes from a real release retrospective. Generated with publis
 
 [![Release-checkpoint report exported by 0.5.0](https://raw.githubusercontent.com/hanzhangzzz/dsh-diagram/0d74a27d902160305099fb8cf2db958a77394b65/stable-0.5.0/release-report.png)](https://raw.githubusercontent.com/hanzhangzzz/dsh-diagram/0d74a27d902160305099fb8cf2db958a77394b65/stable-0.5.0/release-report.png)
 
-<details>
-<summary>Upcoming source preview</summary>
-
-The source version `0.6.0-editorial.3` is not on npm and is not installed by the stable command above. [See the upcoming workflow preview](https://raw.githubusercontent.com/hanzhangzzz/dsh-diagram/b0c1bf08a4fc9248be16c22d8c920604a0e6090d/editorial-preview/dsh-editable-workflow.gif). Both the main recording and exported image above use the published version.
-
-</details>
 
 ## Quick install
 
@@ -60,7 +73,7 @@ Requirements:
 DeepSeek Harness does not install a global `dsh` command by default; the official way to launch it is through `npx`. The commands below work on any machine that meets the requirements:
 
 ```sh
-npx -y @deepseek-ai/dsh@0.1.5-rc.1 plugin --profile web add dsh-diagram@0.5.0
+npx -y @deepseek-ai/dsh@0.1.5-rc.1 plugin --profile web add dsh-diagram@0.6.0
 npx -y @deepseek-ai/dsh@0.1.5-rc.1 --profile web --dump-config
 npx -y @deepseek-ai/dsh@0.1.5-rc.1 web
 ```
@@ -83,7 +96,7 @@ If DSH Web was already running, restart it after adding or updating the plugin. 
 Run the same commands from a DeepSeek Harness checkout that matches a supported release, using `pnpm dsh` as the prefix:
 
 ```sh
-pnpm dsh plugin --profile web add dsh-diagram@0.5.0
+pnpm dsh plugin --profile web add dsh-diagram@0.6.0
 pnpm dsh --profile web --dump-config
 pnpm dsh web
 ```
@@ -93,7 +106,7 @@ pnpm dsh web
 If you installed the CLI globally or created a shell alias, the short form works the same way:
 
 ```sh
-dsh plugin --profile web add dsh-diagram@0.5.0
+dsh plugin --profile web add dsh-diagram@0.6.0
 dsh --profile web --dump-config
 dsh web
 ```
@@ -140,7 +153,7 @@ The plugin does not fetch articles and does not inject UI into arbitrary website
 
 ## Compatibility
 
-| Item | Supported in `0.5.0` |
+| Item | Supported in `0.6.0` |
 | --- | --- |
 | DeepSeek Harness | `0.1.5-rc.1`, `0.1.5-rc.2`, `0.1.2-rc.1` (older DSH: use `dsh-diagram@0.4.0`) |
 | Profile | `web` |
@@ -157,7 +170,7 @@ The npm package has no install lifecycle scripts. Installation adds a bundle to 
 ### Update
 
 ```sh
-dsh plugin --profile web update dsh-diagram --latest
+npx -y @deepseek-ai/dsh@0.1.5-rc.1 plugin --profile web update dsh-diagram@0.6.0
 ```
 
 Restart DSH Web after the update.
@@ -168,10 +181,10 @@ The release page publishes the same prebuilt tarball with a SHA-256 checksum:
 
 ```sh
 dsh plugin --profile web add \
-  https://github.com/hanzhangzzz/dsh-diagram/releases/download/v0.5.0/dsh-diagram-0.5.0.tgz
+  https://github.com/hanzhangzzz/dsh-diagram/releases/download/v0.6.0/dsh-diagram-0.6.0.tgz
 ```
 
-See [v0.5.0](https://github.com/hanzhangzzz/dsh-diagram/releases/tag/v0.5.0) for the checksum and release notes.
+See [v0.6.0](https://github.com/hanzhangzzz/dsh-diagram/releases/tag/v0.6.0) for the checksum and release notes.
 
 ### Remove
 
@@ -196,7 +209,7 @@ Removing the bundle does not delete saved diagram sidecar data. Reinstalling the
 
 ### A newly published version was not installed
 
-pnpm 11's default `minimumReleaseAge` excludes versions less than 24 hours old. Pin an exact version on release day rather than relying on `@latest`; the trial command above already pins the demonstrated `0.5.0`.
+pnpm 11's default `minimumReleaseAge` excludes versions less than 24 hours old. Pin an exact version on release day rather than relying on `@latest`; the trial command above already pins the demonstrated `0.6.0`.
 
 ### The Canvas tab is missing
 
@@ -280,10 +293,4 @@ Bug reports and focused pull requests are welcome in [GitHub Issues](https://git
 
 The plugin's own code is licensed under [MIT](./LICENSE). Licenses for bundled JavaScript and self-hosted fonts are listed in [`THIRD_PARTY_NOTICES.md`](./THIRD_PARTY_NOTICES.md) and `third_party_licenses/`.
 
-## In development: classification overview and detail
-
-Source adds `composition: "atlas"` for `hierarchy`: one classification tree produces a compact count overview and a complete detail index, made of editable native elements. It accepts a root, categories and terminal entries only; cross-links, multiple parents and cycles are rejected rather than omitted. This feature is not yet on npm.
-
-Run `pnpm review:atlas` and open `/tests/visual/atlas.html` on the printed server URL to compare the same input with the existing layout and the new composition, or edit the native scene. `?case=release` selects a second regression subject. Duplicated labels/counts do not automatically synchronize after manual edits, and connectors do not automatically re-layout.
-
-![Editable overview and complete detail index from one classification tree](assets/atlas-example.png)
+For contributors, `pnpm review:atlas` opens the deterministic comparison harness; use `/tests/visual/atlas.html` or add `?case=release` for the second subject.

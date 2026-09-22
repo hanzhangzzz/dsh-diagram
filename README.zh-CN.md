@@ -11,7 +11,7 @@
 已有 DSH Web 的用户，在终端安装：
 
 ```sh
-npx -y @deepseek-ai/dsh@0.1.5-rc.1 plugin --profile web add dsh-diagram@0.5.0
+npx -y @deepseek-ai/dsh@0.1.5-rc.1 plugin --profile web add dsh-diagram@0.6.0
 ```
 
 ![在 DSH 画布中修改文字、保存并导出](https://raw.githubusercontent.com/hanzhangzzz/dsh-diagram/0d74a27d902160305099fb8cf2db958a77394b65/stable-0.5.0/readme-workflow.gif)
@@ -41,12 +41,25 @@ npx -y @deepseek-ai/dsh@0.1.5-rc.1 plugin --profile web add dsh-diagram@0.5.0
 
 [![0.5.0 导出的发布检查点报告](https://raw.githubusercontent.com/hanzhangzzz/dsh-diagram/0d74a27d902160305099fb8cf2db958a77394b65/stable-0.5.0/release-report.png)](https://raw.githubusercontent.com/hanzhangzzz/dsh-diagram/0d74a27d902160305099fb8cf2db958a77394b65/stable-0.5.0/release-report.png)
 
-<details>
-<summary>正在开发的新版效果</summary>
 
-源码中的 `0.6.0-editorial.3` 尚未发布到 npm，不能通过上面的稳定版命令获得。[查看新版操作预览](https://raw.githubusercontent.com/hanzhangzzz/dsh-diagram/b0c1bf08a4fc9248be16c22d8c920604a0e6090d/editorial-preview/dsh-editable-workflow.gif)。首页上方的演示和导出图均使用已发布版本。
+## 0.6.0 新增：先看分类全貌，再查完整明细
 
-</details>
+较大的分类树可以生成可编辑的 **总览＋完整明细**。总览中每根细条对应一个末级条目，明细保留全部名称和说明；在画布中点击「分类总览」「阅读明细」，即可切换阅读位置，避免把全部文字缩进一屏。
+
+[![原生可编辑分类图集：9 个分类、40 个末级条目](https://raw.githubusercontent.com/hanzhangzzz/dsh-diagram/f0fa166c854dff02ea3a43864440232a58ecaf22/stable-0.6.0/atlas-example.png)](https://raw.githubusercontent.com/hanzhangzzz/dsh-diagram/f0fa166c854dff02ea3a43864440232a58ecaf22/stable-0.6.0/atlas-example.png)
+
+上图是从固定的 ISO/IEC 25010:2023 Figure 2 分类输入生成的原生画布导出：50 个节点、49 条关系。它展示确定性渲染，不代表已自动转换整份 PDF；中文为工作译名。
+
+选择 `/canvas-diagram` 后，可以这样说：
+
+```text
+把上面的分类内容生成可编辑的总览和完整明细。
+仅在原文是“一个根→分类→末级条目”时，使用 diagram_create，
+设置 kind: hierarchy、composition: atlas，保留全部名称、说明和关系。
+如果存在交叉关系或更多层级，请换合适图型，不要删掉关系来套版式。
+```
+
+**适用边界：** 默认清晰风格、无分组的三层分类树。循环、多父节点、更深层级及没有条目的分类会被拒绝。手动修改后的重复标签与数量不会自动同步，连线可以编辑但不会自动重新布局；已有保存画布保持原样。
 
 ## 快速安装
 
@@ -60,7 +73,7 @@ npx -y @deepseek-ai/dsh@0.1.5-rc.1 plugin --profile web add dsh-diagram@0.5.0
 DeepSeek Harness 默认不会安装全局 `dsh` 命令，官方启动方式是通过 `npx`。满足前置条件的机器都可以直接执行：
 
 ```sh
-npx -y @deepseek-ai/dsh@0.1.5-rc.1 plugin --profile web add dsh-diagram@0.5.0
+npx -y @deepseek-ai/dsh@0.1.5-rc.1 plugin --profile web add dsh-diagram@0.6.0
 npx -y @deepseek-ai/dsh@0.1.5-rc.1 --profile web --dump-config
 npx -y @deepseek-ai/dsh@0.1.5-rc.1 web
 ```
@@ -83,7 +96,7 @@ npx -y @deepseek-ai/dsh@0.1.5-rc.1 web
 在与受支持发行版 API 匹配的 DeepSeek Harness 源码目录执行相同命令，前缀改为 `pnpm dsh`：
 
 ```sh
-pnpm dsh plugin --profile web add dsh-diagram@0.5.0
+pnpm dsh plugin --profile web add dsh-diagram@0.6.0
 pnpm dsh --profile web --dump-config
 pnpm dsh web
 ```
@@ -93,7 +106,7 @@ pnpm dsh web
 如果你全局安装了 CLI 或配置了 shell alias，短形式效果相同：
 
 ```sh
-dsh plugin --profile web add dsh-diagram@0.5.0
+dsh plugin --profile web add dsh-diagram@0.6.0
 dsh --profile web --dump-config
 dsh web
 ```
@@ -140,7 +153,7 @@ dsh web
 
 ## 兼容性
 
-| 项目 | `0.5.0` 支持范围 |
+| 项目 | `0.6.0` 支持范围 |
 | --- | --- |
 | DeepSeek Harness | `0.1.5-rc.1`、`0.1.5-rc.2`、`0.1.2-rc.1`（更早的 DSH 请用 `dsh-diagram@0.4.0`） |
 | Profile | `web` |
@@ -157,7 +170,7 @@ npm 包没有 install lifecycle script。安装只会把 bundle 加入指定的 
 ### 更新
 
 ```sh
-dsh plugin --profile web update dsh-diagram --latest
+npx -y @deepseek-ai/dsh@0.1.5-rc.1 plugin --profile web update dsh-diagram@0.6.0
 ```
 
 更新后重启 DSH Web。
@@ -168,10 +181,10 @@ Release 页面提供同一份预构建 tarball 及其 SHA-256 校验值：
 
 ```sh
 dsh plugin --profile web add \
-  https://github.com/hanzhangzzz/dsh-diagram/releases/download/v0.5.0/dsh-diagram-0.5.0.tgz
+  https://github.com/hanzhangzzz/dsh-diagram/releases/download/v0.6.0/dsh-diagram-0.6.0.tgz
 ```
 
-校验值和版本说明见 [v0.5.0](https://github.com/hanzhangzzz/dsh-diagram/releases/tag/v0.5.0)。
+校验值和版本说明见 [v0.6.0](https://github.com/hanzhangzzz/dsh-diagram/releases/tag/v0.6.0)。
 
 ### 移除
 
@@ -196,7 +209,7 @@ dsh plugin --profile web remove dsh-diagram
 
 ### 刚发布的版本没有装上？
 
-pnpm 11 的 `minimumReleaseAge` 默认会排除发布不满 24 小时的版本。发布当天请指定精确版本，不要依赖 `@latest`；上面的试用命令已经固定到演示使用的 `0.5.0`。
+pnpm 11 的 `minimumReleaseAge` 默认会排除发布不满 24 小时的版本。发布当天请指定精确版本，不要依赖 `@latest`；上面的试用命令已经固定到演示使用的 `0.6.0`。
 
 ### 为什么没有“画布”标签？
 
@@ -275,10 +288,4 @@ pnpm run smoke:dsh-install -- \
 
 插件自有代码使用 [MIT License](./LICENSE)。发布包内嵌的 JavaScript 与自托管字体许可见 [`THIRD_PARTY_NOTICES.md`](./THIRD_PARTY_NOTICES.md) 和 `third_party_licenses/`。
 
-## 开发中：分类总览与明细
-
-源码新增 `hierarchy` 的 `composition: "atlas"`：从同一份分类树生成数量总览和完整明细，全部使用可编辑原生元素。仅支持根→分类→条目，不支持跨层引用、多父节点或循环；不把复杂关系删成树。此功能尚未发布到 npm。
-
-运行 `pnpm review:atlas`，打开终端地址下的 `/tests/visual/atlas.html`，可切换同输入的原布局、新布局及真实编辑器。`?case=release` 是另一主题的回归样例。图中重复标签与数量在手动修改后不会自动同步，连线也不会自动重新布局。
-
-![同一分类树的总览与完整明细，全部为可编辑原生元素](assets/atlas-example.png)
+贡献者可运行 `pnpm review:atlas`，打开 `/tests/visual/atlas.html` 做确定性对照；添加 `?case=release` 可查看第二个主题。
