@@ -1,0 +1,113 @@
+{
+  "kind": "hierarchy",
+  "title": "发布证据按验证对象分成三类",
+  "summary": "独立的合成回归样例：验证同一版式不依赖 ISO 条款、固定数量或固定语言。这里只是证据分类，不是执行顺序。",
+  "nodes": [
+    {
+      "id": "root",
+      "label": "发布证据",
+      "detail": "Release evidence"
+    },
+    {
+      "id": "b0",
+      "label": "本地实现",
+      "detail": "Local implementation"
+    },
+    {
+      "id": "l0-0",
+      "label": "单元测试及反例"
+    },
+    {
+      "id": "l0-1",
+      "label": "类型检查与构建"
+    },
+    {
+      "id": "l0-2",
+      "label": "包内容核对"
+    },
+    {
+      "id": "b1",
+      "label": "公开分发",
+      "detail": "Public distribution"
+    },
+    {
+      "id": "l1-0",
+      "label": "从公开入口取回指定版本"
+    },
+    {
+      "id": "l1-1",
+      "label": "核对候选包与公开包是否相同"
+    },
+    {
+      "id": "b2",
+      "label": "实际使用路径与兼容性边界",
+      "detail": "User-visible behavior and compatibility"
+    },
+    {
+      "id": "l2-0",
+      "label": "独立环境完成安装与核心任务"
+    },
+    {
+      "id": "l2-1",
+      "label": "升级后保留用户已有配置"
+    },
+    {
+      "id": "l2-2",
+      "label": "明确没有验证过的系统与订阅场景"
+    },
+    {
+      "id": "l2-3",
+      "label": "用户再次完成任务"
+    }
+  ],
+  "edges": [
+    {
+      "from": "root",
+      "to": "b0"
+    },
+    {
+      "from": "b0",
+      "to": "l0-0"
+    },
+    {
+      "from": "b0",
+      "to": "l0-1"
+    },
+    {
+      "from": "b0",
+      "to": "l0-2"
+    },
+    {
+      "from": "root",
+      "to": "b1"
+    },
+    {
+      "from": "b1",
+      "to": "l1-0"
+    },
+    {
+      "from": "b1",
+      "to": "l1-1"
+    },
+    {
+      "from": "root",
+      "to": "b2"
+    },
+    {
+      "from": "b2",
+      "to": "l2-0"
+    },
+    {
+      "from": "b2",
+      "to": "l2-1"
+    },
+    {
+      "from": "b2",
+      "to": "l2-2"
+    },
+    {
+      "from": "b2",
+      "to": "l2-3"
+    }
+  ]
+}

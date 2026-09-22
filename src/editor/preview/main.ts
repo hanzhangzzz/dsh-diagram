@@ -1,3 +1,5 @@
+import { atlasSkeletons, atlasViewElements, ATLAS_BACKGROUND } from "../atlas.ts";
+import type { PersistedScene } from "../../core/contracts.ts";
 import { createDiagramRpcClient, type DiagramRpcClient } from "../rpc.ts";
 import { SURFACE_COLOR, TEXT_COLOR } from "../visual-style.ts";
 import { renderSceneSvg, renderSpecSvg } from "./render-svg.ts";
@@ -49,9 +51,15 @@ export async function bootstrapPreview(
         return;
       }
       const diagram = result.value.diagram;
-      const svg = diagram.scene === undefined
-        ? renderSpecSvg(doc, diagram.sourceSpec)
-        : renderSceneSvg(doc, diagram.scene);
+      const atlas = diagram.sourceSpec.composition === "atlas";
+      const atlasScene = atlas ? diagram.scene ?? {
+        elements: atlasSkeletons(diagram.sourceSpec) as PersistedScene["elements"],
+        appState: {viewBackgroundColor:ATLAS_BACKGROUND}, files: {},
+      } : undefined;
+      const svg = atlasScene !== undefined
+        ? renderSceneSvg(doc, {...atlasScene, elements: [...atlasViewElements(atlasScene.elements, "overview")]})
+        : diagram.scene === undefined ? renderSpecSvg(doc, diagram.sourceSpec) : renderSceneSvg(doc, diagram.scene);
+      if (atlas) svg.setAttribute("aria-label", "分类总览预览；完整明细请在画布中查看");
       svg.style.display = "block";
       svg.style.width = "100%";
       svg.style.height = "100%";

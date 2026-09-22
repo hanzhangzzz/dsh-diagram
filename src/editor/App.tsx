@@ -1,3 +1,4 @@
+import { atlasViewElements } from "./atlas.ts";
 import { Excalidraw, getCommonBounds } from "@excalidraw/excalidraw";
 import type {
   AppState,
@@ -332,7 +333,7 @@ export function DiagramApp({
   }, [scene, sceneEpoch]);
 
   const fitViewport = useCallback(
-    (elements: readonly OrderedExcalidrawElement[], pendingOnly = true) => {
+    (elements: readonly OrderedExcalidrawElement[], pendingOnly = true, mode: "fit" | "read" = "fit") => {
       const api = apiRef.current;
       if (
         (pendingOnly && !pendingViewportFitRef.current) ||
@@ -341,7 +342,9 @@ export function DiagramApp({
       ) {
         return;
       }
-      const view = fitContentViewport(getCommonBounds(elements), api.getAppState());
+      const fitting = pendingOnly && record?.sourceSpec.composition === "atlas"
+        ? atlasViewElements(elements, "overview") : elements;
+      const view = fitContentViewport(getCommonBounds(fitting), api.getAppState(), mode);
       if (view === null) return;
       pendingViewportFitRef.current = false;
       api.updateScene({ appState: {
@@ -350,7 +353,7 @@ export function DiagramApp({
         zoom: { value: view.zoom as AppState["zoom"]["value"] },
       } });
     },
-    [],
+    [record?.sourceSpec.composition],
   );
 
   const onCanvasChange = useCallback(
@@ -532,6 +535,12 @@ export function DiagramApp({
             const api = apiRef.current;
             if (api !== null) fitViewport(api.getSceneElements(), false);
           }} type="button">完整查看</button>
+          {record.sourceSpec.composition === "atlas" && (["overview", "detail"] as const).map(view => (
+            <button key={view} disabled={!editorReady} type="button" onClick={() => {
+              const api = apiRef.current;
+              if (api !== null) fitViewport(atlasViewElements(api.getSceneElements(), view), false, view === "detail" ? "read" : "fit");
+            }}>{view === "overview" ? "分类总览" : "阅读明细"}</button>
+          ))}
           <button aria-pressed={fullscreen} onClick={() => void toggleFullscreen()} type="button">
             {fullscreen ? "退出专注" : "专注画布"}
           </button>

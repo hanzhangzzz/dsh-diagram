@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <title>固定输入 · 原生可编辑图集验收</title>
+    <style>
+      body {
+        margin: 0;
+        background: #e8e9e3;
+        color: #27332f;
+        font: 16px system-ui;
+      }
+      header {
+        padding: 16px 24px;
+        background: #fff;
+        position: sticky;
+        top: 0;
+        z-index: 2;
+      }
+      button,
+      select {
+        font: inherit;
+        margin-right: 12px;
+        padding: 8px 12px;
+      }
+      main {
+        padding: 20px;
+        max-width: 1440px;
+        margin: auto;
+      }
+      svg {
+        display: block;
+        width: 100%;
+        height: auto;
+      }
+      #editor {
+        height: 760px;
+        background: #fff;
+      }
+      #status {
+        padding: 12px;
+      }
+      h1 {
+        font-size: 22px;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <select id="mode">
+        <option value="atlas">总览＋明细</option>
+        <option value="baseline">原布局 · 同一输入</option>
+        <option value="editor">原生编辑器</option>
+        <option value="app">插件画布（隔离验收存储）</option></select
+      ><button id="save">保存到本机验收存储</button
+      ><button id="reload">载入已保存画布</button
+      ><button id="svg">导出 SVG</button><button id="png">导出 PNG</button
+      ><button id="json">导出 Excalidraw</button><span id="status"></span>
+    </header>
+    <main id="view"></main>
+    <div id="editor" hidden></div>
+    <script type="module" src="./atlas.tsx"></script>
+  </body>
+</html>

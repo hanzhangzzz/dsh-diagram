@@ -1,3 +1,4 @@
+import { atlasSkeletons, ATLAS_BACKGROUND } from "./atlas.ts";
 import {
   FONT_FAMILY,
   convertToExcalidrawElements,
@@ -67,6 +68,12 @@ export function createInitialScene(
   spec: DiagramSpec,
   policy: Readonly<DiagramValidationPolicy>,
 ): PersistedScene {
+  if (spec.composition === "atlas") {
+    const converted = convertToExcalidrawElements(atlasSkeletons(spec) as ExcalidrawElementSkeleton[], {regenerateIds:false});
+    const result = normalizeEditorScene(converted.map(e => ({...e, updated:1, versionNonce:1})), {viewBackgroundColor:ATLAS_BACKGROUND}, {}, policy);
+    if (!result.ok) throw new Error(`Initial atlas scene is invalid: ${result.message}`);
+    return result.scene;
+  }
   const diagram = layoutDiagram(spec);
   const skeletons = diagramToElementSkeletons(diagram);
   const converted = convertToExcalidrawElements(skeletons, {

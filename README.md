@@ -279,3 +279,11 @@ Bug reports and focused pull requests are welcome in [GitHub Issues](https://git
 ## License
 
 The plugin's own code is licensed under [MIT](./LICENSE). Licenses for bundled JavaScript and self-hosted fonts are listed in [`THIRD_PARTY_NOTICES.md`](./THIRD_PARTY_NOTICES.md) and `third_party_licenses/`.
+
+## In development: classification overview and detail
+
+Source adds `composition: "atlas"` for `hierarchy`: one classification tree produces a compact count overview and a complete detail index, made of editable native elements. It accepts a root, categories and terminal entries only; cross-links, multiple parents and cycles are rejected rather than omitted. This feature is not yet on npm.
+
+Run `pnpm review:atlas` and open `/tests/visual/atlas.html` on the printed server URL to compare the same input with the existing layout and the new composition, or edit the native scene. `?case=release` selects a second regression subject. Duplicated labels/counts do not automatically synchronize after manual edits, and connectors do not automatically re-layout.
+
+![Editable overview and complete detail index from one classification tree](assets/atlas-example.png)

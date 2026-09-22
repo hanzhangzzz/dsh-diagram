@@ -2,6 +2,15 @@ import { describe, expect, it } from "vitest";
 import { fitContentViewport } from "../src/editor/viewport.ts";
 
 describe("canvas content fit", () => {
+  it("opens a tall detail index at reading width rather than shrinking it to height", () => {
+    const bounds = [24, 900, 1256, 3200] as const;
+    const size = {width:1440,height:900};
+    const fitted=fitContentViewport(bounds,size)!;
+    const reading=fitContentViewport(bounds,size,"read")!;
+    expect(reading.zoom).toBe(1);
+    expect(reading.zoom).toBeGreaterThan(fitted.zoom);
+    expect((bounds[1]+reading.scrollY)*reading.zoom).toBe(104);
+  });
   for (const size of [{ width: 976, height: 626 }, { width: 375, height: 560 }]) {
     it(`keeps the report title and last row clear of controls at ${size.width}px`, () => {
       const bounds = [-20, -100, 1052, 686] as const;

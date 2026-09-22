@@ -1,0 +1,455 @@
+{
+  "kind": "hierarchy",
+  "title": "产品质量：9 个特性展开为 40 个子特性",
+  "summary": "ISO/IEC 25010:2023 · §3.1–3.9 / Figure 2 · 中文为工作译名。这里只表达分类归属；模型适用对象和跨条目引用不属于这棵树。",
+  "nodes": [
+    {
+      "id": "quality",
+      "label": "产品质量",
+      "detail": "Product Quality · Figure 2"
+    },
+    {
+      "id": "c1",
+      "label": "§3.1 功能适合性",
+      "detail": "Functional suitability"
+    },
+    {
+      "id": "c1-1",
+      "label": "§3.1.1 功能完整性",
+      "detail": "Functional completeness"
+    },
+    {
+      "id": "c1-2",
+      "label": "§3.1.2 功能正确性",
+      "detail": "Functional correctness"
+    },
+    {
+      "id": "c1-3",
+      "label": "§3.1.3 功能适宜性",
+      "detail": "Functional appropriateness"
+    },
+    {
+      "id": "c2",
+      "label": "§3.2 性能效率",
+      "detail": "Performance efficiency"
+    },
+    {
+      "id": "c2-1",
+      "label": "§3.2.1 时间特性",
+      "detail": "Time behaviour"
+    },
+    {
+      "id": "c2-2",
+      "label": "§3.2.2 资源利用性",
+      "detail": "Resource utilization"
+    },
+    {
+      "id": "c2-3",
+      "label": "§3.2.3 容量",
+      "detail": "Capacity"
+    },
+    {
+      "id": "c3",
+      "label": "§3.3 兼容性",
+      "detail": "Compatibility"
+    },
+    {
+      "id": "c3-1",
+      "label": "§3.3.1 共存性",
+      "detail": "Co-existence"
+    },
+    {
+      "id": "c3-2",
+      "label": "§3.3.2 互操作性",
+      "detail": "Interoperability"
+    },
+    {
+      "id": "c4",
+      "label": "§3.4 交互能力",
+      "detail": "Interaction capability"
+    },
+    {
+      "id": "c4-1",
+      "label": "§3.4.1 适合性可识别性",
+      "detail": "Appropriateness recognizability"
+    },
+    {
+      "id": "c4-2",
+      "label": "§3.4.2 易学性",
+      "detail": "Learnability"
+    },
+    {
+      "id": "c4-3",
+      "label": "§3.4.3 易操作性",
+      "detail": "Operability"
+    },
+    {
+      "id": "c4-4",
+      "label": "§3.4.4 用户差错防护",
+      "detail": "User error protection"
+    },
+    {
+      "id": "c4-5",
+      "label": "§3.4.5 用户参与度",
+      "detail": "User engagement"
+    },
+    {
+      "id": "c4-6",
+      "label": "§3.4.6 包容性",
+      "detail": "Inclusivity"
+    },
+    {
+      "id": "c4-7",
+      "label": "§3.4.7 用户帮助",
+      "detail": "User assistance"
+    },
+    {
+      "id": "c4-8",
+      "label": "§3.4.8 自描述性",
+      "detail": "Self-descriptiveness"
+    },
+    {
+      "id": "c5",
+      "label": "§3.5 可靠性",
+      "detail": "Reliability"
+    },
+    {
+      "id": "c5-1",
+      "label": "§3.5.1 无故障性",
+      "detail": "Faultlessness"
+    },
+    {
+      "id": "c5-2",
+      "label": "§3.5.2 可用性",
+      "detail": "Availability"
+    },
+    {
+      "id": "c5-3",
+      "label": "§3.5.3 容错性",
+      "detail": "Fault tolerance"
+    },
+    {
+      "id": "c5-4",
+      "label": "§3.5.4 易恢复性",
+      "detail": "Recoverability"
+    },
+    {
+      "id": "c6",
+      "label": "§3.6 信息安全性",
+      "detail": "Security"
+    },
+    {
+      "id": "c6-1",
+      "label": "§3.6.1 保密性",
+      "detail": "Confidentiality"
+    },
+    {
+      "id": "c6-2",
+      "label": "§3.6.2 完整性",
+      "detail": "Integrity"
+    },
+    {
+      "id": "c6-3",
+      "label": "§3.6.3 抗抵赖性",
+      "detail": "Non-repudiation"
+    },
+    {
+      "id": "c6-4",
+      "label": "§3.6.4 可核查性",
+      "detail": "Accountability"
+    },
+    {
+      "id": "c6-5",
+      "label": "§3.6.5 真实性",
+      "detail": "Authenticity"
+    },
+    {
+      "id": "c6-6",
+      "label": "§3.6.6 抗攻击性",
+      "detail": "Resistance"
+    },
+    {
+      "id": "c7",
+      "label": "§3.7 可维护性",
+      "detail": "Maintainability"
+    },
+    {
+      "id": "c7-1",
+      "label": "§3.7.1 模块化",
+      "detail": "Modularity"
+    },
+    {
+      "id": "c7-2",
+      "label": "§3.7.2 可复用性",
+      "detail": "Reusability"
+    },
+    {
+      "id": "c7-3",
+      "label": "§3.7.3 易分析性",
+      "detail": "Analysability"
+    },
+    {
+      "id": "c7-4",
+      "label": "§3.7.4 易修改性",
+      "detail": "Modifiability"
+    },
+    {
+      "id": "c7-5",
+      "label": "§3.7.5 可测试性",
+      "detail": "Testability"
+    },
+    {
+      "id": "c8",
+      "label": "§3.8 灵活性",
+      "detail": "Flexibility"
+    },
+    {
+      "id": "c8-1",
+      "label": "§3.8.1 适应性",
+      "detail": "Adaptability"
+    },
+    {
+      "id": "c8-2",
+      "label": "§3.8.2 可伸缩性",
+      "detail": "Scalability"
+    },
+    {
+      "id": "c8-3",
+      "label": "§3.8.3 易安装性",
+      "detail": "Installability"
+    },
+    {
+      "id": "c8-4",
+      "label": "§3.8.4 易替换性",
+      "detail": "Replaceability"
+    },
+    {
+      "id": "c9",
+      "label": "§3.9 安全性",
+      "detail": "Safety"
+    },
+    {
+      "id": "c9-1",
+      "label": "§3.9.1 运行约束",
+      "detail": "Operational constraint"
+    },
+    {
+      "id": "c9-2",
+      "label": "§3.9.2 风险识别",
+      "detail": "Risk identification"
+    },
+    {
+      "id": "c9-3",
+      "label": "§3.9.3 故障安全",
+      "detail": "Fail safe"
+    },
+    {
+      "id": "c9-4",
+      "label": "§3.9.4 危险警告",
+      "detail": "Hazard warning"
+    },
+    {
+      "id": "c9-5",
+      "label": "§3.9.5 安全集成",
+      "detail": "Safe integration"
+    }
+  ],
+  "edges": [
+    {
+      "from": "quality",
+      "to": "c1"
+    },
+    {
+      "from": "c1",
+      "to": "c1-1"
+    },
+    {
+      "from": "c1",
+      "to": "c1-2"
+    },
+    {
+      "from": "c1",
+      "to": "c1-3"
+    },
+    {
+      "from": "quality",
+      "to": "c2"
+    },
+    {
+      "from": "c2",
+      "to": "c2-1"
+    },
+    {
+      "from": "c2",
+      "to": "c2-2"
+    },
+    {
+      "from": "c2",
+      "to": "c2-3"
+    },
+    {
+      "from": "quality",
+      "to": "c3"
+    },
+    {
+      "from": "c3",
+      "to": "c3-1"
+    },
+    {
+      "from": "c3",
+      "to": "c3-2"
+    },
+    {
+      "from": "quality",
+      "to": "c4"
+    },
+    {
+      "from": "c4",
+      "to": "c4-1"
+    },
+    {
+      "from": "c4",
+      "to": "c4-2"
+    },
+    {
+      "from": "c4",
+      "to": "c4-3"
+    },
+    {
+      "from": "c4",
+      "to": "c4-4"
+    },
+    {
+      "from": "c4",
+      "to": "c4-5"
+    },
+    {
+      "from": "c4",
+      "to": "c4-6"
+    },
+    {
+      "from": "c4",
+      "to": "c4-7"
+    },
+    {
+      "from": "c4",
+      "to": "c4-8"
+    },
+    {
+      "from": "quality",
+      "to": "c5"
+    },
+    {
+      "from": "c5",
+      "to": "c5-1"
+    },
+    {
+      "from": "c5",
+      "to": "c5-2"
+    },
+    {
+      "from": "c5",
+      "to": "c5-3"
+    },
+    {
+      "from": "c5",
+      "to": "c5-4"
+    },
+    {
+      "from": "quality",
+      "to": "c6"
+    },
+    {
+      "from": "c6",
+      "to": "c6-1"
+    },
+    {
+      "from": "c6",
+      "to": "c6-2"
+    },
+    {
+      "from": "c6",
+      "to": "c6-3"
+    },
+    {
+      "from": "c6",
+      "to": "c6-4"
+    },
+    {
+      "from": "c6",
+      "to": "c6-5"
+    },
+    {
+      "from": "c6",
+      "to": "c6-6"
+    },
+    {
+      "from": "quality",
+      "to": "c7"
+    },
+    {
+      "from": "c7",
+      "to": "c7-1"
+    },
+    {
+      "from": "c7",
+      "to": "c7-2"
+    },
+    {
+      "from": "c7",
+      "to": "c7-3"
+    },
+    {
+      "from": "c7",
+      "to": "c7-4"
+    },
+    {
+      "from": "c7",
+      "to": "c7-5"
+    },
+    {
+      "from": "quality",
+      "to": "c8"
+    },
+    {
+      "from": "c8",
+      "to": "c8-1"
+    },
+    {
+      "from": "c8",
+      "to": "c8-2"
+    },
+    {
+      "from": "c8",
+      "to": "c8-3"
+    },
+    {
+      "from": "c8",
+      "to": "c8-4"
+    },
+    {
+      "from": "quality",
+      "to": "c9"
+    },
+    {
+      "from": "c9",
+      "to": "c9-1"
+    },
+    {
+      "from": "c9",
+      "to": "c9-2"
+    },
+    {
+      "from": "c9",
+      "to": "c9-3"
+    },
+    {
+      "from": "c9",
+      "to": "c9-4"
+    },
+    {
+      "from": "c9",
+      "to": "c9-5"
+    }
+  ]
+}
