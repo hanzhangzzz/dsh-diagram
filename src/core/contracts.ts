@@ -152,6 +152,8 @@ export interface DiagramGroup {
 /** Model-authored semantic input retained as generation provenance. */
 export interface DiagramSpec {
   kind: DiagramKind;
+  /** Opt-in paired overview/detail for a two-level classification tree. */
+  composition?: "atlas" | undefined;
   title: string;
   summary?: string | undefined;
   visualStyle?: DiagramVisualStyle | undefined;
@@ -457,6 +459,7 @@ export function createDiagramSpecSchema(
   return z
     .object({
       kind: z.enum(DIAGRAM_KINDS),
+      composition: z.literal("atlas").optional(),
       title: boundedText(policy.maxTitleChars),
       summary: boundedText(policy.maxSummaryChars).optional(),
       visualStyle: z.enum(DIAGRAM_VISUAL_STYLES).optional(),
@@ -466,6 +469,10 @@ export function createDiagramSpecSchema(
     })
     .strict()
     .superRefine((spec, context) => {
+      if (spec.composition === "atlas") {
+        const reason = atlasInputError(spec, policy.maxSceneElements);
+        if (reason) context.addIssue({code: "custom", message: reason, path: ["composition"]});
+      }
       const nodeIds = new Set<string>();
       for (const [index, node] of spec.nodes.entries()) {
         if (nodeIds.has(node.id)) {
@@ -919,3 +926,42 @@ function bindingElementId(
 
 /** A validated, editable scene whose elements are the current diagram state. */
 export type PersistedScene = z.infer<ReturnType<typeof createSceneSchema>>;
+
+/** Refuse an atlas rather than silently flattening unsupported relationships. */
+export function atlasInputError(spec: DiagramSpec, maxElements = Infinity): string | undefined {
+  if (spec.kind !== "hierarchy" || (spec.groups?.length ?? 0) > 0 || spec.nodes.some(n => n.group !== undefined) || spec.visualStyle === "sketchnote")
+    return "Atlas requires an ungrouped clean hierarchy";
+  const ids = new Set(spec.nodes.map(n => n.id));
+  const incoming = new Map<string, number>();
+  const children = new Map<string, string[]>();
+  for (const edge of spec.edges) {
+    if (!ids.has(edge.from) || !ids.has(edge.to)) return "Atlas edge endpoint is missing";
+    incoming.set(edge.to, (incoming.get(edge.to) ?? 0) + 1);
+    children.set(edge.from, [...(children.get(edge.from) ?? []), edge.to]);
+  }
+  const roots = spec.nodes.filter(n => !incoming.has(n.id));
+  if (roots.length !== 1 || [...incoming.values()].some(n => n !== 1)) return "Atlas requires one root and one parent per entry";
+  const visited = new Set<string>();
+  const queue: Array<[string, number]> = [[roots[0]!.id, 0]];
+  for (let i = 0; i < queue.length; i++) {
+    const [id, depth] = queue[i]!;
+    if (visited.has(id) || depth > 2) return "Atlas supports root, categories and entries only";
+    visited.add(id);
+    for (const child of children.get(id) ?? []) queue.push([child, depth + 1]);
+  }
+  if (visited.size !== ids.size || ids.size < 2) return "Atlas requires one connected classification tree";
+  // Account for both views before persisting a spec which the editor cannot open.
+  const root = roots[0]!;
+  const byId = new Map(spec.nodes.map(n => [n.id, n]));
+  const labeledEdges = new Set(spec.edges.filter(e => e.label !== undefined).map(e => e.to));
+  let count = 14 + Number(spec.summary !== undefined) + Number(root.detail !== undefined);
+  for (const id of children.get(root.id) ?? []) {
+    const branch = byId.get(id)!;
+    const leaves = children.get(id) ?? [];
+    if (leaves.length === 0) return "Atlas requires entries under every category; use hierarchy for a shallower tree";
+    count += 6 + (leaves.length ? 2 : 0) + Number(branch.detail !== undefined) + Number(labeledEdges.has(id));
+    for (const leaf of leaves) count += 4 + Number(byId.get(leaf)!.detail !== undefined) + Number(labeledEdges.has(leaf));
+  }
+  if (count > maxElements) return `Atlas needs ${count} native elements; scene limit is ${maxElements}. Use the original hierarchy layout or a smaller source scope.`;
+  return undefined;
+}

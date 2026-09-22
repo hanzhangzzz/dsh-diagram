@@ -92,6 +92,7 @@ describe("diagram tools", () => {
       properties: {
         kind: { enum: expect.arrayContaining(["report"]) },
         visualStyle: { enum: ["clean", "sketchnote"] },
+        composition: { enum: ["atlas"] },
         nodes: {
           items: {
             properties: {

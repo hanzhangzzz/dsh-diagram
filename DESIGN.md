@@ -125,3 +125,15 @@
 - Development candidate: `0.6.0-editorial.3`, pending a separately authorized public npm release.
 - Installable commit identity: 每个准备打包、提交和本地安装的开发候选都提升为唯一 prerelease 版本；不得以已有版本重新打包变化后的代码。公开 release commit 再把 prerelease 提升为对应正式 semver。
 - Upgrade evidence: 发布前用唯一 tarball 从上一公开版本执行 DSH `plugin update`，分别启动更新前后的 Web 并核对安装 manifest；公开发布后再用 npm `@latest` 复核 registry 更新路径。
+
+## Editable classification atlas (source-only, not yet released)
+
+- An explicit `composition: "atlas"` on `kind: "hierarchy"` compiles one semantic tree into an overview and complete detail index on the same native canvas. It does not change existing recipes or saved scenes.
+- The accepted structure is one root, category nodes and terminal entries, no groups, cycles, multi-parent nodes or deeper paths. Reject unsupported structure instead of deleting relations to make it fit. This is a classification recipe, not a general PDF-to-diagram replacement.
+- Each overview mark corresponds to one actual terminal node; counts are computed from edges. All original labels, descriptions and edge labels remain in the detail panel. Shared category numbers connect the two views; the detail grid does not claim a shared geometric axis with the overview.
+- Native text, rectangles and lines remain editable; no image, HTML embedding, external font or model-authored coordinates enter the scene. Overview marks and detail entries are separate editable elements, not a live linked data model: manual changes do not automatically synchronize duplicated labels/counts. Lines are editable geometry, not an automatic re-layout system.
+- The ISO fixture is a frozen extraction of Figure 2 / §§3.1–3.9 of the user-provided ISO/IEC 25010:2023 PDF: 1 root, 9 characteristics, 40 subcharacteristics. It deliberately excludes Figure 3's target-entity relations and cross-entry references, so this is not full-PDF equivalence. Chinese labels are working translations. Neither PDF nor OCR is published.
+- Run `pnpm review:atlas`, open `/tests/visual/atlas.html`. Baseline and atlas use exactly the same JSON, changing only the explicit composition selector. `?case=release` loads an independent synthetic classification. Native conversion is repeated and compared before displaying the page. The additional plugin-canvas mode mounts the real DiagramApp with an isolated local test RPC. The harness's local save/reload is isolated visual-test storage, not proof of DSH sidecar persistence.
+- Acceptance: freeze fixture hash, no loss of full text, true per-category mark counts, unique native IDs, no unreadable shrink-to-fit overview, no overlap/clipping in detail, actual edit/save/reopen and three native exports. Check final DSH bundle separately. Pixel equality is only meaningful in the same browser/font/viewport; it is not a cross-platform pixel promise.
+
+- Chat previews show the current overview only and label that scope; the editor initially fits the overview. `阅读明细` fits the detail panel to reading width, while `完整查看` still fits the entire canvas. These are viewport changes only, not scene rewrites.

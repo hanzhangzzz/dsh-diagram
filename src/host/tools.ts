@@ -102,6 +102,11 @@ export function createDiagramTools(
         required: true,
         description: "The diagram form that best expresses the article's structure.",
       },
+      composition: {
+        type: "string",
+        enum: ["atlas"],
+        description: "Optional paired overview/detail. Only for an ungrouped clean hierarchy with one root, categories and terminal entries, one parent per node, no cycles or cross-links. Do not remove facts to fit this form.",
+      },
       title: {
         type: "string",
         required: true,

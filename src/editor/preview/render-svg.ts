@@ -1,3 +1,4 @@
+import { atlasSkeletons, ATLAS_BACKGROUND } from "../atlas.ts";
 import type {
   DiagramSpec,
   PersistedScene,
@@ -94,6 +95,10 @@ export function renderSceneSvg(
  * @returns Detached `<svg>` covering the laid-out diagram and its header.
  */
 export function renderSpecSvg(doc: Document, spec: DiagramSpec): SVGSVGElement {
+  if (spec.composition === "atlas") return renderSceneSvg(doc, {
+    elements: atlasSkeletons(spec) as PersistedScene["elements"],
+    appState: {viewBackgroundColor:ATLAS_BACKGROUND}, files: {},
+  });
   const diagram = layoutDiagram(spec);
   const report = diagram.kind === "report";
   const titleFontSize = report

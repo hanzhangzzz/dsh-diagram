@@ -9,6 +9,7 @@ export interface CanvasViewport {
 export function fitContentViewport(
   bounds: readonly [number, number, number, number],
   size: { width: number; height: number },
+  mode: "fit" | "read" = "fit",
 ): CanvasViewport | null {
   if (size.width <= 0 || size.height <= 0 || !bounds.every(Number.isFinite)) return null;
   const left = Math.min(40, size.width * 0.08);
@@ -18,10 +19,10 @@ export function fitContentViewport(
   const height = size.height - top - bottom;
   const contentWidth = Math.max(1, bounds[2] - bounds[0]);
   const contentHeight = Math.max(1, bounds[3] - bounds[1]);
-  const zoom = Math.max(0.1, Math.min(1, width / contentWidth, height / contentHeight));
+  const zoom = Math.max(0.1, Math.min(1, width / contentWidth, mode === "read" ? 1 : height / contentHeight));
   return {
     zoom,
     scrollX: (left + width / 2) / zoom - (bounds[0] + bounds[2]) / 2,
-    scrollY: (top + height / 2) / zoom - (bounds[1] + bounds[3]) / 2,
+    scrollY: mode === "read" ? top / zoom - bounds[1] : (top + height / 2) / zoom - (bounds[1] + bounds[3]) / 2,
   };
 }

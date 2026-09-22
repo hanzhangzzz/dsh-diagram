@@ -63,6 +63,14 @@ const positioned: PositionedDiagram = {
 };
 
 describe("diagram scene compiler", () => {
+  it("creates a storage-valid native atlas without rewriting legacy scenes", () => {
+    const spec: DiagramSpec = {kind:"hierarchy", composition:"atlas", title:"分类", nodes:[{id:"r",label:"整体"},{id:"a",label:"分类"},{id:"b",label:"条目"}],edges:[{from:"r",to:"a"},{from:"a",to:"b"}]};
+    const scene = createInitialScene(spec, DEFAULT_DIAGRAM_VALIDATION_POLICY);
+    expect(createInitialScene(spec, DEFAULT_DIAGRAM_VALIDATION_POLICY)).toEqual(scene);
+    expect(scene.elements.every(e => ["text","rectangle","line"].includes(String(e.type)))).toBe(true);
+    expect(scene.files).toEqual({});
+    expect(scene.elements.some(e => e.id === "detail:entry:b")).toBe(true);
+  });
   it("compiles sketchnote styling and every controlled icon to deterministic editable primitives", () => {
     const icons = [
       "document",

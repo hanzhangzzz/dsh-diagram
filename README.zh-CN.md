@@ -274,3 +274,11 @@ pnpm run smoke:dsh-install -- \
 ## 许可证
 
 插件自有代码使用 [MIT License](./LICENSE)。发布包内嵌的 JavaScript 与自托管字体许可见 [`THIRD_PARTY_NOTICES.md`](./THIRD_PARTY_NOTICES.md) 和 `third_party_licenses/`。
+
+## 开发中：分类总览与明细
+
+源码新增 `hierarchy` 的 `composition: "atlas"`：从同一份分类树生成数量总览和完整明细，全部使用可编辑原生元素。仅支持根→分类→条目，不支持跨层引用、多父节点或循环；不把复杂关系删成树。此功能尚未发布到 npm。
+
+运行 `pnpm review:atlas`，打开终端地址下的 `/tests/visual/atlas.html`，可切换同输入的原布局、新布局及真实编辑器。`?case=release` 是另一主题的回归样例。图中重复标签与数量在手动修改后不会自动同步，连线也不会自动重新布局。
+
+![同一分类树的总览与完整明细，全部为可编辑原生元素](assets/atlas-example.png)
