@@ -242,6 +242,8 @@ function layoutFlow(spec: DiagramSpec): RawLayout {
   // Pick a compact desktop composition from two small, deterministic choices.
   // Positions never drop branches, reverse edges, or add invented stages.
   const sizes = spec.nodes.map(measureNode);
+  const columnGap = labeledRankGap(spec, "LR");
+  const rowGap = labeledRankGap(spec, "TB");
   const candidates = [2, 3].map((columns) => {
     const cellWidth = Math.max(...sizes.map((size) => size.width));
     const rows = Math.ceil(spec.nodes.length / columns);
@@ -249,7 +251,7 @@ function layoutFlow(spec: DiagramSpec): RawLayout {
       Math.max(...sizes.slice(row * columns, (row + 1) * columns).map((size) => size.height)),
     );
     const rowTops = rowHeights.map((_, row) =>
-      rowHeights.slice(0, row).reduce((sum, height) => sum + height + 96, 0),
+      rowHeights.slice(0, row).reduce((sum, height) => sum + height + rowGap, 0),
     );
     const nodes = spec.nodes.map((node, index) => {
       const row = Math.floor(index / columns);
@@ -258,12 +260,12 @@ function layoutFlow(spec: DiagramSpec): RawLayout {
       return {
         ...node,
         ...size,
-        x: column * (cellWidth + DIRECTED_RANK_GAP) + (cellWidth - size.width) / 2,
+        x: column * (cellWidth + columnGap) + (cellWidth - size.width) / 2,
         y: (rowTops[row] ?? 0) + ((rowHeights[row] ?? 0) - size.height) / 2,
       };
     });
-    const width = columns * cellWidth + (columns - 1) * DIRECTED_RANK_GAP;
-    const height = rowHeights.reduce((sum, value) => sum + value, 0) + (rows - 1) * 96;
+    const width = columns * cellWidth + (columns - 1) * columnGap;
+    const height = rowHeights.reduce((sum, value) => sum + value, 0) + (rows - 1) * rowGap;
     return { nodes, scale: Math.min(1_100 / width, 650 / height) };
   });
   candidates.sort((a, b) => b.scale - a.scale);
@@ -271,12 +273,18 @@ function layoutFlow(spec: DiagramSpec): RawLayout {
   return { nodes, edges: positionOrthogonalEdges(spec, nodes, []) };
 }
 
+/** Reserve space for meaning-bearing labels before routing, not after boxes overlap them. */
+function labeledRankGap(spec: DiagramSpec, direction: "LR" | "TB"): number {
+  return Math.max(DIRECTED_RANK_GAP, ...spec.edges.map(edge => edge.label === undefined
+    ? 0 : (direction === "LR" ? edgeLabelBoxWidth(edge.label) : edgeLabelBoxHeight(edge.label)) + 32));
+}
+
 function layoutDirected(spec: DiagramSpec, rankdir: "LR" | "TB"): RawLayout {
   const graph = new dagre.graphlib.Graph({ multigraph: true });
   graph.setGraph({
     rankdir,
     nodesep: DIRECTED_NODE_GAP,
-    ranksep: DIRECTED_RANK_GAP,
+    ranksep: labeledRankGap(spec, rankdir),
     marginx: 0,
     marginy: 0,
   });
@@ -771,6 +779,7 @@ function layoutComparison(spec: DiagramSpec): RawLayout {
       0,
     ),
   );
+  const columnGap = Math.max(COMPARISON_COLUMN_GAP, labeledRankGap(spec, "LR"));
   const columnX: number[] = [];
   for (let column = 0; column < columnCount; column += 1) {
     const previousX = columnX[column - 1] ?? 0;
@@ -778,7 +787,7 @@ function layoutComparison(spec: DiagramSpec): RawLayout {
     columnX.push(
       column === 0
         ? 0
-        : previousX + previousWidth + COMPARISON_COLUMN_GAP,
+        : previousX + previousWidth + columnGap,
     );
   }
   const rowY = Array.from({ length: columnCount }, () => 0);

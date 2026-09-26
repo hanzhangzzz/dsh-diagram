@@ -131,8 +131,8 @@ export function createDiagramTools(
           additionalProperties: false,
           properties: {
             id: { type: "string", required: true },
-            label: { type: "string", required: true },
-            detail: { type: "string" },
+            label: { type: "string", required: true, description: "A short concept, action, condition or result. Avoid a full sentence or section summary." },
+            detail: { type: "string", description: "One essential qualifier or evidence note, normally one or two short lines. Not a paragraph, source transcript, or full case summary. Preserve necessary scope and uncertainty." },
             group: { type: "string" },
             emphasis: { type: "boolean" },
             tone: {

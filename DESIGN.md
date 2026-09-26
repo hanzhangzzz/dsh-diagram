@@ -137,3 +137,14 @@
 - Acceptance: freeze fixture hash, no loss of full text, true per-category mark counts, unique native IDs, no unreadable shrink-to-fit overview, no overlap/clipping in detail, actual edit/save/reopen and three native exports. Check final DSH bundle separately. Pixel equality is only meaningful in the same browser/font/viewport; it is not a cross-platform pixel promise.
 
 - Chat previews show the current overview only and label that scope; the editor initially fits the overview. `阅读明细` fits the detail panel to reading width, while `完整查看` still fits the entire canvas. These are viewport changes only, not scene rewrites.
+
+
+## Visual storytelling improvement (active, 2026-09-25)
+
+Goal: improve structural variety, excessive node text, repetitive content and the semantic/layout failures found in the AI Native handbook comparison. Completion requires actual new model generation plus visual adversarial acceptance; smaller text counts or green unit tests alone are insufficient.
+
+- Baseline evidence: organization workspace `ops/cases/ai-native-handbook-compare/` (private local evidence, not part of the public package). It contains 11 original model graphs, native exports and an independent 68-page source probe. Do not publish the PDF/OCR or local runtime state.
+- Work in progress: creation guidance now begins with source-backed relation planning, a primary question and necessary complementary views; it distinguishes relation types, rejects paragraph-shaped nodes and preserves qualifiers. These are model instructions, not a claim of verified model compliance.
+- Reproduced layout fault: fixed rank/serpentine gaps were narrower than relationship labels. Two tall-node flow counterexamples failed before the change; label-aware horizontal and vertical gaps now preserve complete labels and original edge directions. Native output must still be visually checked.
+- Remaining acceptance: re-run the same complete handbook through the installable candidate; inspect structural variety, meaningful compression without lost qualifiers, comparison alignment, edge-label visibility and default readability. Verify new native edit/save/reopen/export and unchanged stored legacy scenes. Broaden with a second document/fixture to challenge overfitting. Record failures and repair the generator rather than touching exported images.
+- Product boundaries remain: editable native scenes, deterministic layout, preserved user edits and session identity. Do not silently migrate existing scenes or narrow durable validation limits to reject previously valid documents. No public release is implied by this development candidate.
