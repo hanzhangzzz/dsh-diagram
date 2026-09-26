@@ -239,6 +239,12 @@ The editor keeps the local draft. Export it before choosing **Reload server vers
 
 Under the strict content security policy, Excalidraw may fall back from glyph subsetting to embedding the full self-hosted font. The exported SVG remains self-contained; the plugin does not enable `unsafe-eval` to suppress the warning.
 
+## Source preview: structured diagrams
+
+The source version adds numbered, editable supporting notes, decision diamonds, explicit parallel architecture regions (`composition: regions`), and aligned comparison criteria. Main-graph reading and whole-document overview are separate viewport actions; all exports retain the complete current scene. These changes are not included in the public `0.6.0` package above. Build this source to try the prerelease.
+
+Keep decision-changing conditions in the main node. Supporting notes are not automatically synchronized with manual edits to their referenced labels. Shared comparison labels must represent the same criterion; the renderer aligns matching labels, not their meaning.
+
 ## Build from source
 
 ```sh

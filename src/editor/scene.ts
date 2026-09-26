@@ -1,4 +1,5 @@
 import { atlasSkeletons, ATLAS_BACKGROUND } from "./atlas.ts";
+import { mainViewSpec, notesSkeletons } from "./notes.ts";
 import {
   FONT_FAMILY,
   convertToExcalidrawElements,
@@ -22,6 +23,7 @@ import {
   nodeTextStyleFor,
   REPORT_GROUP_TOP_PADDING,
   wrapPlainText,
+  wrapTitleText,
   type PositionedDiagram,
 } from "../core/layout.ts";
 import {
@@ -74,8 +76,8 @@ export function createInitialScene(
     if (!result.ok) throw new Error(`Initial atlas scene is invalid: ${result.message}`);
     return result.scene;
   }
-  const diagram = layoutDiagram(spec);
-  const skeletons = diagramToElementSkeletons(diagram);
+  const diagram = layoutDiagram(mainViewSpec(spec));
+  const skeletons = [...diagramToElementSkeletons(diagram), ...notesSkeletons(spec, diagram.height + 100)];
   const converted = convertToExcalidrawElements(skeletons, {
     regenerateIds: false,
   });
@@ -119,9 +121,9 @@ function positionNativeText(
     const clusterHeight = label.height
       + (detail === undefined ? 0 : NATIVE_TEXT_TIER_GAP + detail.height);
     const iconOffset = node.icon === undefined ? 0 : NODE_ICON_SLOT_HEIGHT;
-    const clusterY = node.y
-      + iconOffset
-      + (node.height - iconOffset - clusterHeight) / 2;
+    const clusterY = node.y + iconOffset + (node.rowAligned
+      ? nodeTextStyleFor(diagram.kind,node).paddingY / 2
+      : (node.height - iconOffset - clusterHeight) / 2);
     positions.set(labelId, {
       x: node.x + (node.width - label.width) / 2,
       y: clusterY,
@@ -164,13 +166,13 @@ function positionNativeText(
         y: contentTop - REPORT_HEADER_CONTENT_GAP - title.height,
       });
     }
-    for (const group of diagram.kind === "report" ? diagram.groups : []) {
+    for (const group of diagram.groups.filter(group => diagram.kind === "report" || group.headerHeight !== undefined)) {
       const id = `text:group:${group.id}`;
       const label = measuredText(byId.get(id));
       if (label === undefined) continue;
       positions.set(id, {
-        x: group.x + (group.width - label.width) / 2,
-        y: group.y + (REPORT_GROUP_TOP_PADDING - label.height) / 2,
+        x: diagram.kind === "report" ? group.x + (group.width - label.width) / 2 : group.x + 18,
+        y: group.y + ((group.headerHeight ?? REPORT_GROUP_TOP_PADDING) - label.height) / 2,
       });
     }
   }
@@ -265,7 +267,7 @@ export function diagramToElementSkeletons(
           id: `text:group:${group.id}`,
           x: group.x + 18,
           y: group.y + 14,
-          text: group.label,
+          text: group.headerHeight === undefined ? group.label : wrapPlainText(group.label, groupFontSize, group.width - 36),
           fontFamily,
           fontSize: groupFontSize,
           strokeColor: palette.ink,
@@ -337,7 +339,7 @@ export function diagramToElementSkeletons(
       : tonePalette(node.tone, diagram.visualStyle);
     const solid = node.variant === "solid";
     const textStyle = nodeTextStyleFor(diagram.kind, node);
-    const innerWidth = Math.max(32, node.width - textStyle.paddingX);
+    const innerWidth = Math.max(32, node.width / (node.variant === "decision" ? 2 : 1) - textStyle.paddingX);
     // The converter measures raw text and discards any provided width, so
     // both tiers are pre-wrapped with the same estimator that sized the box.
     const label = wrapPlainText(
@@ -347,7 +349,7 @@ export function diagramToElementSkeletons(
     );
     const labelRows = label.split("\n").length;
     nodes.push({
-      type: "rectangle",
+      type: node.variant === "decision" ? "diamond" : "rectangle",
       id: `node:${node.id}`,
       x: node.x,
       y: node.y,
@@ -370,7 +372,7 @@ export function diagramToElementSkeletons(
       fillStyle: solid ? "solid" : tokens.fillStyle,
       roughness: tokens.roughness,
       ...deterministicSketchSeed(`node:${node.id}`, diagram.visualStyle),
-      roundness: { type: 3, value: tokens.handwritten ? 32 : 8 },
+      roundness: node.variant === "decision" ? null : { type: 3, value: tokens.handwritten ? 32 : 8 },
     });
     if (node.icon !== undefined) {
       const iconX = node.x + (node.width - DIAGRAM_ICON_BOX_SIZE) / 2;
@@ -451,7 +453,7 @@ export function diagramToElementSkeletons(
       id: "diagram:title",
       x: 40,
       y: diagram.summary === undefined ? -44 : -76,
-      text: wrapPlainText(diagram.title, titleFontSize, Math.max(240, diagram.width - 80)),
+      text: wrapTitleText(diagram.title, titleFontSize, Math.max(240, diagram.width - 80)),
       fontFamily,
       fontSize: titleFontSize,
       strokeColor: tokens.text,

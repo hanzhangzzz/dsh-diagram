@@ -26,6 +26,7 @@ const excalidrawHarness = vi.hoisted(() => ({
     | undefined,
   renderCount: 0,
   updateScene: vi.fn(),
+  bounds: vi.fn(() => [10, 20, 170, 100]),
 }));
 
 vi.mock("@excalidraw/excalidraw", async () => {
@@ -70,7 +71,7 @@ vi.mock("@excalidraw/excalidraw", async () => {
         "data-testid": "excalidraw-loaded",
       });
     },
-    getCommonBounds: () => [10, 20, 170, 100],
+    getCommonBounds: excalidrawHarness.bounds,
     FONT_FAMILY: { Helvetica: 2 },
     convertToExcalidrawElements: (elements: unknown) => elements,
     exportToBlob: vi.fn(),
@@ -130,10 +131,26 @@ afterEach(() => {
   excalidrawHarness.onChange = undefined;
   excalidrawHarness.renderCount = 0;
   excalidrawHarness.updateScene.mockReset();
+  excalidrawHarness.bounds.mockClear();
   cleanup();
 });
 
 describe("DiagramApp", () => {
+  it("fits the main graph on the first asynchronous notes load and reads notes without saving a different document", async () => {
+    const sourceSpec={...record.sourceSpec,nodes:[{id:"api",label:"API",notes:"补充来源"}]};
+    const withNotes={...record,sourceSpec,scene:{...scene,elements:[...scene.elements,{id:"notes:body:api",type:"text",x:0,y:1500,width:200,height:40,text:"已编辑说明",fontSize:15}]}} as DiagramRecord;
+    const client=clientWith([summary],withNotes);
+    render(<DiagramApp client={client} sessionId="session-1" />);
+    await screen.findByTestId("excalidraw-loaded");
+    await waitFor(()=>expect(excalidrawHarness.bounds).toHaveBeenCalled());
+    const first=excalidrawHarness.bounds.mock.calls[0] as unknown as [Array<{id:string}>];
+    expect(first[0].map(e=>e.id)).toEqual(["node-1"]);
+    fireEvent.click(screen.getByRole("button",{name:"阅读说明"}));
+    const last=excalidrawHarness.bounds.mock.calls.at(-1) as unknown as [Array<{id:string}>];
+    expect(last[0].map(e=>e.id)).toEqual(["notes:body:api"]);
+    expect(client.save).not.toHaveBeenCalled();
+  });
+
   it("keeps the canvas below a compact toolbar when notices are empty", async () => {
     const client = clientWith([summary], record);
 

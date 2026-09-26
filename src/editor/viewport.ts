@@ -19,10 +19,14 @@ export function fitContentViewport(
   const height = size.height - top - bottom;
   const contentWidth = Math.max(1, bounds[2] - bounds[0]);
   const contentHeight = Math.max(1, bounds[3] - bounds[1]);
-  const zoom = Math.max(0.1, Math.min(1, width / contentWidth, mode === "read" ? 1 : height / contentHeight));
+  const zoom = mode === "read"
+    ? Math.max(0.75, Math.min(1, width / contentWidth))
+    : Math.max(0.1, Math.min(1, width / contentWidth, height / contentHeight));
   return {
     zoom,
-    scrollX: (left + width / 2) / zoom - (bounds[0] + bounds[2]) / 2,
+    scrollX: mode === "read" && contentWidth * zoom > width
+      ? left / zoom - bounds[0]
+      : (left + width / 2) / zoom - (bounds[0] + bounds[2]) / 2,
     scrollY: mode === "read" ? top / zoom - bounds[1] : (top + height / 2) / zoom - (bounds[1] + bounds[3]) / 2,
   };
 }

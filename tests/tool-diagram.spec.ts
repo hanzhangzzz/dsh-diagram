@@ -92,7 +92,7 @@ describe("diagram tools", () => {
       properties: {
         kind: { enum: expect.arrayContaining(["report"]) },
         visualStyle: { enum: ["clean", "sketchnote"] },
-        composition: { enum: ["atlas"] },
+        composition: { enum: ["atlas", "regions"] },
         nodes: {
           items: {
             properties: {
@@ -107,7 +107,7 @@ describe("diagram tools", () => {
                   "target",
                 ],
               },
-              variant: { enum: ["card", "compact", "solid"] },
+              variant: { enum: ["card", "compact", "solid", "decision"] },
               icon: {
                 enum: [
                   "document",
@@ -251,6 +251,19 @@ describe("diagram tools", () => {
     expect(result.summary).not.toContain("Private claim");
     expect(result.truncated).toBe(false);
     expect(readDiagram).toHaveBeenCalledWith(HEADER, ID, expect.any(AbortSignal));
+  });
+
+  it("reads supporting notes before first canvas save, then only the current edited scene", async () => {
+    const original={...record(),sourceSpec:{...SPEC,nodes:[{id:"claim",label:"Conclusion",detail:"Conditional",notes:"Original source explanation"}]}};
+    let current: DiagramRecord=original;
+    const [,read]=createDiagramTools(host({readDiagram:vi.fn(async()=>({ok:true as const,value:{diagram:current}}))}));
+    const first=await read.execute({id:ID},execution()) as {summary:string};
+    expect(first.summary).toContain("Original source explanation");
+    expect(first.summary.indexOf("Supporting notes")).toBeGreaterThan(first.summary.indexOf("Connections"));
+    current={...original,scene:{elements:[{id:"notes:body:claim",type:"text",x:0,y:0,width:200,height:40,text:"Edited source explanation"}],appState:{},files:{}}};
+    const edited=await read.execute({id:ID},execution()) as {summary:string};
+    expect(edited.summary).toContain("Edited source explanation");
+    expect(edited.summary).not.toContain("Original source explanation");
   });
 
   it("bounds diagram_read model content by Unicode code points", async () => {

@@ -156,3 +156,11 @@ describe("renderSpecSvg", () => {
     expect(svg.textContent).toContain("第一层");
   });
 });
+
+
+it("previews a branch condition as the same diamond used by the editor", () => {
+  const svg=renderSpecSvg(document,{kind:"flow",title:"条件分支",nodes:[{id:"condition",label:"证据充分？",variant:"decision"},{id:"yes",label:"执行"},{id:"no",label:"等待"}],edges:[{from:"condition",to:"yes",label:"是"},{from:"condition",to:"no",label:"否"}]});
+  expect(svg.querySelector('[data-node-id="condition"]')?.tagName.toLowerCase()).toBe("polygon");
+  expect(svg.querySelector('[data-node-id="yes"]')?.tagName.toLowerCase()).toBe("rect");
+  expect(svg.textContent).toContain("证据充分？");
+});
