@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { DiagramSpec, PersistedScene } from "../src/core/contracts.ts";
 import { DEFAULT_DIAGRAM_VALIDATION_POLICY } from "../src/core/contracts.ts";
 import type { DiagramRpcClient } from "../src/editor/rpc.ts";
+import { diagramIdSchema, diagramSessionIdSchema, diagramRevisionSchema } from "../src/core/rpc.ts";
 import { bootstrapPreview } from "../src/editor/preview/main.ts";
 
 const SPEC: DiagramSpec = {
@@ -141,4 +142,21 @@ describe("bootstrapPreview", () => {
     expect(container.textContent).toContain("参数");
     expect(rpc.list).not.toHaveBeenCalled();
   });
+});
+
+
+it("previews current main text while explicitly identifying omitted supporting notes", async () => {
+  const container=root();
+  const edited: PersistedScene={elements:[
+    {id:"text:node:a",type:"text",x:0,y:0,width:120,height:30,text:"当前已编辑主图",fontSize:16},
+    {id:"notes:body:a",type:"text",x:0,y:900,width:300,height:100,text:"仅在完整画布中阅读的说明",fontSize:15},
+  ],appState:{},files:{}} as PersistedScene;
+  const value={...diagram(edited),id:diagramIdSchema.parse("31c02c3c-130c-4936-8720-8c2cc9fc1a3c"),revision:diagramRevisionSchema.parse("93b53465-4b55-4322-a4ab-a46fbe57f498"),sessionId:diagramSessionIdSchema.parse("session-1"),sessionFingerprint:{createdAt:1},kind:"flow" as const,sourceSpec:{...SPEC,nodes:[{id:"a",label:"旧标题",notes:"旧说明"},{id:"b",label:"结束"}]}};
+  const client=rpcClient({get:vi.fn(async()=>({ok:true as const,value:{diagram:value}}))});
+  await bootstrapPreview(container,SEARCH,client);
+  expect(container.textContent).toContain("当前已编辑主图");
+  expect(container.textContent).not.toContain("旧标题");
+  expect(container.textContent).not.toContain("仅在完整画布中阅读的说明");
+  expect(container.querySelector("svg")?.getAttribute("aria-label")).toContain("补充说明");
+  expect(edited.elements).toHaveLength(2);
 });

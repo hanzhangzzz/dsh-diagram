@@ -27,3 +27,11 @@ describe("canvas content fit", () => {
     expect(fitContentViewport([NaN, 0, 100, 100], { width: 900, height: 600 })).toBeNull();
   });
 });
+
+it("keeps a wide diagram readable from its top-left instead of shrinking text to fit", () => {
+  const bounds=[-120,-80,2400,1200] as const;
+  const view=fitContentViewport(bounds,{width:900,height:600},"read")!;
+  expect(view.zoom).toBeGreaterThanOrEqual(0.75);
+  expect((bounds[0]+view.scrollX)*view.zoom).toBeCloseTo(40);
+  expect((bounds[1]+view.scrollY)*view.zoom).toBeCloseTo(104);
+});

@@ -1,4 +1,5 @@
 import { atlasViewElements } from "./atlas.ts";
+import { hasNotes, noteViewElements } from "./notes.ts";
 import { Excalidraw, getCommonBounds } from "@excalidraw/excalidraw";
 import type {
   AppState,
@@ -332,6 +333,7 @@ export function DiagramApp({
     } as unknown as ExcalidrawInitialDataState;
   }, [scene, sceneEpoch]);
 
+  const hasSupportingNotes = record !== null && hasNotes(record.sourceSpec);
   const fitViewport = useCallback(
     (elements: readonly OrderedExcalidrawElement[], pendingOnly = true, mode: "fit" | "read" = "fit") => {
       const api = apiRef.current;
@@ -343,9 +345,15 @@ export function DiagramApp({
         return;
       }
       const fitting = pendingOnly && record?.sourceSpec.composition === "atlas"
-        ? atlasViewElements(elements, "overview") : elements;
-      const view = fitContentViewport(getCommonBounds(fitting), api.getAppState(), mode);
+        ? atlasViewElements(elements, "overview")
+        : pendingOnly && hasSupportingNotes ? noteViewElements(elements, "main") : elements;
+      const bounds = getCommonBounds(fitting);
+      let view = fitContentViewport(bounds, api.getAppState(), mode);
       if (view === null) return;
+      if (pendingOnly && record?.sourceSpec.composition !== "atlas" && view.zoom < 0.7) {
+        view = fitContentViewport(bounds, api.getAppState(), "read");
+        if (view === null) return;
+      }
       pendingViewportFitRef.current = false;
       api.updateScene({ appState: {
         scrollX: view.scrollX,
@@ -353,7 +361,7 @@ export function DiagramApp({
         zoom: { value: view.zoom as AppState["zoom"]["value"] },
       } });
     },
-    [record?.sourceSpec.composition],
+    [record?.sourceSpec.composition, hasSupportingNotes],
   );
 
   const onCanvasChange = useCallback(
@@ -535,6 +543,18 @@ export function DiagramApp({
             const api = apiRef.current;
             if (api !== null) fitViewport(api.getSceneElements(), false);
           }} type="button">完整查看</button>
+          {record.sourceSpec.composition !== "atlas" && <button disabled={!editorReady} type="button"
+            title="保持可读字号，从左上开始；拖动画布查看其余内容。完整查看可回到总览。"
+            onClick={() => {
+              const api = apiRef.current;
+              if (api !== null) fitViewport(noteViewElements(api.getSceneElements(), "main"), false, "read");
+            }}>阅读主图</button>}
+          {hasNotes(record.sourceSpec) && (["main", "notes"] as const).map(view => (
+            <button key={view} disabled={!editorReady} type="button" onClick={() => {
+              const api = apiRef.current;
+              if (api !== null) fitViewport(noteViewElements(api.getSceneElements(), view), false, view === "notes" ? "read" : "fit");
+            }}>{view === "main" ? "主图" : "阅读说明"}</button>
+          ))}
           {record.sourceSpec.composition === "atlas" && (["overview", "detail"] as const).map(view => (
             <button key={view} disabled={!editorReady} type="button" onClick={() => {
               const api = apiRef.current;

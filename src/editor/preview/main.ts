@@ -3,6 +3,7 @@ import type { PersistedScene } from "../../core/contracts.ts";
 import { createDiagramRpcClient, type DiagramRpcClient } from "../rpc.ts";
 import { SURFACE_COLOR, TEXT_COLOR } from "../visual-style.ts";
 import { renderSceneSvg, renderSpecSvg } from "./render-svg.ts";
+import { hasNotes, mainViewSpec, noteViewElements } from "../notes.ts";
 
 const MESSAGE_FONT = "400 0.8125rem/1.5 ui-sans-serif, sans-serif";
 
@@ -58,8 +59,12 @@ export async function bootstrapPreview(
       } : undefined;
       const svg = atlasScene !== undefined
         ? renderSceneSvg(doc, {...atlasScene, elements: [...atlasViewElements(atlasScene.elements, "overview")]})
-        : diagram.scene === undefined ? renderSpecSvg(doc, diagram.sourceSpec) : renderSceneSvg(doc, diagram.scene);
+        : diagram.scene === undefined ? renderSpecSvg(doc, mainViewSpec(diagram.sourceSpec))
+        : renderSceneSvg(doc, hasNotes(diagram.sourceSpec)
+          ? {...diagram.scene, elements: [...noteViewElements(diagram.scene.elements, "main")]}
+          : diagram.scene);
       if (atlas) svg.setAttribute("aria-label", "分类总览预览；完整明细请在画布中查看");
+      if (hasNotes(diagram.sourceSpec)) svg.setAttribute("aria-label", "主图预览；补充说明请在画布中阅读");
       svg.style.display = "block";
       svg.style.width = "100%";
       svg.style.height = "100%";

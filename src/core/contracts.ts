@@ -44,7 +44,7 @@ export const DIAGRAM_ICONS = [
 export type DiagramIcon = (typeof DIAGRAM_ICONS)[number];
 
 /** Controlled visual hierarchy for semantic nodes. */
-export const DIAGRAM_NODE_VARIANTS = ["card", "compact", "solid"] as const;
+export const DIAGRAM_NODE_VARIANTS = ["card", "compact", "solid", "decision"] as const;
 
 /** One controlled node presentation variant. */
 export type DiagramNodeVariant = (typeof DIAGRAM_NODE_VARIANTS)[number];
@@ -126,6 +126,8 @@ export interface DiagramNode {
   id: string;
   label: string;
   detail?: string | undefined;
+  /** Supporting explanation, kept in an editable notes area rather than the main node. */
+  notes?: string | undefined;
   group?: string | undefined;
   emphasis?: boolean | undefined;
   tone?: DiagramTone | undefined;
@@ -153,7 +155,7 @@ export interface DiagramGroup {
 export interface DiagramSpec {
   kind: DiagramKind;
   /** Opt-in paired overview/detail for a two-level classification tree. */
-  composition?: "atlas" | undefined;
+  composition?: "atlas" | "regions" | undefined;
   title: string;
   summary?: string | undefined;
   visualStyle?: DiagramVisualStyle | undefined;
@@ -432,6 +434,7 @@ export function createDiagramSpecSchema(
       id: idSchema,
       label: boundedText(policy.maxNodeLabelChars),
       detail: boundedText(policy.maxNodeDetailChars).optional(),
+      notes: boundedText(policy.maxNodeDetailChars).optional(),
       group: idSchema.optional(),
       emphasis: z.boolean().optional(),
       tone: z.enum(DIAGRAM_TONES).optional(),
@@ -459,7 +462,7 @@ export function createDiagramSpecSchema(
   return z
     .object({
       kind: z.enum(DIAGRAM_KINDS),
-      composition: z.literal("atlas").optional(),
+      composition: z.enum(["atlas", "regions"]).optional(),
       title: boundedText(policy.maxTitleChars),
       summary: boundedText(policy.maxSummaryChars).optional(),
       visualStyle: z.enum(DIAGRAM_VISUAL_STYLES).optional(),
@@ -469,7 +472,13 @@ export function createDiagramSpecSchema(
     })
     .strict()
     .superRefine((spec, context) => {
+      if (spec.composition === "regions" && spec.kind !== "architecture") {
+        context.addIssue({code: "custom", message: "Regions composition requires architecture kind", path: ["composition"]});
+      }
       if (spec.composition === "atlas") {
+        if (spec.nodes.some(node => node.notes !== undefined)) {
+          context.addIssue({code: "custom", message: "Atlas already has a complete detail index; use detail instead of notes", path: ["composition"]});
+        }
         const reason = atlasInputError(spec, policy.maxSceneElements);
         if (reason) context.addIssue({code: "custom", message: reason, path: ["composition"]});
       }
@@ -481,6 +490,9 @@ export function createDiagramSpecSchema(
             message: `Duplicate node id: ${node.id}`,
             path: ["nodes", index, "id"],
           });
+        }
+        if (node.variant === "decision" && (node.icon !== undefined || spec.composition === "atlas")) {
+          context.addIssue({code: "custom", message: "Decision nodes use a plain diamond; omit icon and atlas composition", path: ["nodes", index, "variant"]});
         }
         nodeIds.add(node.id);
       }
@@ -504,24 +516,24 @@ export function createDiagramSpecSchema(
         groupIds.add(group.id);
       }
       if (
-        spec.kind === "report"
+        (spec.kind === "report" || spec.composition === "regions")
         && !(spec.groups ?? []).some(
           (group) => group.placement === undefined || group.placement === "main",
         )
       ) {
         context.addIssue({
           code: "custom",
-          message: "Report requires at least one main group",
+          message: spec.kind === "report" ? "Report requires at least one main group" : "Regions require at least one main group",
           path: ["groups"],
         });
       }
 
       const usedGroupIds = new Set<string>();
       for (const [index, node] of spec.nodes.entries()) {
-        if (spec.kind === "report" && node.group === undefined) {
+        if ((spec.kind === "report" || spec.composition === "regions") && node.group === undefined) {
           context.addIssue({
             code: "custom",
-            message: "Report nodes must belong to a group",
+            message: spec.kind === "report" ? "Report nodes must belong to a group" : "Regions nodes must belong to a group",
             path: ["nodes", index, "group"],
           });
         }

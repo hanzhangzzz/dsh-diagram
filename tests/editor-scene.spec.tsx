@@ -63,6 +63,19 @@ const positioned: PositionedDiagram = {
 };
 
 describe("diagram scene compiler", () => {
+  it("exports branch diamonds and supporting notes as editable native elements", () => {
+    const input: DiagramSpec = {kind:"flow",title:"发布门控",nodes:[
+      {id:"check",label:"检查通过？",detail:"未知不放行",variant:"decision",notes:"来源：第63页。所有必检项通过才可能放行。"},
+      {id:"execute",label:"现场终检"},
+    ],edges:[{from:"check",to:"execute",label:"是"}]};
+    const scene=createInitialScene(input,DEFAULT_DIAGRAM_VALIDATION_POLICY);
+    expect(scene.elements.find(e=>e.id === "node:check")?.type).toBe("diamond");
+    expect(scene.elements.find(e=>e.id === "notes:body:check")?.text).toContain("所有必检项");
+    expect(scene.elements.find(e=>e.id === "text:node:check")?.text).toContain("[1]");
+    expect(scene.elements.find(e=>e.id === "detail:node:check")?.text).toBe("未知不放行");
+    expect(scene.files).toEqual({});
+  });
+
   it("creates a storage-valid native atlas without rewriting legacy scenes", () => {
     const spec: DiagramSpec = {kind:"hierarchy", composition:"atlas", title:"分类", nodes:[{id:"r",label:"整体"},{id:"a",label:"分类"},{id:"b",label:"条目"}],edges:[{from:"r",to:"a"},{from:"a",to:"b"}]};
     const scene = createInitialScene(spec, DEFAULT_DIAGRAM_VALIDATION_POLICY);

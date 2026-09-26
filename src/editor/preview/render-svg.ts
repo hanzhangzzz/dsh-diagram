@@ -12,6 +12,7 @@ import {
   NODE_ICON_SLOT_HEIGHT,
   nodeTextStyleFor,
   wrapPlainText,
+  wrapTitleText,
   type PositionedDiagram,
   type PositionedPoint,
 } from "../../core/layout.ts";
@@ -107,7 +108,7 @@ export function renderSpecSvg(doc: Document, spec: DiagramSpec): SVGSVGElement {
   const summaryFontSize = report
     ? REPORT_SUMMARY_FONT_SIZE
     : STANDARD_SUMMARY_FONT_SIZE;
-  const title = wrapPlainText(diagram.title, titleFontSize, Math.max(240, diagram.width - 80));
+  const title = wrapTitleText(diagram.title, titleFontSize, Math.max(240, diagram.width - 80));
   const summary = diagram.summary === undefined ? undefined : wrapPlainText(
     diagram.summary, summaryFontSize, Math.min(report ? 960 : 720, Math.max(240, diagram.width - 80)),
   );
@@ -553,16 +554,17 @@ function renderSpecGroups(
     rect.setAttribute("stroke-width", "1.5");
     if (tokens.roughness === 1) rect.setAttribute("fill-opacity", "0.62");
     svg.append(rect);
-    svg.append(specText(doc, {
-      x: group.x + 18,
-      y: group.y + 14,
-      text: group.label,
+    const lines = (group.headerHeight === undefined ? group.label : wrapPlainText(group.label, groupFontSize, group.width - 36)).split("\n");
+    lines.forEach((line, index) => svg.append(specText(doc, {
+      x: diagram.kind === "report" ? group.x + group.width / 2 : group.x + 18,
+      y: group.y + ((group.headerHeight ?? 52) - lines.length * groupFontSize * DEFAULT_LINE_HEIGHT) / 2 + index * groupFontSize * DEFAULT_LINE_HEIGHT,
+      text: line,
       fontSize: groupFontSize,
       color: palette.ink,
-      anchor: "start",
+      anchor: diagram.kind === "report" ? "middle" : "start",
       bold: true,
       handwritten: tokens.handwritten,
-    }));
+    })));
   }
 }
 
@@ -654,7 +656,9 @@ function renderSpecNodes(
       : (palette?.ink ?? tokens.text);
     const detailColor = solid ? tokens.solidText : tokens.muted;
 
-    const rect = doc.createElementNS(SVG_NS, "rect");
+    const decision = node.variant === "decision";
+    const rect = doc.createElementNS(SVG_NS, decision ? "polygon" : "rect");
+    if (decision) rect.setAttribute("points", `${node.x + node.width / 2},${node.y} ${node.x + node.width},${node.y + node.height / 2} ${node.x + node.width / 2},${node.y + node.height} ${node.x},${node.y + node.height / 2}`);
     rect.setAttribute("data-node-id", node.id);
     rect.setAttribute("x", String(node.x));
     rect.setAttribute("y", String(node.y));
@@ -672,7 +676,7 @@ function renderSpecNodes(
     }
 
     const style = nodeTextStyleFor(diagram.kind, node);
-    const textMaxWidth = node.width - style.paddingX;
+    const textMaxWidth = node.width / (decision ? 2 : 1) - style.paddingX;
     const labelLines = wrapPlainText(
       node.label,
       style.labelFontSize,
@@ -690,9 +694,8 @@ function renderSpecNodes(
         ? 0
         : 4 + detailLines.length * style.detailLineHeight);
     const iconOffset = node.icon === undefined ? 0 : NODE_ICON_SLOT_HEIGHT;
-    let cursor = node.y
-      + iconOffset
-      + (node.height - iconOffset - blockHeight) / 2;
+    let cursor = node.y + iconOffset + (node.rowAligned
+      ? style.paddingY / 2 : (node.height - iconOffset - blockHeight) / 2);
     const centerX = node.x + node.width / 2;
     for (const line of labelLines) {
       svg.append(specText(doc, {

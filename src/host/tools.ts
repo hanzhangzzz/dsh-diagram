@@ -104,8 +104,8 @@ export function createDiagramTools(
       },
       composition: {
         type: "string",
-        enum: ["atlas"],
-        description: "Optional paired overview/detail. Only for an ungrouped clean hierarchy with one root, categories and terminal entries, one parent per node, no cycles or cross-links. Do not remove facts to fit this form.",
+        enum: ["atlas", "regions"],
+        description: "atlas: paired overview/detail for an ungrouped three-level hierarchy. regions: architecture with parallel main regions and explicit top/bottom cross-cutting regions; group every node and include at least one main group. Choose by actual relationships, never delete facts to fit a form.",
       },
       title: {
         type: "string",
@@ -133,6 +133,7 @@ export function createDiagramTools(
             id: { type: "string", required: true },
             label: { type: "string", required: true, description: "A short concept, action, condition or result. Avoid a full sentence or section summary." },
             detail: { type: "string", description: "One essential qualifier or evidence note, normally one or two short lines. Not a paragraph, source transcript, or full case summary. Preserve necessary scope and uncertainty." },
+            notes: { type: "string", description: "Optional supporting source, example or explanation. Kept in a separate editable notes area linked by number. Keep all decision-changing conditions in label/detail; notes never hide a necessary qualifier. Avoid repeating the main node." },
             group: { type: "string" },
             emphasis: { type: "boolean" },
             tone: {
@@ -143,7 +144,7 @@ export function createDiagramTools(
             variant: {
               type: "string",
               enum: [...DIAGRAM_NODE_VARIANTS],
-              description: "Controlled hierarchy: card, compact metric/badge, or solid focal outcome.",
+              description: "Controlled hierarchy: card, compact metric/badge, solid focal outcome, or decision diamond for a genuine branch condition. Decision nodes cannot have icons.",
             },
             icon: {
               type: "string",
@@ -185,12 +186,12 @@ export function createDiagramTools(
             placement: {
               type: "string",
               enum: [...REPORT_GROUP_PLACEMENTS],
-              description: "For report diagrams: a full-width top/bottom band or a main-stage column.",
+              description: "For report or architecture composition regions: a full-width top/bottom area or a parallel main column. These positions do not imply a process or deployment hierarchy.",
             },
             direction: {
               type: "string",
               enum: [...REPORT_GROUP_DIRECTIONS],
-              description: "For report diagrams: deterministic reading direction inside this region.",
+              description: "For report or architecture composition regions: deterministic reading direction inside this region.",
             },
           },
         },
@@ -320,6 +321,11 @@ function summarizeSpec(diagram: DiagramRecord): string {
     for (const group of spec.groups ?? []) {
       lines.push(`- ${group.id}: ${group.label}`);
     }
+  }
+  const notes = spec.nodes.filter(node => node.notes !== undefined);
+  if (notes.length > 0) {
+    lines.push("Supporting notes (after the main relationships):");
+    notes.forEach((node, index) => lines.push(`[${index + 1}] ${node.id}: ${node.notes}`));
   }
   return lines.join("\n");
 }
