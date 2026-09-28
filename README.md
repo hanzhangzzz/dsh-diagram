@@ -2,7 +2,7 @@
 
 English | [简体中文](https://github.com/hanzhangzzz/dsh-diagram/blob/master/README.zh-CN.md)
 
-[![npm version](https://img.shields.io/npm/v/dsh-diagram?style=flat-square)](https://www.npmjs.com/package/dsh-diagram) [![GitHub release](https://img.shields.io/github/v/release/hanzhangzzz/dsh-diagram?display_name=tag&style=flat-square)](https://github.com/hanzhangzzz/dsh-diagram/releases/latest) [![license](https://img.shields.io/github/license/hanzhangzzz/dsh-diagram?style=flat-square)](./LICENSE) [![DeepSeek Harness](https://img.shields.io/badge/DeepSeek_Harness-0.1.5--rc.1-4c6ef5?style=flat-square)](https://github.com/deepseek-ai/deepseek-harness)
+[![npm version](https://img.shields.io/npm/v/dsh-diagram?style=flat-square)](https://www.npmjs.com/package/dsh-diagram) [![GitHub release](https://img.shields.io/github/v/release/hanzhangzzz/dsh-diagram?display_name=tag&style=flat-square)](https://github.com/hanzhangzzz/dsh-diagram/releases/latest) [![license](https://img.shields.io/github/license/hanzhangzzz/dsh-diagram?style=flat-square)](./LICENSE) [![DeepSeek Harness](https://img.shields.io/badge/DeepSeek_Harness-0.1.7--rc.2-4c6ef5?style=flat-square)](https://github.com/deepseek-ai/deepseek-harness)
 
 **Turn an article you have read in DSH into a diagram you can keep editing, saving, and exporting.**
 
@@ -11,7 +11,7 @@ A canvas plugin for DeepSeek Harness (DSH) Web. The Agent drafts the structure; 
 Already using DSH Web? Install from your terminal:
 
 ```sh
-npx -y @deepseek-ai/dsh@0.1.5-rc.1 plugin --profile web add dsh-diagram@0.6.0
+npx -y @deepseek-ai/dsh@0.1.7-rc.2 plugin --profile web add dsh-diagram@0.6.1
 ```
 
 ![Edit a DSH canvas, save, and export](https://raw.githubusercontent.com/hanzhangzzz/dsh-diagram/0d74a27d902160305099fb8cf2db958a77394b65/stable-0.5.0/readme-workflow.gif)
@@ -65,7 +65,7 @@ This report board comes from a real release retrospective. Generated with publis
 
 Requirements:
 
-- DeepSeek Harness `0.1.5-rc.1` (latest); also verified on `0.1.5-rc.2` and `0.1.2-rc.1`. DSH `0.1.1-rc.2` and older need dsh-diagram `0.4.0`
+- DeepSeek Harness `0.1.7-rc.2` (latest); also verified on `0.1.5-rc.1` and `0.1.5-rc.2`. `0.1.2-rc.1` remains in the supported range, but a fresh install of that DSH release currently fails to start `dsh web` even without plugins, so it could not be re-verified. DSH `0.1.1-rc.2` and older need dsh-diagram `0.4.0`
 - Node.js `^22.19.0` or `>=24.0.0`
 - pnpm `>=10` on `PATH` (the DSH plugin command delegates package management to pnpm)
 - DSH Web bound to `127.0.0.1`
@@ -73,9 +73,9 @@ Requirements:
 DeepSeek Harness does not install a global `dsh` command by default; the official way to launch it is through `npx`. The commands below work on any machine that meets the requirements:
 
 ```sh
-npx -y @deepseek-ai/dsh@0.1.5-rc.1 plugin --profile web add dsh-diagram@0.6.0
-npx -y @deepseek-ai/dsh@0.1.5-rc.1 --profile web --dump-config
-npx -y @deepseek-ai/dsh@0.1.5-rc.1 web
+npx -y @deepseek-ai/dsh@0.1.7-rc.2 plugin --profile web add dsh-diagram@0.6.1
+npx -y @deepseek-ai/dsh@0.1.7-rc.2 --profile web --dump-config
+npx -y @deepseek-ai/dsh@0.1.7-rc.2 web
 ```
 
 The config dump should contain this block:
@@ -96,7 +96,7 @@ If DSH Web was already running, restart it after adding or updating the plugin. 
 Run the same commands from a DeepSeek Harness checkout that matches a supported release, using `pnpm dsh` as the prefix:
 
 ```sh
-pnpm dsh plugin --profile web add dsh-diagram@0.6.0
+pnpm dsh plugin --profile web add dsh-diagram@0.6.1
 pnpm dsh --profile web --dump-config
 pnpm dsh web
 ```
@@ -106,12 +106,12 @@ pnpm dsh web
 If you installed the CLI globally or created a shell alias, the short form works the same way:
 
 ```sh
-dsh plugin --profile web add dsh-diagram@0.6.0
+dsh plugin --profile web add dsh-diagram@0.6.1
 dsh --profile web --dump-config
 dsh web
 ```
 
-Later sections use this short `dsh` form; substitute the `npx -y @deepseek-ai/dsh@0.1.5-rc.1` or `pnpm dsh` prefix that matches how you run DSH.
+Later sections use this short `dsh` form; substitute the `npx -y @deepseek-ai/dsh@0.1.7-rc.2` or `pnpm dsh` prefix that matches how you run DSH.
 
 </details>
 
@@ -153,9 +153,9 @@ The plugin does not fetch articles and does not inject UI into arbitrary website
 
 ## Compatibility
 
-| Item | Supported in `0.6.0` |
+| Item | Supported in `0.6.1` |
 | --- | --- |
-| DeepSeek Harness | `0.1.5-rc.1`, `0.1.5-rc.2`, `0.1.2-rc.1` (older DSH: use `dsh-diagram@0.4.0`) |
+| DeepSeek Harness | `0.1.7-rc.2`, `0.1.5-rc.1`, `0.1.5-rc.2`, `0.1.2-rc.1` (older DSH: use `dsh-diagram@0.4.0`) |
 | Profile | `web` |
 | Web bind address | `127.0.0.1` only |
 | Node.js | `^22.19.0` or `>=24.0.0` |
@@ -170,7 +170,7 @@ The npm package has no install lifecycle scripts. Installation adds a bundle to 
 ### Update
 
 ```sh
-npx -y @deepseek-ai/dsh@0.1.5-rc.1 plugin --profile web update dsh-diagram@0.6.0
+npx -y @deepseek-ai/dsh@0.1.7-rc.2 plugin --profile web update dsh-diagram@0.6.1
 ```
 
 Restart DSH Web after the update.
@@ -181,10 +181,10 @@ The release page publishes the same prebuilt tarball with a SHA-256 checksum:
 
 ```sh
 dsh plugin --profile web add \
-  https://github.com/hanzhangzzz/dsh-diagram/releases/download/v0.6.0/dsh-diagram-0.6.0.tgz
+  https://github.com/hanzhangzzz/dsh-diagram/releases/download/v0.6.1/dsh-diagram-0.6.1.tgz
 ```
 
-See [v0.6.0](https://github.com/hanzhangzzz/dsh-diagram/releases/tag/v0.6.0) for the checksum and release notes.
+See [v0.6.1](https://github.com/hanzhangzzz/dsh-diagram/releases/tag/v0.6.1) for the checksum and release notes.
 
 ### Remove
 
@@ -209,7 +209,7 @@ Removing the bundle does not delete saved diagram sidecar data. Reinstalling the
 
 ### A newly published version was not installed
 
-pnpm 11's default `minimumReleaseAge` excludes versions less than 24 hours old. Pin an exact version on release day rather than relying on `@latest`; the trial command above already pins the demonstrated `0.6.0`.
+pnpm 11's default `minimumReleaseAge` excludes versions less than 24 hours old. Pin an exact version on release day rather than relying on `@latest`; the trial command above already pins `0.6.1`.
 
 ### The Canvas tab is missing
 
