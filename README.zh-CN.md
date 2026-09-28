@@ -6,13 +6,15 @@
 
 **把 DSH 里读过的文章，变成可以继续修改、保存和导出的图。**
 
-这是 DeepSeek Harness（DSH）Web 的画布插件。Agent 先整理图表，你在同一会话中用 Excalidraw 修改文字和布局；不必把结果搬到另一个应用里重画。
+这是 DeepSeek Harness（DSH）桌面版与 Web 版的画布插件。Agent 先整理图表，你在同一会话中用 Excalidraw 修改文字和布局；不必把结果搬到另一个应用里重画。
 
-已有 DSH Web 的用户，在终端安装：
+**在 DeepSeek Harness 桌面版中安装**（推荐）：打开 **插件** → **添加插件**，输入下面的包名，点 **安装**，再点 **立即启用**。
 
-```sh
-npx -y @deepseek-ai/dsh@0.1.7-rc.2 plugin --profile web add dsh-diagram@0.6.1
+```text
+dsh-diagram@0.6.1
 ```
+
+在终端使用 DSH Web？运行 `npx -y @deepseek-ai/dsh@0.1.7-rc.2 plugin --profile web add dsh-diagram@0.6.1`。详见[快速安装](#快速安装)。
 
 ![在 DSH 画布中修改文字、保存并导出](https://raw.githubusercontent.com/hanzhangzzz/dsh-diagram/0d74a27d902160305099fb8cf2db958a77394b65/stable-0.5.0/readme-workflow.gif)
 
@@ -20,7 +22,7 @@ npx -y @deepseek-ai/dsh@0.1.7-rc.2 plugin --profile web add dsh-diagram@0.6.1
 
 ## 先完成一次试用
 
-**重启 DSH Web**，在会话中提供一段文章内容，输入 `/` 选择 **canvas-diagram**，然后发送：
+在桌面版点过 **立即启用**（或重启 DSH Web）后，在会话中提供一段文章内容，输入 `/` 选择 **canvas-diagram**，然后发送：
 
 ```text
 把上面的文章整理为一张图，只保留三个主要步骤，每个节点用短句。
@@ -62,6 +64,24 @@ npx -y @deepseek-ai/dsh@0.1.7-rc.2 plugin --profile web add dsh-diagram@0.6.1
 **适用边界：** 默认清晰风格、无分组的三层分类树。循环、多父节点、更深层级及没有条目的分类会被拒绝。手动修改后的重复标签与数量不会自动同步，连线可以编辑但不会自动重新布局；已有保存画布保持原样。
 
 ## 快速安装
+
+### DeepSeek Harness 桌面版（推荐）
+
+前置条件：
+
+- DeepSeek 官方的 DeepSeek Harness 桌面版 `0.1.7-rc.2`。已在 macOS Apple Silicon 上验证；Windows x64 尚未测试。桌面版 `0.1.7-rc.1` 会拒绝安装本插件，请先按应用内提示更新到 `0.1.7-rc.2`。
+- 不需要其他环境：桌面版自带 Node.js 和包管理器。
+
+官方应用的开发者签名为 Hangzhou DeepSeek Artificial Intelligence Co., Ltd，参见 [DeepSeek Harness 官方仓库](https://github.com/deepseek-ai/deepseek-harness)。社区制作的各类“DSH 桌面版”是不同的应用，未与本插件做过测试。
+
+1. 在侧栏打开 **插件**，点 **添加插件**。
+2. 输入 `dsh-diagram@0.6.1`，点 **安装**。请保留版本号：DSH 的包管理器会跳过发布不满 24 小时的版本，只写 `dsh-diagram` 可能装到旧版，并提示“dsh-diagram@0.6.0 与 DSH 0.1.7-rc.2 不兼容”。
+3. 点 **立即启用**。插件会出现在 **已安装** 中，版本为 `0.6.1`。
+4. 打开一个会话，顶部出现 **画布** 标签。
+
+桌面版的插件保存在它自己的 profile 中，请在 **插件** 页面管理；本文中的终端命令只适用于 DSH Web。
+
+### DSH Web（终端）
 
 前置条件：
 
@@ -155,9 +175,10 @@ dsh web
 
 | 项目 | `0.6.1` 支持范围 |
 | --- | --- |
-| DeepSeek Harness | `0.1.7-rc.2`、`0.1.5-rc.1`、`0.1.5-rc.2`、`0.1.2-rc.1`（更早的 DSH 请用 `dsh-diagram@0.4.0`） |
-| Profile | `web` |
-| Web 绑定地址 | 仅 `127.0.0.1` |
+| DeepSeek Harness 桌面版 | `0.1.7-rc.2`（已在 macOS Apple Silicon 验证；Windows x64 尚未测试） |
+| DeepSeek Harness Web | `0.1.7-rc.2`、`0.1.5-rc.1`、`0.1.5-rc.2`、`0.1.2-rc.1`（更早的 DSH 请用 `dsh-diagram@0.4.0`） |
+| Profile | `desktop`（在插件页面管理）或 `web` |
+| Web 绑定地址 | 仅 `127.0.0.1`（桌面版自带的 Host 已使用本机回环地址） |
 | Node.js | `^22.19.0` 或 `>=24.0.0` |
 | 编辑器 | Excalidraw `0.18.1` |
 | 存储 | 插件独立的 DSH storage-domain sidecar |
@@ -166,6 +187,8 @@ dsh web
 npm 包没有 install lifecycle script。安装只会把 bundle 加入指定的 DSH profile，不会现场编译，也不会修改 DeepSeek Harness 源码。
 
 ## 管理安装
+
+桌面版请在 **插件** 页面管理。以下命令适用于 DSH Web。
 
 ### 更新
 
@@ -207,13 +230,17 @@ dsh plugin --profile web remove dsh-diagram
 
 ## 常见问题
 
+### 桌面版提示“dsh-diagram@0.6.0 与 DSH 0.1.7-rc.2 不兼容”？
+
+包管理器选中了旧版本。请重新添加，并写上版本号：`dsh-diagram@0.6.1`。如果桌面版是 `0.1.7-rc.1`，请先把应用更新到 `0.1.7-rc.2`。
+
 ### 刚发布的版本没有装上？
 
 pnpm 11 的 `minimumReleaseAge` 默认会排除发布不满 24 小时的版本。发布当天请指定精确版本，不要依赖 `@latest`；上面的试用命令已经固定到 `0.6.1`。
 
 ### 为什么没有“画布”标签？
 
-确认插件安装到了 `web` profile，`--dump-config` 输出包含上面的 `dsh-diagram` 配置块，并在安装后重启了 DSH Web。
+桌面版请确认 **已安装** 中显示版本 `0.6.1`，并且点过 **立即启用**。DSH Web 请确认插件安装到了 `web` profile，`--dump-config` 输出包含上面的 `dsh-diagram` 配置块，并在安装后重启了 DSH Web。
 
 ### 为什么 Agent 写了 SVG 或 Mermaid 文件，而不是用画布？
 
@@ -241,7 +268,7 @@ pnpm 11 的 `minimumReleaseAge` 默认会排除发布不满 24 小时的版本�
 
 ## 源码预览：结构化成图
 
-当前源码新增编号对应的可编辑补充说明、决策菱形、并列架构区域（`composition: regions`）及同维度对比行。主图阅读和完整总览分别切换，所有导出保留当前完整画布。以上能力尚未包含在前述公开 `0.6.0` 包中，可从源码构建预发布版试用。
+当前源码新增编号对应的可编辑补充说明、决策菱形、并列架构区域（`composition: regions`）及同维度对比行。主图阅读和完整总览分别切换，所有导出保留当前完整画布。以上能力尚未包含在前述公开 `0.6.1` 包中，可从源码构建预发布版试用。
 
 会改变判断的条件仍须留在主节点；补充说明和对应标签的手工修改不会自动同步。对比图中的同名标签必须确实是同一比较维度，渲染器只对齐名称，不代替语义判断。
 

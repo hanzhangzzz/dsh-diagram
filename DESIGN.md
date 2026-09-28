@@ -4,7 +4,7 @@
 
 - Status: Active
 - Last refreshed: 2026-09-21
-- Primary product surfaces: DeepSeek Harness Web 的会话“画布”标签页、`diagram_create` 的标准工具结果卡片，以及对话流中的 diagram 预览节点（`conversation.chat.node` keyed renderer + 同源 `preview.html` iframe）。
+- Primary product surfaces: DeepSeek Harness 桌面版（用户主要入口）与 Web 的会话“画布”标签页、`diagram_create` 的标准工具结果卡片，以及对话流中的 diagram 预览节点（`conversation.chat.node` keyed renderer + 同源 `preview.html` iframe）。
 - Evidence reviewed: 本地 `http://127.0.0.1:3080`；deepseek-harness 的 `packages/client/ui-conversation/src/client/contract/slots.ts`、`packages/client/ui-trajectory/src/client/index.ts`、`packages/client/ui-tool/src/client/contract/slots.ts`、`packages/client/AGENTS.md`；`cathrynlavery/diagram-design`；Excalidraw；社区 `dsh-web-ui`、`dsh-TUI` 与 `modlens` 插件；用户批准的企业手绘知识信息图基线 `output/imagegen/effective-ai-agents-sketchnote-demo-v2.png`。
 
 ## Brand
