@@ -67,6 +67,7 @@ pnpm run test
 - 构建目标是 DSH `0.1.5-rc.2` 子包：devDependencies 精确锁到 `0.1.5-rc.2`，`build/smoke-dsh-install.mjs` 的 `DEFAULT_DSH_VERSION` 是 `0.1.7-rc.2`（npm `latest`）。运行时支持面是 `0.1.2-rc.1 || 0.1.5-rc.1 || 0.1.5-rc.2 || 0.1.7-rc.2`，`0.1.7-rc.2` 在 0.6.1 以未改动的 0.6.0 代码加入支持面并通过 smoke。注意：2026-09 起用 pnpm 安装 `@deepseek-ai/dsh@0.1.5-rc.1` 会解析到 `dsh-app-boot@0.1.5-rc.3`，`dsh web` 启动即报 “user patch-layer watching requires the Cordis HMR service”，与插件无关；npx 安装 `0.1.5-rc.1`/`0.1.5-rc.2` 可正常启动（多版本取证用 `--dsh-bin` 指向 npx 缓存里的 dsh）；`0.1.2-rc.1` 用 npx 安装也同样崩溃，因此 0.6.1 对它只记录 install=passed，其余为 unknown。DSH 在 0.1.2 移除了 `dsh-host-apiproxy` 与 `dsh-client-runtime`（RPC envelope 契约迁入 `dsh-client-connection`，会话节点类型拆入 `dsh-client-ui-conversation/client` 与 `dsh-client-ui-chat/client`，`slots` 由 `dsh-client-ui-renderer` 提供，事件注册表变为 `ctx.uiConversation.events`），因此 `0.1.1-rc.2` 及更早版本只能由 dsh-diagram `0.4.0` 覆盖，不要试图在同一 artifact 内兼容两套包布局。升级时同时更新 peerDependencies、devDependencies、README 徽章和兼容表、smoke 默认版本及真实安装测试。
 - peerDependencies 用显式并集列举受支持版本，不要写成 `^0.1.0-rc.6` 这类范围：semver 规定预发布版本只匹配同 `major.minor.patch` 且自身带预发布的比较符，因此 `^0.1.0-rc.6` 匹配不到 `0.1.1-rc.2`（已实测为 `false`）。也不要退回单版精确锁——那正是曾让 npm 在混合版本树上抛 ERESOLVE 的原因。新增受支持版本必须先跑通 smoke 再加进并集。
 - `package.json.dsh.compatibility` 的 `dshReleases` 与 `dshOperations` 是 DSH STORE 读取的逐版本兼容声明，也是唯一由我们自己给出的兼容证据。只允许写入 `smoke:dsh-install` 真实跑出来的结论；未执行的项写 `unknown`，不得由版本范围推导（商店明确规定范围不能替代精确记录）。0.6.1 中 `0.1.5-rc.1`/`0.1.5-rc.2`/`0.1.7-rc.2` 三版 install/start/uninstall 为 `passed`；`0.1.2-rc.1` 宿主本身无法启动，只有 install 为 `passed`；rollback 均未测故为 `unknown`。
+- DeepSeek Harness 桌面版是用户的主要入口，Web 保持兼容。桌面版是 Electron 外壳加完整 Web 应用：插件装在 `$DSH_HOME/profiles/desktop`，只能在应用内「插件 → 添加插件」安装，CLI 与 `smoke:dsh-install` 都不覆盖它。桌面版把 `dsh-app://app` 请求转发到 `127.0.0.1:19387`，转发前删除 `origin`、`host`、`sec-fetch-site`，所以本插件的 RPC loopback/Origin 检查在桌面版成立；修改 RPC admission 或静态资源策略时必须回归桌面版。桌面版验证方法：取 DeepSeek 官方签名包（`codesign` TeamIdentifier `NAN929V4UM`），从临时目录以隔离 `DSH_HOME` 和 `--remote-debugging-port` 启动，经 CDP 在插件页安装显式版本，再跑生成、手改、保存、`diagram_read`、导出；结束后删除本次创建的 `~/Library/Application Support/@deepseek-ai/dsh-desktop`、`~/Library/Preferences/com.deepseek.dsh.plist`、`~/Library/Logs/DeepSeek Harness`。
 - smoke 支持 `--dsh-version`（或 `DSH_DIAGRAM_DSH_VERSION`）选择目标 DSH，和 `--dsh-bin`（或 `DSH_BIN`）复用已装好的 DSH。多版本取证用这两个入口，不要为此改动 smoke 的隔离逻辑。
 - smoke 断言只能锚定 DSH 的**行为契约**，不能锚定某一版的源码写法。已踩过两次：boot 全局从 `window.__DSH_BOOT__` 变为 `globalThis["__DSH_BOOT__"]`；卸载后 `/diagram-assets` 从回落 SPA 变为返回 404。两处都曾把插件正常的情况误报成不兼容，现分别由 `isBootDocument` 和「404 或 SPA 皆可、其余失败」的不变量断言覆盖。
 - 不要对 DSH Service class 使用跨包 `instanceof`。DSH 的 source launch 和已构建 npm artifact 可能加载同一 class 的两个模块实例，导致合法 service 被误判。依赖 Cordis `static inject` 等待服务，再通过 `ctx.get("serviceKey")` 取得结构化接口。
@@ -146,7 +147,7 @@ pnpm run test
 - editor shell 是三行 grid；`.body` 必须显式位于第三行。依赖自动 placement 会让空状态行占据剩余高度，导致画布只得到约一百像素。
 - 从 iframe root 到 Excalidraw 容器的 `min-height: 0` 链必须完整；折叠 diagram 侧栏只改变外层布局，不能重挂载或重载画布。
 - DSH 外层使用已有 CSS variables；iframe 内先读取同名变量并提供中性 fallback。不要增加第二套设计系统。
-- 视觉改动不能只跑 jsdom。至少用真实 DSH Web 检查标签、iframe 高度、侧栏折叠、导出按钮、空状态、窄屏和浏览器 console。
+- 视觉改动不能只跑 jsdom。至少用真实 DSH 桌面版或 Web 检查标签、iframe 高度、侧栏折叠、导出按钮、空状态、窄屏和浏览器 console。
 - 截图或演示 GIF 必须使用无隐私的通用 Session，不得暴露用户工作区、历史会话、API key 或本机路径。
 
 ## 已踩过且不得回归的问题
@@ -240,7 +241,7 @@ test ! -e lib/index.js.map
 6. 提交并推送 release commit；commit author/committer 必须是 huajuan404。创建指向该 commit 的 `vX.Y.Z` tag。当前 release tags 是 lightweight、commit 未签名；只能核验 tag ref、commit SHA 和 author/committer，不能声称 tag 已签名。
 7. 用最终 tarball 发布 npm，再把同一字节文件和 `.sha256` 上传到 GitHub Release。不要分别重新 pack。
 8. 下载两个公开来源并比较 SHA-256；确认 `npm view dsh-diagram@latest`、GitHub latest Release、tag SHA 和 `origin/master` 一致。
-9. 从公开 npm 建全新隔离 profile，真实执行 add、dump-config、update、Web 启动、浏览器加载和 remove。不能用本地 `lib/` 或旧 profile 代替。发布当天用显式 `dsh-diagram@X.Y.Z`（pnpm 11 的 `minimumReleaseAge` 会让 `@latest` 在 24 小时内解析到上一版，见踩坑 12）。
+9. 从公开 npm 建全新隔离 profile，真实执行 add、dump-config、update、Web 启动、浏览器加载和 remove，并在桌面版插件页安装同一显式版本。不能用本地 `lib/` 或旧 profile 代替。发布当天用显式 `dsh-diagram@X.Y.Z`（pnpm 11 的 `minimumReleaseAge` 会让 `@latest` 在 24 小时内解析到上一版，见踩坑 12）。
 10. npm 默认页面可能短暂缓存旧 README；registry metadata 和 `/package/dsh-diagram/v/X.Y.Z` 是版本发布后的确定性检查入口。GitHub CDN 偶发 TLS reset 时用 `gh release download` 复核 asset，网络错误不能被误诊为包错误。
 
 仓库当前没有 GitHub Actions workflow；push tag 不会自动 publish npm、生成 Release 或上传 checksum。上述动作都是显式人工步骤，不能因为 tag 存在就报告发布完成。
@@ -252,7 +253,7 @@ test ! -e lib/index.js.map
 - curated 目录入口是 `awesome-dsh-plugin/awesome-dsh-plugin`；新增大版本后检查现有条目仍准确，不要重复提交。
 - GitHub topic 查询和 curated 目录条目是已验证的发现入口。npm registry 可安装不等于 npm 搜索已收录；`npm search` 可能延迟或不返回新包，报告商店覆盖时分别核验，不要合并成一个“已收录”结论。
 - README 默认英文并提供完整中文镜像。功能、版本、限制、安装、更新、卸载、安全与 FAQ 的语义必须同步。
-- README 第一屏保留一句具体价值、npm/Release/License/DSH 徽章、体现 DSH 入口、手动编辑与保存过程的真实操作 GIF和最短安装入口。静态界面与导出图仅作次级示例，不能代替可编辑性的操作展示。不要用“AI-powered”等不可验证描述替代行为。
+- README 第一屏保留一句具体价值、npm/Release/License/DSH 徽章、体现 DSH 入口、手动编辑与保存过程的真实操作 GIF和最短安装入口。安装入口以桌面版插件页（插件 → 添加插件 → `dsh-diagram@X.Y.Z` → 立即启用）为主，Web 终端命令为辅，两者都写显式版本。静态界面与导出图仅作次级示例，不能代替可编辑性的操作展示。不要用“AI-powered”等不可验证描述替代行为。
 - 插件不会抓取文章，也不会向任意网站注入 UI；文章必须先进入 DSH Session。不要在文案中扩大能力范围。
 - demo 图片和 GIF 存放在 GitHub `assets` 分支，不把生成媒体塞进 master 历史。更新展示时继续使用去隐私的真实运行画面或真实导出。可见效果升级后同步中英文 README；源码预览与 npm 已发布版本不同时，在展示旁明确标注。
 

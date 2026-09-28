@@ -6,13 +6,15 @@ English | [简体中文](https://github.com/hanzhangzzz/dsh-diagram/blob/master/
 
 **Turn an article you have read in DSH into a diagram you can keep editing, saving, and exporting.**
 
-A canvas plugin for DeepSeek Harness (DSH) Web. The Agent drafts the structure; you refine text and layout in Excalidraw inside the same session, without rebuilding the result in another app.
+A canvas plugin for DeepSeek Harness (DSH) Desktop and Web. The Agent drafts the structure; you refine text and layout in Excalidraw inside the same session, without rebuilding the result in another app.
 
-Already using DSH Web? Install from your terminal:
+**In DeepSeek Harness Desktop** (recommended): open **Plugins** → **Add plugin**, enter the package below, click **Install**, then **Enable now**.
 
-```sh
-npx -y @deepseek-ai/dsh@0.1.7-rc.2 plugin --profile web add dsh-diagram@0.6.1
+```text
+dsh-diagram@0.6.1
 ```
+
+Using DSH Web from a terminal instead? Run `npx -y @deepseek-ai/dsh@0.1.7-rc.2 plugin --profile web add dsh-diagram@0.6.1`. Details: [Quick install](#quick-install).
 
 ![Edit a DSH canvas, save, and export](https://raw.githubusercontent.com/hanzhangzzz/dsh-diagram/0d74a27d902160305099fb8cf2db958a77394b65/stable-0.5.0/readme-workflow.gif)
 
@@ -20,7 +22,7 @@ npx -y @deepseek-ai/dsh@0.1.7-rc.2 plugin --profile web add dsh-diagram@0.6.1
 
 ## Try one complete workflow
 
-**Restart DSH Web.** Put an article in a session, type `/` and select **canvas-diagram**, then send:
+After **Enable now** in Desktop (or restarting DSH Web), put an article in a session, type `/` and select **canvas-diagram**, then send:
 
 ```text
 Turn the article above into a diagram with just three main steps and short labels.
@@ -62,6 +64,24 @@ This report board comes from a real release retrospective. Generated with publis
 
 
 ## Quick install
+
+### DeepSeek Harness Desktop (recommended)
+
+Requirements:
+
+- The official DeepSeek Harness Desktop app, version `0.1.7-rc.2`. Verified on macOS Apple Silicon; Windows x64 has not been tested yet. Desktop `0.1.7-rc.1` rejects this plugin, so accept the in-app update to `0.1.7-rc.2` first.
+- Nothing else: Desktop bundles its own Node.js and package manager.
+
+The official app is signed by Hangzhou DeepSeek Artificial Intelligence Co., Ltd. See the [official DeepSeek Harness repository](https://github.com/deepseek-ai/deepseek-harness). Community "DSH desktop" wrappers are different applications and have not been tested with this plugin.
+
+1. In the sidebar, open **Plugins**, then click **Add plugin**.
+2. Enter `dsh-diagram@0.6.1` and click **Install**. Keep the version in the name: DSH's package manager skips releases published less than 24 hours ago, so a bare `dsh-diagram` can pick an older release that fails with "dsh-diagram@0.6.0 is incompatible with DSH 0.1.7-rc.2".
+3. Click **Enable now**. The plugin appears under **Installed** as version `0.6.1`.
+4. Open a session and look for the **Canvas** tab.
+
+Desktop keeps its plugins in its own profile. Manage them on the **Plugins** page; the terminal commands in this README apply to DSH Web only.
+
+### DSH Web (terminal)
 
 Requirements:
 
@@ -155,9 +175,10 @@ The plugin does not fetch articles and does not inject UI into arbitrary website
 
 | Item | Supported in `0.6.1` |
 | --- | --- |
-| DeepSeek Harness | `0.1.7-rc.2`, `0.1.5-rc.1`, `0.1.5-rc.2`, `0.1.2-rc.1` (older DSH: use `dsh-diagram@0.4.0`) |
-| Profile | `web` |
-| Web bind address | `127.0.0.1` only |
+| DeepSeek Harness Desktop | `0.1.7-rc.2` (macOS Apple Silicon verified; Windows x64 not yet tested) |
+| DeepSeek Harness Web | `0.1.7-rc.2`, `0.1.5-rc.1`, `0.1.5-rc.2`, `0.1.2-rc.1` (older DSH: use `dsh-diagram@0.4.0`) |
+| Profile | `desktop` (managed on the Plugins page) or `web` |
+| Web bind address | `127.0.0.1` only (Desktop's own Host already uses loopback) |
 | Node.js | `^22.19.0` or `>=24.0.0` |
 | Editor | Excalidraw `0.18.1` |
 | Storage | Plugin-owned DSH storage-domain sidecar |
@@ -166,6 +187,8 @@ The plugin does not fetch articles and does not inject UI into arbitrary website
 The npm package has no install lifecycle scripts. Installation adds a bundle to the selected DSH profile; it does not compile code or modify the DeepSeek Harness source tree.
 
 ## Manage the installation
+
+In Desktop, use the **Plugins** page. The commands below are for DSH Web.
 
 ### Update
 
@@ -207,13 +230,17 @@ Removing the bundle does not delete saved diagram sidecar data. Reinstalling the
 
 ## Troubleshooting
 
+### Desktop says "dsh-diagram@0.6.0 is incompatible with DSH 0.1.7-rc.2"
+
+The package manager picked an older release. Add the plugin again as `dsh-diagram@0.6.1`, with the version. If your Desktop is `0.1.7-rc.1`, update the app to `0.1.7-rc.2` first.
+
 ### A newly published version was not installed
 
 pnpm 11's default `minimumReleaseAge` excludes versions less than 24 hours old. Pin an exact version on release day rather than relying on `@latest`; the trial command above already pins `0.6.1`.
 
 ### The Canvas tab is missing
 
-Confirm that you installed the plugin into the `web` profile, that `--dump-config` contains the `dsh-diagram` block shown above, and that DSH Web was restarted after installation.
+In Desktop, confirm that the plugin shows version `0.6.1` under **Installed** and that you clicked **Enable now**. In DSH Web, confirm that you installed the plugin into the `web` profile, that `--dump-config` contains the `dsh-diagram` block shown above, and that DSH Web was restarted after installation.
 
 ### The Agent wrote an SVG or Mermaid file instead of using the Canvas
 
@@ -241,7 +268,7 @@ Under the strict content security policy, Excalidraw may fall back from glyph su
 
 ## Source preview: structured diagrams
 
-The source version adds numbered, editable supporting notes, decision diamonds, explicit parallel architecture regions (`composition: regions`), and aligned comparison criteria. Main-graph reading and whole-document overview are separate viewport actions; all exports retain the complete current scene. These changes are not included in the public `0.6.0` package above. Build this source to try the prerelease.
+The source version adds numbered, editable supporting notes, decision diamonds, explicit parallel architecture regions (`composition: regions`), and aligned comparison criteria. Main-graph reading and whole-document overview are separate viewport actions; all exports retain the complete current scene. These changes are not included in the public `0.6.1` package above. Build this source to try the prerelease.
 
 Keep decision-changing conditions in the main node. Supporting notes are not automatically synchronized with manual edits to their referenced labels. Shared comparison labels must represent the same criterion; the renderer aligns matching labels, not their meaning.
 
