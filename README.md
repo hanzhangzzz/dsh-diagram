@@ -22,7 +22,7 @@ Using DSH Web from a terminal instead? Run `npx -y @deepseek-ai/dsh@0.1.7-rc.2 p
 
 **The whole loop in 30 seconds (0.6.1, with sound):** draft from the conversation → fix labels by hand → the Agent reads your edited version → export PNG/SVG/`.excalidraw`. Product frames are real recordings and exports; the animation around them is illustration.
 
-https://github.com/user-attachments/assets/244a5b33-7504-410b-aae2-b962b797f58e
+https://github.com/user-attachments/assets/e0930087-f841-48af-84ea-fa39267f85b0
 
 ## Try one complete workflow
 

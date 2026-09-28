@@ -22,7 +22,7 @@ dsh-diagram@0.6.1
 
 **30 秒看完整个流程（0.6.1，英文画面，有配乐）：** 从会话内容起草 → 手改文字 → Agent 读回你修改后的版本 → 导出 PNG/SVG/`.excalidraw`。产品画面为真实录屏与导出，画面外的动画为示意。
 
-https://github.com/user-attachments/assets/244a5b33-7504-410b-aae2-b962b797f58e
+https://github.com/user-attachments/assets/e0930087-f841-48af-84ea-fa39267f85b0
 
 ## 先完成一次试用
 
