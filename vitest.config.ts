@@ -5,6 +5,7 @@ export default defineConfig({
     include: ['tests/**/*.spec.{ts,tsx}'],
     environment: 'node',
     pool: 'forks',
+    setupFiles: ['tests/setup-locale.ts'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html'],

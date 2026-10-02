@@ -147,7 +147,7 @@ describe("diagram tools", () => {
       revision: "10000000-0000-4000-8000-000000000001",
       title: SPEC.title,
       kind: SPEC.kind,
-      canvasTab: "画布",
+      canvasTab: "Canvas",
     };
 
     expect(create.output.presentationMeta?.(SPEC, value)).toEqual({
@@ -179,7 +179,7 @@ describe("diagram tools", () => {
       diagramId: ID,
       title: "Article flow",
       kind: "flow",
-      canvasTab: "画布",
+      canvasTab: "Canvas",
     });
     expect(createDiagram).toHaveBeenCalledWith(
       HEADER,

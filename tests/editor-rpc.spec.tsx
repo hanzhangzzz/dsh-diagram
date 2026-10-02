@@ -97,7 +97,7 @@ describe("diagram iframe RPC", () => {
     });
 
     await expect(client.list("session-1")).rejects.toThrow("rpcId");
-    await expect(client.list("session-1")).rejects.toThrow("响应格式无效");
+    await expect(client.list("session-1")).rejects.toThrow("response was invalid");
   });
 
   it("surfaces the outer transport result without accepting it as business data", async () => {

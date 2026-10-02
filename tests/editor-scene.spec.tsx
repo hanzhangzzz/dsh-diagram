@@ -469,17 +469,17 @@ describe("editor scene validation", () => {
       {
         elements: [{ ...baseElement, type: "image" }],
         files: {},
-        message: "图片或嵌入内容",
+        message: "images or embedded content",
       },
       {
         elements: [{ ...baseElement, link: "https://example.com" }],
         files: {},
-        message: "链接",
+        message: "links",
       },
       {
         elements: [baseElement],
         files: { file: { dataURL: "data:image/png;base64,AA==" } },
-        message: "图片文件",
+        message: "image files",
       },
     ];
 

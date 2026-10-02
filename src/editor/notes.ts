@@ -1,5 +1,6 @@
 import type { DiagramSpec } from "../core/contracts.ts";
 import { wrapPlainText } from "../core/layout.ts";
+import { t } from "../core/i18n.ts";
 import type { ExcalidrawElementSkeleton } from "@excalidraw/excalidraw/data/transform";
 
 const PREFIX = "notes:";
@@ -34,8 +35,8 @@ export function notesSkeletons(spec: DiagramSpec, top: number): ExcalidrawElemen
     result.push({type: "text", id: PREFIX + id, x, y, text: value,
       fontSize: size, fontFamily: 2, strokeColor: "#34413b"});
   };
-  text("title", 40, top, "补充说明 · 与主图编号对应", 24);
-  text("boundary", 40, top + 38, "理解主结论必需的条件应留在主图；此处保留来源、例子与进一步解释。", 14);
+  text("title", 40, top, t("notes.title"), 24);
+  text("boundary", 40, top + 38, t("notes.boundary"), 14);
   let y = top + 90;
   for (let i = 0; i < entries.length; i += 2) {
     let rowHeight = 0;

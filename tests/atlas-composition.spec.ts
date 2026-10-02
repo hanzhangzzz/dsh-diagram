@@ -54,7 +54,9 @@ describe("editable overview and detail atlas", () => {
     const bytes = readFileSync(
       new URL("./fixtures/atlas-iso25010.json", import.meta.url),
     );
-    expect(createHash("sha256").update(bytes).digest("hex")).toBe(
+    expect(
+      createHash("sha256").update(bytes.toString("utf8").replace(/\r\n/g, "\n")).digest("hex"),
+    ).toBe(
       "cfb5624ec8fe954961e89ff384f5e6b668e053a575c8efd40079566a255e5ed6",
     );
     const spec = createDiagramSpecSchema(policy).parse({

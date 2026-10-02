@@ -310,7 +310,7 @@ describe("pending diagram draft recovery", () => {
     );
 
     expect((await screen.findByRole("alert")).textContent).toContain(
-      "版本冲突",
+      "Version conflict",
     );
     expect(client.save).toHaveBeenCalledWith(
       "session-1",
@@ -368,9 +368,9 @@ describe("pending diagram draft recovery", () => {
       );
     });
     expect(
-      await screen.findByText(/存储容量已满，先导出本地副本/),
+      await screen.findByText(/Storage is full/),
     ).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "展开 diagram 列表" }));
+    fireEvent.click(screen.getByRole("button", { name: "Expand diagram list" }));
     fireEvent.click(screen.getByRole("button", { name: /^Details/ }));
     expect(
       await screen.findByRole("heading", { name: "Details" }),

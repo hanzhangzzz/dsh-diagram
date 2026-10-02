@@ -16,7 +16,7 @@ describe("DiagramView", () => {
 
     render(<DiagramView {...props} />);
 
-    const frame = screen.getByTitle("diagram 画布编辑器");
+    const frame = screen.getByTitle("diagram Canvas editor");
     expect(frame.getAttribute("src")).toBe(
       "/diagram-assets/index.html?sessionId=session%2Fwith%20spaces",
     );
@@ -28,7 +28,7 @@ describe("DiagramView", () => {
 });
 
 describe("client plugin", () => {
-  it("registers one Chinese canvas tab in the conversation view slot", () => {
+  it("registers one canvas tab in the conversation view slot", () => {
     const registrations: [Record<string, unknown>, ComponentType<unknown>][] =
       [];
     const register = vi.fn(
@@ -54,7 +54,7 @@ describe("client plugin", () => {
       name: "conversation.view",
       id: "diagram",
       order: 20,
-      label: "画布",
+      label: "Canvas",
     });
     expect(viewRegistration?.[1]).toBe(DiagramView);
   });

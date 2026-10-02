@@ -108,7 +108,7 @@ describe("bootstrapPreview", () => {
     });
     await bootstrapPreview(container, SEARCH, rpc);
 
-    expect(container.textContent).toContain("不存在");
+    expect(container.textContent).toContain("does not exist");
     expect(container.querySelector("svg")).toBeNull();
   });
 
@@ -124,7 +124,7 @@ describe("bootstrapPreview", () => {
     const rpc = rpcClient({ get: get as unknown as DiagramRpcClient["get"] });
     await bootstrapPreview(container, SEARCH, rpc);
 
-    expect(container.textContent).toContain("加载失败");
+    expect(container.textContent).toContain("failed to load");
     const retry = container.querySelector("button");
     expect(retry).not.toBeNull();
 
@@ -139,7 +139,7 @@ describe("bootstrapPreview", () => {
     const rpc = rpcClient();
     await bootstrapPreview(container, "?sessionId=only", rpc);
 
-    expect(container.textContent).toContain("参数");
+    expect(container.textContent).toContain("parameters");
     expect(rpc.list).not.toHaveBeenCalled();
   });
 });
@@ -157,6 +157,6 @@ it("previews current main text while explicitly identifying omitted supporting n
   expect(container.textContent).toContain("当前已编辑主图");
   expect(container.textContent).not.toContain("旧标题");
   expect(container.textContent).not.toContain("仅在完整画布中阅读的说明");
-  expect(container.querySelector("svg")?.getAttribute("aria-label")).toContain("补充说明");
+  expect(container.querySelector("svg")?.getAttribute("aria-label")).toContain("supporting notes");
   expect(edited.elements).toHaveLength(2);
 });

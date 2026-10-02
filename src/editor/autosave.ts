@@ -1,4 +1,5 @@
 import type { PersistedScene } from "../core/contracts.ts";
+import { t } from "../core/i18n.ts";
 
 /** Result returned by the editor's save adapter. */
 export type SaveAttempt =
@@ -250,7 +251,7 @@ export class SceneAutosaveController {
       if (!this.disposed && !this.isInvalid()) {
         this.publish({
           kind: "error",
-          message: `自动保存请求失败：${errorMessage(error)}。请重试。`,
+          message: t("autosave.request.failed", { error: errorMessage(error) }),
         });
       }
     } finally {

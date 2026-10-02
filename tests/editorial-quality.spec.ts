@@ -36,8 +36,9 @@ describe("frozen editorial acceptance cases", () => {
     }
   });
   it("keeps the pre-upgrade inputs unchanged", () => {
-    expect(createHash("sha256").update(source).digest("hex"))
-      .toBe("c78c467ba52efa45dc641db8f8a03c2e7d7c5f0f3228b28ef7302c56ac8b1421");
+    expect(
+      createHash("sha256").update(source.toString("utf8").replace(/\r\n/g, "\n")).digest("hex"),
+    ).toBe("c78c467ba52efa45dc641db8f8a03c2e7d7c5f0f3228b28ef7302c56ac8b1421");
   });
 
   for (const { id, spec } of cases) {

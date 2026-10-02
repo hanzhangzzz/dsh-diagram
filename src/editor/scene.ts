@@ -1,5 +1,6 @@
 import { atlasSkeletons, ATLAS_BACKGROUND } from "./atlas.ts";
 import { mainViewSpec, notesSkeletons } from "./notes.ts";
+import { t } from "../core/i18n.ts";
 import {
   FONT_FAMILY,
   convertToExcalidrawElements,
@@ -508,28 +509,27 @@ export function normalizeEditorScene(
   policy: Readonly<DiagramValidationPolicy>,
 ): EditorSceneResult {
   if (!Array.isArray(elements)) {
-    return { ok: false, message: "画布元素格式无效。重新载入服务器版本。" };
+    return { ok: false, message: t("scene.invalid.elements") };
   }
   for (const element of elements) {
     if (!isRecord(element)) continue;
     if (typeof element.type === "string" && !EDITABLE_TYPES.has(element.type)) {
       return {
         ok: false,
-        message:
-          "当前画布包含图片或嵌入内容。删除 image、iframe、embeddable 或 frame 元素后会继续自动保存。",
+        message: t("scene.has.media"),
       };
     }
     if (element.link !== undefined && element.link !== null) {
       return {
         ok: false,
-        message: "当前画布包含链接。移除元素链接后会继续自动保存。",
+        message: t("scene.has.link"),
       };
     }
   }
   if (isRecord(files) && Object.keys(files).length > 0) {
     return {
       ok: false,
-      message: "当前画布包含图片文件。删除图片后会继续自动保存。",
+      message: t("scene.has.files"),
     };
   }
 
@@ -546,7 +546,9 @@ export function normalizeEditorScene(
     const issue = parsed.error.issues[0];
     return {
       ok: false,
-      message: `当前画布超出保存限制：${issue?.message ?? "未知校验错误"}。精简元素或文字后会继续自动保存。`,
+      message: t("scene.over.limit", {
+        issue: issue?.message ?? t("scene.unknown.issue"),
+      }),
     };
   }
   return { ok: true, scene: parsed.data };

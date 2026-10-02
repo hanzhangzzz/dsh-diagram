@@ -5,6 +5,8 @@ import type {
   ServerResponse,
 } from "@deepseek-ai/dsh-client-connection/client";
 
+import { t } from "../core/i18n.ts";
+
 import {
   DEFAULT_DIAGRAM_VALIDATION_POLICY,
   diagramValidationPolicySchema,
@@ -129,18 +131,22 @@ export function createDiagramRpcClient(
     );
     if (!response.ok) {
       throw new Error(
-        `diagram ${endpoint} 传输失败：HTTP ${response.status}。请检查 DSH Host。`,
+        t("rpc.transport.failed", { endpoint, status: response.status }),
       );
     }
     const envelope = parseResponse(await response.json(), endpoint);
     if (envelope.rpcId !== rpcId) {
       throw new Error(
-        `diagram ${endpoint} rpcId 不匹配：发送 ${rpcId}，收到 ${envelope.rpcId}。`,
+        t("rpc.rpcid.mismatch", {
+          endpoint,
+          sent: rpcId,
+          received: envelope.rpcId,
+        }),
       );
     }
     if (!envelope.result.ok) {
       throw new Error(
-        `diagram ${endpoint} 请求被 DSH 拒绝：${envelope.result.error.message}`,
+        t("rpc.rejected", { endpoint, message: envelope.result.error.message }),
       );
     }
     return envelope.result.value;
@@ -195,7 +201,10 @@ function parseResponse(value: unknown, endpoint: string) {
   const parsed = serverResponseSchema.safeParse(value);
   if (!parsed.success) {
     throw new Error(
-      `diagram ${endpoint} 响应格式无效：${parsed.error.issues[0]?.message ?? "未知字段错误"}。`,
+      t("rpc.response.invalid", {
+        endpoint,
+        issue: parsed.error.issues[0]?.message ?? t("rpc.unknown.field"),
+      }),
     );
   }
   return parsed.data;
@@ -209,7 +218,10 @@ function parseBusinessResult<Schema extends z.ZodType>(
   const parsed = schema.safeParse(value);
   if (!parsed.success) {
     throw new Error(
-      `diagram ${endpoint} 业务响应格式无效：${parsed.error.issues[0]?.message ?? "未知字段错误"}。`,
+      t("rpc.business.invalid", {
+        endpoint,
+        issue: parsed.error.issues[0]?.message ?? t("rpc.unknown.field"),
+      }),
     );
   }
   return parsed.data;

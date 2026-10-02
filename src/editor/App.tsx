@@ -58,6 +58,14 @@ import {
   writePendingDiagramDraft,
   type PendingDiagramDraft,
 } from "./pendingDraft.ts";
+import {
+  LOCALE_LABELS,
+  SUPPORTED_LOCALES,
+  activateLocale,
+  resolveLocale,
+  t,
+  type Locale,
+} from "../core/i18n.ts";
 import css from "./App.module.css";
 import { fitContentViewport } from "./viewport.ts";
 
@@ -96,8 +104,9 @@ export function DiagramApp({
   );
   const [loadState, setLoadState] = useState<LoadState>({
     kind: "loading",
-    message: "正在读取当前会话的 diagram…",
+    message: t("editor.loading.session"),
   });
+  const [locale, setLocale] = useState<Locale>(() => resolveLocale());
   const [retryKey, setRetryKey] = useState(0);
   const [diagrams, setDiagrams] = useState<DiagramSummary[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -137,7 +146,7 @@ export function DiagramApp({
     const abort = new AbortController();
     setLoadState({
       kind: "loading",
-      message: "正在读取当前会话的 diagram…",
+      message: t("editor.loading.session"),
     });
     void rpc
       .list(sessionId, abort.signal)
@@ -190,7 +199,7 @@ export function DiagramApp({
         if (!abort.signal.aborted) {
           setLoadState({
             kind: "error",
-            message: `读取 diagram 列表失败：${errorMessage(error)}。`,
+            message: t("editor.list.failed", { error: errorMessage(error) }),
           });
         }
       });
@@ -210,7 +219,7 @@ export function DiagramApp({
     setEditorReady(false);
     setCanvasError(null);
     setSaveStatus(null);
-    setLoadState({ kind: "loading", message: "正在载入可编辑画布…" });
+    setLoadState({ kind: "loading", message: t("editor.loading.canvas") });
 
     void rpc
       .get(sessionId, selectedId, abort.signal)
@@ -293,7 +302,7 @@ export function DiagramApp({
         if (ownsSelection()) {
           setLoadState({
             kind: "error",
-            message: `载入 diagram 失败：${errorMessage(error)}。`,
+            message: t("editor.load.diagram.failed", { error: errorMessage(error) }),
           });
         }
       });
@@ -409,7 +418,7 @@ export function DiagramApp({
       if (document.fullscreenElement !== null) await document.exitFullscreen();
       else await document.documentElement.requestFullscreen();
     } catch {
-      setCanvasError("浏览器未允许专注画布。仍可使用完整查看、缩放和侧栏收起。");
+      setCanvasError(t("editor.fullscreen.denied"));
     }
   };
 
@@ -437,7 +446,10 @@ export function DiagramApp({
           ),
         );
       } catch (error) {
-        setCanvasError(`导出 ${format} 失败：${errorMessage(error)}。请重试。`);
+        setCanvasError(t("editor.export.failed", {
+          format,
+          error: errorMessage(error),
+        }));
       } finally {
         setExporting(null);
       }
@@ -447,7 +459,7 @@ export function DiagramApp({
 
   const reloadServerVersion = useCallback(async () => {
     if (record === null) return;
-    setLoadState({ kind: "loading", message: "正在重新载入服务器版本…" });
+    setLoadState({ kind: "loading", message: t("editor.loading.reload") });
     try {
       const result = await rpc.get(sessionId, record.id);
       if (!result.ok) {
@@ -473,7 +485,7 @@ export function DiagramApp({
     } catch (error) {
       setLoadState({
         kind: "error",
-        message: `重新载入失败：${errorMessage(error)}。`,
+        message: t("editor.reload.failed", { error: errorMessage(error) }),
       });
     }
   }, [draftStorage, limits.validationPolicy, record, rpc, sessionId]);
@@ -491,6 +503,15 @@ export function DiagramApp({
     [persistPendingDraft, record, selectedId],
   );
 
+  const changeLocale = useCallback((next: Locale) => {
+    activateLocale(next);
+    document.title = t("page.title.editor");
+    document.documentElement.lang =
+      next === "ptBR" ? "pt-BR" : next === "zh" ? "zh-CN" : "en";
+    // Force a re-render so every `t()` in this tree reads the new table.
+    setLocale(next);
+  }, []);
+
   if (loadState.kind === "loading") {
     return <EditorMessage busy message={loadState.message} />;
   }
@@ -498,18 +519,18 @@ export function DiagramApp({
     return (
       <EditorMessage
         action={() => setRetryKey((value) => value + 1)}
-        actionLabel="重试"
+        actionLabel={t("editor.retry")}
         message={loadState.message}
       />
     );
   }
   if (loadState.kind === "empty") {
     return (
-      <EditorMessage message="当前会话还没有 diagram。回到对话，让 Agent 使用 diagram_create 为文章生成一张主图，然后重新打开“画布”。" />
+      <EditorMessage message={t("editor.empty")} />
     );
   }
   if (record === null || scene === null || initialData === null) {
-    return <EditorMessage message="diagram 数据不完整。请重新载入。" />;
+    return <EditorMessage message={t("editor.incomplete")} />;
   }
 
   const statusText = autosaveStatusText(saveStatus);
@@ -520,14 +541,14 @@ export function DiagramApp({
         <div className={css.titleBlock}>
           <h1>{record.title}</h1>
           <p aria-live="polite" className={css.saveStatus} role="status"
-            title={saveStatus?.kind === "saved" ? `版本 ${saveStatus.revision}` : undefined}>
+            title={saveStatus?.kind === "saved" ? t("editor.title.version", { revision: saveStatus.revision }) : undefined}>
             {statusText}
           </p>
         </div>
         <label className={css.mobileSelectLabel}>
           <span>diagram</span>
           <select
-            aria-label="选择 diagram"
+            aria-label={t("editor.select.diagram")}
             onChange={(event) => void selectDiagram(event.target.value)}
             value={record.id}
           >
@@ -538,31 +559,31 @@ export function DiagramApp({
             ))}
           </select>
         </label>
-        <div aria-label="导出当前 diagram" className={css.exportActions} role="group">
+        <div aria-label={t("editor.export.group")} className={css.exportActions} role="group">
           <button disabled={!editorReady} onClick={() => {
             const api = apiRef.current;
             if (api !== null) fitViewport(api.getSceneElements(), false);
-          }} type="button">完整查看</button>
+          }} type="button">{t("editor.fit")}</button>
           {record.sourceSpec.composition !== "atlas" && <button disabled={!editorReady} type="button"
-            title="保持可读字号，从左上开始；拖动画布查看其余内容。完整查看可回到总览。"
+            title={t("editor.read.main.title")}
             onClick={() => {
               const api = apiRef.current;
               if (api !== null) fitViewport(noteViewElements(api.getSceneElements(), "main"), false, "read");
-            }}>阅读主图</button>}
+            }}>{t("editor.read.main")}</button>}
           {hasNotes(record.sourceSpec) && (["main", "notes"] as const).map(view => (
             <button key={view} disabled={!editorReady} type="button" onClick={() => {
               const api = apiRef.current;
               if (api !== null) fitViewport(noteViewElements(api.getSceneElements(), view), false, view === "notes" ? "read" : "fit");
-            }}>{view === "main" ? "主图" : "阅读说明"}</button>
+            }}>{view === "main" ? t("editor.view.main") : t("editor.view.notes")}</button>
           ))}
           {record.sourceSpec.composition === "atlas" && (["overview", "detail"] as const).map(view => (
             <button key={view} disabled={!editorReady} type="button" onClick={() => {
               const api = apiRef.current;
               if (api !== null) fitViewport(atlasViewElements(api.getSceneElements(), view), false, view === "detail" ? "read" : "fit");
-            }}>{view === "overview" ? "分类总览" : "阅读明细"}</button>
+            }}>{view === "overview" ? t("editor.view.overview") : t("editor.view.detail")}</button>
           ))}
           <button aria-pressed={fullscreen} onClick={() => void toggleFullscreen()} type="button">
-            {fullscreen ? "退出专注" : "专注画布"}
+            {fullscreen ? t("editor.fullscreen.exit") : t("editor.fullscreen.enter")}
           </button>
           {(["excalidraw", "svg", "png"] as const).map((format) => (
             <button
@@ -571,10 +592,22 @@ export function DiagramApp({
               onClick={() => void exportCurrent(format)}
               type="button"
             >
-              {exporting === format ? "导出中…" : formatLabel(format)}
+              {exporting === format ? t("editor.exporting") : formatLabel(format)}
             </button>
           ))}
         </div>
+        <select
+          aria-label={t("editor.select.language")}
+          className={css.localeSelect}
+          onChange={(event) => changeLocale(event.target.value as Locale)}
+          value={locale}
+        >
+          {SUPPORTED_LOCALES.map((code) => (
+            <option key={code} value={code}>
+              {LOCALE_LABELS[code]}
+            </option>
+          ))}
+        </select>
       </header>
 
       <div className={css.notices}>
@@ -586,7 +619,7 @@ export function DiagramApp({
             </span>
             {canvasError === null && saveStatus?.kind === "error" && (
               <button onClick={() => autosaveRef.current?.retry()} type="button">
-                重试保存
+                {t("editor.retry.save")}
               </button>
             )}
           </div>
@@ -595,16 +628,16 @@ export function DiagramApp({
         {saveStatus?.kind === "conflict" && (
           <div className={css.conflictBar} role="alert">
             <span>
-              版本冲突：服务器已更新到 {saveStatus.currentRevision}。本地稿仍保留在当前页面。
+              {t("editor.conflict", { revision: saveStatus.currentRevision })}
             </span>
             <button
-              onClick={() => void exportCurrent("excalidraw", "-本地稿")}
+              onClick={() => void exportCurrent("excalidraw", "-local-draft")}
               type="button"
             >
-              导出本地稿
+              {t("editor.conflict.export.local")}
             </button>
             <button onClick={() => void reloadServerVersion()} type="button">
-              重新载入服务器版本（放弃本地稿）
+              {t("editor.conflict.reload")}
             </button>
           </div>
         )}
@@ -612,7 +645,7 @@ export function DiagramApp({
 
       <div className={css.body} data-sidebar-collapsed={sidebarCollapsed}>
         <nav
-          aria-label="当前会话的 diagram"
+          aria-label={t("editor.sidebar.diagrams")}
           className={css.sidebar}
           data-collapsed={sidebarCollapsed}
         >
@@ -624,7 +657,9 @@ export function DiagramApp({
               aria-controls="diagram-list"
               aria-expanded={!sidebarCollapsed}
               aria-label={
-                sidebarCollapsed ? "展开 diagram 列表" : "收起 diagram 列表"
+                sidebarCollapsed
+                  ? t("editor.sidebar.expand")
+                  : t("editor.sidebar.collapse")
               }
               className={css.sidebarToggle}
               onClick={() => setSidebarCollapsed((current) => !current)}
@@ -656,7 +691,7 @@ export function DiagramApp({
             ))}
           </div>
         </nav>
-        <section aria-label={`${record.title} 可编辑画布`} className={css.canvas}>
+        <section aria-label={t("editor.canvas.editable.aria", { title: record.title })} className={css.canvas}>
           <Excalidraw
             UIOptions={{
               canvasActions: {
@@ -671,7 +706,7 @@ export function DiagramApp({
             excalidrawAPI={onEditorReady}
             initialData={initialData}
             key={`${record.id}:${sceneEpoch}`}
-            langCode="zh-CN"
+            langCode={locale === "zh" ? "zh-CN" : locale === "ptBR" ? "pt-PT" : "en"}
             onChange={onCanvasChange}
             onLinkOpen={(_element, event) => event.preventDefault()}
             onPaste={(data) => {
@@ -753,24 +788,26 @@ async function saveScene(
       case "invalid-scene":
         return {
           kind: "rejected",
-          message: `服务器拒绝画布：${result.error.issues.map((issue) => issue.message).join("；")}。修正后重试。`,
+          message: t("editor.save.rejected", {
+            issues: result.error.issues.map((issue) => issue.message).join("; "),
+          }),
         };
       case "storage-capacity":
         return {
           kind: "failed",
-          message: "存储容量已满，先导出本地副本。清理空间后重试保存。",
+          message: t("editor.save.capacity"),
         };
       case "diagram-not-found":
-        return { kind: "failed", message: "diagram 已不存在。重新打开画布列表。" };
+        return { kind: "failed", message: t("editor.save.notfound") };
       case "session-not-found":
-        return { kind: "failed", message: "当前 Session 已结束或被替换。重新打开会话。" };
+        return { kind: "failed", message: t("editor.save.session.ended") };
       default:
         return assertNever(result.error);
     }
   } catch (error) {
     return {
       kind: "failed",
-      message: `自动保存失败：${errorMessage(error)}。请重试。`,
+      message: t("editor.autosave.failed", { error: errorMessage(error) }),
     };
   }
 }
@@ -789,10 +826,10 @@ function summaryFromRecord(record: DiagramRecord): DiagramSummary {
 
 function forbiddenPasteMessage(data: ClipboardData): string | null {
   if (data.files !== undefined && Object.keys(data.files).length > 0) {
-    return "不能粘贴图片文件。请改用矩形、文字、线条或箭头。";
+    return t("paste.image.file");
   }
   if (data.mixedContent?.some((item) => item.type === "imageUrl") === true) {
-    return "不能粘贴外部图片链接。请改用文字或可编辑图形。";
+    return t("paste.image.link");
   }
   if (
     data.elements?.some(
@@ -801,26 +838,26 @@ function forbiddenPasteMessage(data: ClipboardData): string | null {
         (element.link !== null && element.link !== undefined),
     ) === true
   ) {
-    return "粘贴内容包含图片、嵌入对象或链接。移除这些内容后再粘贴。";
+    return t("paste.mixed");
   }
   return null;
 }
 
 function autosaveStatusText(status: AutosaveStatus | null): string {
-  if (status === null) return "准备保存";
+  if (status === null) return t("status.ready");
   switch (status.kind) {
     case "saved":
-      return "已保存";
+      return t("status.saved");
     case "dirty":
-      return "有未保存修改";
+      return t("status.dirty");
     case "saving":
-      return "保存中…";
+      return t("status.saving");
     case "conflict":
-      return "版本冲突 · 本地稿未覆盖";
+      return t("status.conflict");
     case "invalid":
-      return "当前修改不符合保存规则";
+      return t("status.invalid");
     case "error":
-      return "保存失败 · 本地稿仍保留";
+      return t("status.error");
     default:
       return assertNever(status);
   }
@@ -829,15 +866,17 @@ function autosaveStatusText(status: AutosaveStatus | null): string {
 function rpcErrorMessage(error: DiagramRpcError): string {
   switch (error.code) {
     case "session-not-found":
-      return "当前 Session 已结束或被替换。回到 DSH 重新打开会话。";
+      return t("editor.save.session.ended");
     case "diagram-not-found":
-      return "所选 diagram 已不存在。重新载入画布列表。";
+      return t("editor.save.notfound");
     case "version-conflict":
-      return "服务器已有更新版本。重新载入后继续编辑。";
+      return t("error.version.conflict");
     case "invalid-scene":
-      return `服务器拒绝画布：${error.issues.map((issue) => issue.message).join("；")}。`;
+      return t("editor.save.rejected", {
+        issues: error.issues.map((issue) => issue.message).join("; "),
+      });
     case "storage-capacity":
-      return "存储容量已满，先导出本地副本。清理空间后重试。";
+      return t("editor.save.capacity");
     default:
       return assertNever(error);
   }
@@ -846,19 +885,19 @@ function rpcErrorMessage(error: DiagramRpcError): string {
 function diagramKindLabel(kind: DiagramSummary["kind"]): string {
   switch (kind) {
     case "flow":
-      return "流程";
+      return t("kind.flow");
     case "architecture":
-      return "架构";
+      return t("kind.architecture");
     case "report":
-      return "报告";
+      return t("kind.report");
     case "timeline":
-      return "时间线";
+      return t("kind.timeline");
     case "hierarchy":
-      return "层级";
+      return t("kind.hierarchy");
     case "comparison":
-      return "对比";
+      return t("kind.comparison");
     case "relationship":
-      return "关系";
+      return t("kind.relationship");
     default:
       return assertNever(kind);
   }

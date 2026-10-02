@@ -54,7 +54,7 @@ const CREATE_OUTPUT = {
     revision: { type: "string", required: true },
     title: { type: "string", required: true },
     kind: { type: "string", enum: [...DIAGRAM_KINDS], required: true },
-    canvasTab: { type: "string", const: "画布", required: true },
+    canvasTab: { type: "string", const: "Canvas", required: true },
   },
 } as const;
 
@@ -91,7 +91,7 @@ export function createDiagramTools(
     description:
       "把当前会话中的文章或讨论生成为可编辑的画布图表（报告图/架构图/流程图/时间线/层级图/对比图/关系图）。"
       + "Create an editable diagram for the current article or discussion. Supply a compact semantic graph;"
-      + " the plugin lays it out deterministically. The result appears in the current DSH session's 画布 tab."
+      + " the plugin lays it out deterministically. The result appears in the current DSH session's Canvas tab."
       + " Use only facts supported by the current context; prefer a smaller truthful graph over invented completeness."
       + " Prefer this over writing standalone SVG or Mermaid files when the user wants an editable diagram. "
       + DIAGRAM_COMPOSITION_GUIDANCE,
@@ -201,7 +201,7 @@ export function createDiagramTools(
       schema: CREATE_OUTPUT,
       render: (_args, value) => [{
         type: "text",
-        text: `Created editable ${value.kind} diagram "${value.title}" in the current session. Open the 画布 tab to edit it. Diagram id: ${value.diagramId}; revision: ${value.revision}.`,
+        text: `Created editable ${value.kind} diagram "${value.title}" in the current session. Open the Canvas tab to edit it. Diagram id: ${value.diagramId}; revision: ${value.revision}.`,
       }],
       presentationMeta: (_args, value) =>
         createDiagramPreviewMeta({
@@ -227,7 +227,7 @@ export function createDiagramTools(
         revision: diagram.revision,
         title: diagram.title,
         kind: diagram.kind,
-        canvasTab: "画布" as const,
+        canvasTab: "Canvas" as const,
       };
     },
     presentCall: (args) => ({

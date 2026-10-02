@@ -1,0 +1,18 @@
+# Normalize line endings to LF across all operating systems so that
+# content-hash and byte-level assertions (tests hash fixture files) are
+# deterministic regardless of the developer's core.autocrlf setting.
+* text eol=lf
+
+# Keep future binary artifacts safe from any EOL/working-tree conversion.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.otf binary
+*.zip binary
+*.gz binary

@@ -9,7 +9,7 @@ afterEach(cleanup);
 import { jumpToCanvasTab } from "../src/client/canvas-tab.ts";
 import { DiagramPreviewNode } from "../src/client/DiagramPreviewNode.tsx";
 
-function canvasTab(label = "画布"): HTMLElement {
+function canvasTab(label = "Canvas"): HTMLElement {
   const tab = document.createElement("button");
   tab.setAttribute("role", "tab");
   tab.textContent = label;
@@ -74,7 +74,7 @@ describe("DiagramPreviewNode edit affordance", () => {
     sessionStorage.clear();
 
     render(<DiagramPreviewNode {...props} />);
-    fireEvent.click(screen.getByRole("button", { name: "在画布中编辑" }));
+    fireEvent.click(screen.getByRole("button", { name: "Edit in canvas" }));
 
     expect(clicked).toHaveBeenCalledTimes(1);
     expect(
@@ -87,7 +87,7 @@ describe("DiagramPreviewNode edit affordance", () => {
   it("stays inert without a canvas tab in the document", () => {
     render(<DiagramPreviewNode {...props} />);
     expect(() =>
-      fireEvent.click(screen.getByRole("button", { name: "在画布中编辑" })),
+      fireEvent.click(screen.getByRole("button", { name: "Edit in canvas" })),
     ).not.toThrow();
   });
 });

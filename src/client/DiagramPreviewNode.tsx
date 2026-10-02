@@ -4,6 +4,7 @@ import type {} from "@deepseek-ai/dsh-client-ui-session/client";
 
 import { writeCanvasDeepLink } from "../core/canvas-link.ts";
 import { jumpToCanvasTab } from "./canvas-tab.ts";
+import { clientString } from "./strings.ts";
 import css from "./DiagramPreviewNode.module.css";
 
 /** Renderer props without the locale kit: this row registers no locale NS. */
@@ -29,7 +30,9 @@ export function DiagramPreviewNode({
   return (
     <section
       aria-busy={!loaded}
-      aria-label={`diagram 预览：${node.data.title}`}
+      aria-label={clientString("canvas.preview.aria", undefined, {
+        title: node.data.title,
+      })}
       className={css.root}
     >
       <header className={css.header}>
@@ -45,13 +48,13 @@ export function DiagramPreviewNode({
           }}
           type="button"
         >
-          在画布中编辑
+          {clientString("canvas.preview.edit")}
         </button>
       </header>
       <div className={css.body}>
         {!loaded && (
           <p className={css.loading} role="status">
-            正在加载图表预览…
+            {clientString("canvas.preview.loading")}
           </p>
         )}
         <iframe
@@ -59,7 +62,9 @@ export function DiagramPreviewNode({
           loading="lazy"
           onLoad={() => setLoaded(true)}
           src={previewUrl}
-          title={`diagram 预览：${node.data.title}`}
+          title={clientString("canvas.preview.aria", undefined, {
+            title: node.data.title,
+          })}
         />
       </div>
     </section>

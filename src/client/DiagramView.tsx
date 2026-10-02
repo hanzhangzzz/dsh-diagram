@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import type { ConvViewProps } from "@deepseek-ai/dsh-client-ui-conversation/client";
 import type {} from "@deepseek-ai/dsh-client-ui-session/client";
 
+import { clientString } from "./strings.ts";
 import css from "./DiagramView.module.css";
 
 /** Conversation tab that mounts the editor assets only while this view is active. */
@@ -16,13 +17,13 @@ export function DiagramView({ sessionId }: ConvViewProps) {
   return (
     <section
       aria-busy={!loaded}
-      aria-label="diagram 画布"
+      aria-label={clientString("canvas.editor.aria")}
       className={css.root}
       data-conversation-composer-overlay=""
     >
       {!loaded && (
         <p className={css.loading} role="status">
-          正在加载画布编辑器…
+          {clientString("canvas.editor.loading")}
         </p>
       )}
       <iframe
@@ -30,7 +31,7 @@ export function DiagramView({ sessionId }: ConvViewProps) {
         className={css.frame}
         onLoad={() => setLoaded(true)}
         src={editorUrl}
-        title="diagram 画布编辑器"
+        title={clientString("canvas.editor.title")}
       />
     </section>
   );

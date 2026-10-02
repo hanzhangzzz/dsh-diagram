@@ -145,7 +145,7 @@ describe("DiagramApp", () => {
     await waitFor(()=>expect(excalidrawHarness.bounds).toHaveBeenCalled());
     const first=excalidrawHarness.bounds.mock.calls[0] as unknown as [Array<{id:string}>];
     expect(first[0].map(e=>e.id)).toEqual(["node-1"]);
-    fireEvent.click(screen.getByRole("button",{name:"阅读说明"}));
+    fireEvent.click(screen.getByRole("button",{name:"Read notes"}));
     const last=excalidrawHarness.bounds.mock.calls.at(-1) as unknown as [Array<{id:string}>];
     expect(last[0].map(e=>e.id)).toEqual(["notes:body:api"]);
     expect(client.save).not.toHaveBeenCalled();
@@ -271,7 +271,7 @@ describe("DiagramApp", () => {
 
     expect(await screen.findByTestId("excalidraw-loaded")).toBeTruthy();
     const expandButton = screen.getByRole("button", {
-      name: "展开 diagram 列表",
+      name: "Expand diagram list",
     });
     expect(expandButton.getAttribute("aria-expanded")).toBe("false");
     expect(screen.queryByRole("button", { name: /^Runtime/ })).toBeNull();
@@ -281,7 +281,7 @@ describe("DiagramApp", () => {
 
     expect(screen.getByRole("button", { name: /^Runtime/ })).toBeTruthy();
     expect(client.get).toHaveBeenCalledOnce();
-    fireEvent.click(screen.getByRole("button", { name: "收起 diagram 列表" }));
+    fireEvent.click(screen.getByRole("button", { name: "Collapse diagram list" }));
     expect(screen.queryByRole("button", { name: /^Runtime/ })).toBeNull();
     expect(client.get).toHaveBeenCalledOnce();
   });
@@ -292,7 +292,7 @@ describe("DiagramApp", () => {
     render(<DiagramApp client={client} sessionId="session-1" />);
 
     expect(
-      await screen.findByText(/让 Agent 使用 diagram_create/),
+      await screen.findByText(/let the Agent generate a main diagram/),
     ).toBeTruthy();
     expect(client.get).not.toHaveBeenCalled();
   });
@@ -367,7 +367,7 @@ describe("DiagramApp", () => {
         changedScene.files,
       );
     });
-    fireEvent.click(screen.getByRole("button", { name: "展开 diagram 列表" }));
+    fireEvent.click(screen.getByRole("button", { name: "Expand diagram list" }));
     fireEvent.click(screen.getByRole("button", { name: /^Details/ }));
     await waitFor(() => expect(client.save).toHaveBeenCalledOnce());
 
