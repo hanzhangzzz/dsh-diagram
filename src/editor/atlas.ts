@@ -4,6 +4,7 @@ import {
   type DiagramNode,
 } from "../core/contracts.ts";
 import { wrapPlainText } from "../core/layout.ts";
+import { t } from "../core/i18n.ts";
 
 /** Renderer-neutral native primitives; also used by the lightweight preview. */
 export interface AtlasElement {
@@ -184,7 +185,7 @@ export function atlasSkeletons(spec: DiagramSpec): AtlasElement[] {
   box("panel:overview", 24, top, 1232, overviewHeight);
   text(
     "panel:overview:title",
-    "01  先看整体：分类与数量",
+    t("atlas.overview.title"),
     56,
     top + 28,
     900,
@@ -192,17 +193,17 @@ export function atlasSkeletons(spec: DiagramSpec): AtlasElement[] {
   );
   text(
     "panel:overview:legend",
-    "每根细条对应一个末级条目；完整名称与说明在下方明细。线表示归属，不表示时间顺序。",
+    t("atlas.overview.legend"),
     56,
     top + 68,
     1160,
     14,
     MUTED,
   );
-  text("column:root", "整体", 64, top + 112, 220, 14, MUTED);
+  text("column:root", t("atlas.col.root"), 64, top + 112, 220, 14, MUTED);
   text(
     "column:branch",
-    `分类 / ${branches.length}`,
+    t("atlas.col.branches", { count: branches.length }),
     410,
     top + 112,
     340,
@@ -211,7 +212,9 @@ export function atlasSkeletons(spec: DiagramSpec): AtlasElement[] {
   );
   text(
     "column:leaf",
-    `末级条目 / ${branches.reduce((n, b) => n + children(b.id).length, 0)}`,
+    t("atlas.col.leaves", {
+      count: branches.reduce((n, b) => n + children(b.id).length, 0),
+    }),
     840,
     top + 112,
     350,
@@ -322,7 +325,7 @@ export function atlasSkeletons(spec: DiagramSpec): AtlasElement[] {
   const detailElementsStart = out.length;
   text(
     "panel:detail:title",
-    "02  再查明细：同一分类，完整条目",
+    t("atlas.detail.title"),
     56,
     detailTop + 28,
     1140,

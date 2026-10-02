@@ -270,6 +270,21 @@
   display: none;
 }
 
+.localeSelect {
+  min-height: 2rem;
+  padding: 0.3rem 0.5rem;
+  border: 1px solid var(--dsw-alias-border-l1, #b8bdc5);
+  border-radius: 0.5rem;
+  color: var(--dsw-alias-label-primary, #20232a);
+  background: var(--dsw-alias-bg-layer-2, #ffffff);
+  font-size: 0.8125rem;
+}
+
+.localeSelect:focus-visible {
+  outline: 2px solid var(--dsw-alias-state-business-primary, #2563eb);
+  outline-offset: 2px;
+}
+
 .messagePage {
   display: grid;
   width: 100%;

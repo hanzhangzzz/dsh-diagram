@@ -169,7 +169,7 @@ describe("DiagramPreviewNode", () => {
 
     render(<DiagramPreviewNode {...props} />);
 
-    const frame = screen.getByTitle("diagram 预览：推荐结构");
+    const frame = screen.getByTitle("diagram preview: 推荐结构");
     expect(frame.getAttribute("src")).toBe(
       "/diagram-assets/preview.html?sessionId=session%2Fwith%20spaces&diagramId=0f8fad5b-d9cb-469f-a165-70867728950e",
     );

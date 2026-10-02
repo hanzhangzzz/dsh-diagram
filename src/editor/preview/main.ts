@@ -1,6 +1,7 @@
 import { atlasSkeletons, atlasViewElements, ATLAS_BACKGROUND } from "../atlas.ts";
 import type { PersistedScene } from "../../core/contracts.ts";
 import { createDiagramRpcClient, type DiagramRpcClient } from "../rpc.ts";
+import { t } from "../../core/i18n.ts";
 import { SURFACE_COLOR, TEXT_COLOR } from "../visual-style.ts";
 import { renderSceneSvg, renderSpecSvg } from "./render-svg.ts";
 import { hasNotes, mainViewSpec, noteViewElements } from "../notes.ts";
@@ -30,25 +31,21 @@ export async function bootstrapPreview(
   const sessionId = params.get("sessionId")?.trim() ?? "";
   const diagramId = params.get("diagramId")?.trim() ?? "";
   if (sessionId === "" || diagramId === "") {
-    showMessage(doc, root, "预览参数缺失：需要 sessionId 和 diagramId。");
+    showMessage(doc, root, t("preview.missing.params"));
     return;
   }
 
   const load = async (): Promise<void> => {
-    showMessage(doc, root, "正在加载图表预览…");
+    showMessage(doc, root, t("preview.loading"));
     try {
       const listed = await rpc.list(sessionId);
       if (!listed.ok) {
-        showMessage(doc, root, "该图表在当前会话中不存在。");
+        showMessage(doc, root, t("preview.notfound"));
         return;
       }
       const result = await rpc.get(sessionId, diagramId);
       if (!result.ok) {
-        showMessage(
-          doc,
-          root,
-          "该图表在当前会话中不存在（可能创建于其他会话或已被移除）。",
-        );
+        showMessage(doc, root, t("preview.notfound.alt"));
         return;
       }
       const diagram = result.value.diagram;
@@ -63,8 +60,8 @@ export async function bootstrapPreview(
         : renderSceneSvg(doc, hasNotes(diagram.sourceSpec)
           ? {...diagram.scene, elements: [...noteViewElements(diagram.scene.elements, "main")]}
           : diagram.scene);
-      if (atlas) svg.setAttribute("aria-label", "分类总览预览；完整明细请在画布中查看");
-      if (hasNotes(diagram.sourceSpec)) svg.setAttribute("aria-label", "主图预览；补充说明请在画布中阅读");
+      if (atlas) svg.setAttribute("aria-label", t("preview.atlas.aria"));
+      if (hasNotes(diagram.sourceSpec)) svg.setAttribute("aria-label", t("preview.notes.aria"));
       svg.style.display = "block";
       svg.style.width = "100%";
       svg.style.height = "100%";
@@ -112,14 +109,14 @@ function showFailure(
   container.style.font = MESSAGE_FONT;
 
   const message = doc.createElement("p");
-  message.textContent = `图表预览加载失败：${
-    error instanceof Error ? error.message : String(error)
-  }`;
+  message.textContent = t("preview.load.failed", {
+    error: error instanceof Error ? error.message : String(error),
+  });
   message.style.margin = "0";
 
   const button = doc.createElement("button");
   button.type = "button";
-  button.textContent = "重试";
+  button.textContent = t("preview.retry");
   button.addEventListener("click", () => {
     void retry();
   });

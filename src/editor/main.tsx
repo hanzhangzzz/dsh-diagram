@@ -6,6 +6,7 @@ import {
   configureExcalidrawAssets,
   type ExcalidrawAssetTarget,
 } from "./excalidrawAssets.ts";
+import { loadLocale, resolveLocale, t } from "../core/i18n.ts";
 import "./index.css";
 
 const container = document.getElementById("root");
@@ -17,11 +18,18 @@ const sessionId = new URLSearchParams(globalThis.location.search).get(
 
 configureExcalidrawAssets(globalThis as ExcalidrawAssetTarget);
 
-void import("./App.tsx").then(({ DiagramApp }) => {
+// Resolve the locale once up-front so both the <html lang> and page title agree,
+// and every synchronous `t()` in the component tree is ready before mount.
+const locale = resolveLocale();
+document.documentElement.lang =
+  locale === "ptBR" ? "pt-BR" : locale === "zh" ? "zh-CN" : "en";
+
+void loadLocale(locale).then(() => import("./App.tsx")).then(({ DiagramApp }) => {
+  document.title = t("page.title.editor");
   createRoot(container).render(
     <StrictMode>
       {sessionId === null || sessionId.trim() === "" ? (
-        <main role="alert">缺少 sessionId。请从 DSH 会话的“画布”标签打开编辑器。</main>
+        <main role="alert">{t("editor.missing.sessionId")}</main>
       ) : (
         <DiagramApp sessionId={sessionId} />
       )}

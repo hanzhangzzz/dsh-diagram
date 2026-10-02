@@ -179,7 +179,7 @@ describe("diagram tools", () => {
       diagramId: ID,
       title: "Article flow",
       kind: "flow",
-      canvasTab: "画布",
+      canvasTab: "Canvas",
     });
     expect(createDiagram).toHaveBeenCalledWith(
       HEADER,
