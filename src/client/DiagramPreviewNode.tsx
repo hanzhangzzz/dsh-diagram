@@ -29,7 +29,7 @@ export function DiagramPreviewNode({
   return (
     <section
       aria-busy={!loaded}
-      aria-label={`diagram 预览：${node.data.title}`}
+      aria-label={`diagram preview: ${node.data.title}`}
       className={css.root}
     >
       <header className={css.header}>
@@ -45,13 +45,13 @@ export function DiagramPreviewNode({
           }}
           type="button"
         >
-          在画布中编辑
+          Edit in canvas
         </button>
       </header>
       <div className={css.body}>
         {!loaded && (
           <p className={css.loading} role="status">
-            正在加载图表预览…
+            Loading diagram preview…
           </p>
         )}
         <iframe
@@ -59,7 +59,7 @@ export function DiagramPreviewNode({
           loading="lazy"
           onLoad={() => setLoaded(true)}
           src={previewUrl}
-          title={`diagram 预览：${node.data.title}`}
+          title={`diagram preview: ${node.data.title}`}
         />
       </div>
     </section>

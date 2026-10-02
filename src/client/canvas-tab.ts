@@ -1,5 +1,5 @@
 /** Visible label of the canvas view tab this plugin registers. */
-export const CANVAS_TAB_LABEL = "画布";
+export const CANVAS_TAB_LABEL = "Canvas";
 
 /**
  * Switches the conversation to this plugin's canvas view tab.

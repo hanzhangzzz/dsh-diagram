@@ -16,13 +16,13 @@ export function DiagramView({ sessionId }: ConvViewProps) {
   return (
     <section
       aria-busy={!loaded}
-      aria-label="diagram 画布"
+      aria-label="diagram Canvas"
       className={css.root}
       data-conversation-composer-overlay=""
     >
       {!loaded && (
         <p className={css.loading} role="status">
-          正在加载画布编辑器…
+          Loading canvas editor…
         </p>
       )}
       <iframe
@@ -30,7 +30,7 @@ export function DiagramView({ sessionId }: ConvViewProps) {
         className={css.frame}
         onLoad={() => setLoaded(true)}
         src={editorUrl}
-        title="diagram 画布编辑器"
+        title="diagram Canvas editor"
       />
     </section>
   );

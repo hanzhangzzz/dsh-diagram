@@ -6,6 +6,7 @@ import type {} from "@deepseek-ai/dsh-client-ui-chat/client";
 
 import { DiagramView } from "./DiagramView.tsx";
 import { DiagramPreviewNode } from "./DiagramPreviewNode.tsx";
+import { CANVAS_TAB_LABEL } from "./canvas-tab.ts";
 import {
   DIAGRAM_PREVIEW_NODE_KIND,
   diagramPreviewDefinition,
@@ -26,7 +27,7 @@ export function apply(ctx: Context): void {
         name: "conversation.view",
         id: "diagram",
         order: 20,
-        label: "画布",
+        label: CANVAS_TAB_LABEL,
       },
       DiagramView,
     ),
